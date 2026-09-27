@@ -26,6 +26,8 @@
   #hud { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 3; }
   #vignette { position: fixed; inset: 0; pointer-events: none;
     background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%); }
+  #firefx { position: fixed; inset: 0; pointer-events: none; opacity: 0;
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(255,120,20,0.65) 100%); }
   #acidfx { position: fixed; inset: 0; pointer-events: none; opacity: 0;
     background: radial-gradient(ellipse at center, transparent 30%, rgba(90,200,30,0.6) 100%); }
   #hurt { position: fixed; inset: 0; pointer-events: none; opacity: 0;
@@ -80,7 +82,7 @@
     text-shadow: 0 4px 24px rgba(0,0,0,0.8); }
   .title span { color: var(--accent); }
   .subtitle { font-family: "Oswald"; letter-spacing: 0.6em; color: var(--dim); margin: 10px 0 34px; font-size: 14px; }
-  #levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 180px)); justify-content: center; gap: 12px; width: min(1180px, 100%); }
+  #levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 165px)); justify-content: center; gap: 10px; width: min(1240px, 100%); }
   .card { pointer-events: auto; cursor: pointer; border: 1px solid var(--line); padding: 14px 14px 16px; min-height: 150px;
     position: relative; overflow: hidden; transition: transform 0.15s, border-color 0.15s; text-align: left; color: var(--fg);
     font: inherit; }
@@ -94,6 +96,7 @@
   .t-day { background: linear-gradient(160deg, rgba(90,120,150,0.55), rgba(20,20,20,0.85)); }
   .t-dusk { background: linear-gradient(160deg, rgba(190,100,50,0.55), rgba(20,15,15,0.85)); }
   .t-night { background: linear-gradient(160deg, rgba(30,40,80,0.7), rgba(5,5,10,0.9)); }
+  .t-dust { background: linear-gradient(160deg, rgba(170,130,80,0.6), rgba(25,18,10,0.9)); }
   .t-rain { background: linear-gradient(160deg, rgba(70,95,110,0.6), rgba(10,14,18,0.9)); }
   .t-fog { background: linear-gradient(160deg, rgba(130,140,140,0.55), rgba(20,20,20,0.85)); }
   .controls { margin-top: 26px; font-size: 12px; color: var(--dim); letter-spacing: 0.05em; text-align: center; line-height: 1.9; }
@@ -206,7 +209,7 @@
   @media (max-height: 520px) {
     #menu { justify-content: flex-start; padding-top: 14px; padding-bottom: 14px; overflow-y: auto; }
     .title { font-size: 40px; } .subtitle { margin: 4px 0 12px; }
-    #menu #levels { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+    #menu #levels { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
     .card { min-height: 0; padding: 10px; } .card .n { font-size: 22px; } .card .ds { display: none; }
     .controls { margin-top: 10px; }
     .panel { padding: 20px 26px; } .panel h2 { font-size: 28px; }
@@ -226,6 +229,7 @@
 <div id="vignette"></div>
 <div id="hurt"></div>
 <div id="acidfx"></div>
+<div id="firefx"></div>
 
 <div id="scope"></div>
 <div id="hud">
@@ -320,11 +324,13 @@ const LEVELS = [
     hpMul: 1.3, speedMul: 1.15, waves: [{ walker: 14, runner: 6, armored: 2 }, { walker: 14, runner: 8, crawler: 4, spitter: 3, armored: 3 }, { walker: 16, runner: 12, screamer: 2, bloater: 4, brute: 2 }, { runner: 18, armored: 5, spitter: 4, crawler: 4, brute: 3 }] },
   { name: '警察局', theme: 'police', time: 'night', desc: '市警局已經淪陷。感染的警察舉著防暴盾牌衝來，還有人拿著槍。',
     hpMul: 1.35, speedMul: 1.15, waves: [{ walker: 12, riot: 4 }, { walker: 12, runner: 6, riot: 5, gunner: 2 }, { walker: 12, runner: 8, riot: 6, gunner: 4, crawler: 4 }, { runner: 12, riot: 8, gunner: 6, armored: 3, brute: 2 }] },
+  { num: 6, name: '陸軍基地', theme: 'military', time: 'dust', desc: '城外的陸軍基地被沙塵暴吞沒。感染的軍犬成群衝鋒，火焰兵殭屍會近距離噴火。',
+    hpMul: 1.42, speedMul: 1.17, waves: [{ walker: 12, runner: 6, dog: 6 }, { walker: 12, runner: 6, armored: 3, flamer: 2, dog: 6 }, { walker: 14, runner: 8, flamer: 3, gunner: 3, dog: 8, bloater: 2 }, { runner: 12, armored: 5, flamer: 4, dog: 10, brute: 2 }] },
   { num: 7, name: '市立醫院', theme: 'hospital', time: 'rain', desc: '感染從這裡爆發。暴雨中，醫護殭屍會治療屍群，實驗室逃出的突變體會從遠處撲向你。',
     hpMul: 1.5, speedMul: 1.2, waves: [{ walker: 14, runner: 6, medic: 2 }, { walker: 14, runner: 8, medic: 3, spitter: 3, crawler: 4 }, { walker: 16, runner: 10, mutant: 1, medic: 3, bloater: 3 }, { runner: 14, medic: 4, mutant: 2, gunner: 3, riot: 3 }, { walker: 12, runner: 16, mutant: 3, medic: 4, screamer: 2, brute: 1 }] },
-  // levels 6, 8 and 9 are still to be made; the finale stays numbered 10 and is hidden from the menu until they exist
+  // levels 8 and 9 are still to be made; the finale stays numbered 10 and is hidden from the menu until they exist
   { num: 10, hidden: true, name: '最後防線', theme: 'downtown', time: 'night', desc: '撤離直升機抵達前，守住市中心。所有種類的感染者都會出現。',
-    hpMul: 1.6, speedMul: 1.25, waves: [{ walker: 18, runner: 10, crawler: 5 }, { walker: 18, runner: 12, spitter: 4, bloater: 4, riot: 4, brute: 2 }, { walker: 20, runner: 14, armored: 5, gunner: 4, screamer: 2, brute: 3 }, { walker: 16, runner: 18, spitter: 5, bloater: 5, riot: 6, crawler: 5, brute: 4 }, { runner: 26, armored: 6, gunner: 6, screamer: 3, spitter: 5, bloater: 4, medic: 4, mutant: 3, brute: 6 }] },
+    hpMul: 1.6, speedMul: 1.25, waves: [{ walker: 18, runner: 10, crawler: 5 }, { walker: 18, runner: 12, spitter: 4, bloater: 4, riot: 4, brute: 2 }, { walker: 20, runner: 14, armored: 5, gunner: 4, screamer: 2, brute: 3 }, { walker: 16, runner: 18, spitter: 5, bloater: 5, riot: 6, crawler: 5, brute: 4 }, { runner: 26, armored: 6, gunner: 6, screamer: 3, spitter: 5, bloater: 4, medic: 4, mutant: 3, dog: 8, flamer: 4, brute: 6 }] },
 ];
 LEVELS.forEach((l, i) => { l.num ??= i + 1; });
 const nextVisible = (i) => { for (let k = i + 1; k < LEVELS.length; k++) if (!LEVELS[k].hidden) return k; return -1; };
@@ -337,6 +343,8 @@ const TIMES = {
            sun: 0xffa060, sunI: 2.6, hemiSky: 0x8a90b8, hemiGround: 0x3a2a22, hemiI: 0.55, exp: 0.62, envI: 0.55, night: false },
   night: { label: '夜晚', sky: false, bg: 0x05070c, fog: 0x06090e, fogD: 0.026,
            sun: 0x7f93c8, sunI: 0.3, hemiSky: 0x2a3550, hemiGround: 0x0a0a0a, hemiI: 0.35, exp: 1.0, envI: 0, night: true },
+  dust:  { label: '沙塵暴', sky: true, bgFog: true, dust: true, elev: 18, azi: 110, turb: 20, ray: 1, mie: 0.05, mieG: 0.8, fog: 0xa98b64, fogD: 0.021,
+           sun: 0xffd6a0, sunI: 1.7, hemiSky: 0xd8b890, hemiGround: 0x4a3a28, hemiI: 0.8, exp: 0.7, envI: 0.4, night: false },
   rain:  { label: '暴雨', sky: true, bgFog: true, rain: true, elev: 30, azi: 200, turb: 20, ray: 0.5, mie: 0.02, mieG: 0.8, fog: 0x565e67, fogD: 0.02,
            sun: 0xc8d0dc, sunI: 0.7, hemiSky: 0x9aa6b4, hemiGround: 0x2c2c2c, hemiI: 0.85, exp: 0.78, envI: 0.35, night: false },
   fog:   { label: '濃霧', sky: true, bgFog: true, elev: 25, azi: 180, turb: 20, ray: 0.6, mie: 0.02, mieG: 0.8, fog: 0x8c9599, fogD: 0.03,
@@ -362,6 +370,10 @@ const ZTYPES = {
               desc: '舉著防暴盾牌和警棍。盾牌擋得住所有子彈和爆炸，但承受一定傷害後會碎裂。可以繞到側面，或集中火力打碎盾牌。' },
   gunner:   { name: '持槍警察殭屍', color: '#d0a040', hp: 110, speed: 1.7, dmg: 9, scale: 1, rate: 1.2, cash: 35, score: 350, gun: true,
               desc: '還記得怎麼開槍。舉槍瞄準時會亮起紅色雷射，看到就躲到掩體後面。' },
+  dog:      { name: '感染軍犬', color: '#8a6a4a', hp: 45, speed: 6.2, dmg: 8, scale: 1, rate: 0.7, cash: 20, score: 150,
+              desc: '基地的軍犬也被感染了。速度比你跑得還快，而且成群出現。個子矮，要往下瞄。' },
+  flamer:   { name: '火焰兵殭屍', color: '#e0702a', hp: 160, speed: 1.5, dmg: 5, scale: 1.05, rate: 1.2, cash: 45, score: 400, flame: true,
+              desc: '背著燃料罐的士兵，靠近到 8 公尺內會持續噴火。從側面或背後打爆燃料罐，它會當場爆炸。' },
   medic:    { name: '醫護殭屍', color: '#5fc0a8', hp: 90, speed: 1.8, dmg: 10, scale: 1, rate: 1.1, cash: 40, score: 350, heal: true,
               desc: '胸前的綠色十字會發光。它會躲在屍群後面，每隔幾秒治療附近的殭屍。優先擊殺。' },
   mutant:   { name: '突變實驗體', color: '#d08a8a', hp: 460, speed: 2.0, dmg: 22, scale: 1.25, rate: 1.3, cash: 70, score: 600, leap: true,
@@ -707,6 +719,35 @@ function buildTextures() {
   TEX.facades.hospital = [0, 1].map((i) => facadeTex('hospital', i));
   TEX.scrubs = [clothTex('#4f9a90', 0.7), clothTex('#6aa8b8', 0.6)];
   TEX.gown = clothTex('#a8c4c8', 0.8);
+  // woodland camouflage
+  [c, x] = makeCanvas(256);
+  x.fillStyle = '#6b6a48'; x.fillRect(0, 0, 256, 256);
+  for (const col of ['74,82,48', '58,46,32', '30,32,24', '120,110,78']) blotches(x, 256, 256, 22, col, 14, 40, 0.95);
+  speckle(x, 256, 256, 5000, 0.2);
+  TEX.camo = toTex(c);
+  [c, x] = makeCanvas(256);
+  x.fillStyle = '#5e6446'; x.fillRect(0, 0, 256, 256);
+  for (const col of ['70,78,50', '52,44,30', '100,96,70']) blotches(x, 256, 256, 26, col, 8, 22, 0.95);
+  blotches(x, 256, 256, 12, '80,5,5', 6, 22, 0.8); speckle(x, 256, 256, 6000, 0.2);
+  TEX.camoCloth = toTex(c);
+  // hesco barrier: tan fabric in a wire grid
+  [c, x] = makeCanvas(128);
+  x.fillStyle = '#b9a47c'; x.fillRect(0, 0, 128, 128); blotches(x, 128, 128, 10, '90,76,50', 10, 30, 0.4); speckle(x, 128, 128, 3000, 0.2);
+  x.strokeStyle = 'rgba(60,60,60,0.8)'; x.lineWidth = 2;
+  for (let k = 0; k <= 128; k += 16) { x.beginPath(); x.moveTo(k, 0); x.lineTo(k, 128); x.stroke(); x.beginPath(); x.moveTo(0, k); x.lineTo(128, k); x.stroke(); }
+  TEX.hesco = toTex(c);
+  TEX.baseSign = signTex('陸 軍 基 地', 'ARMY BASE', '#3a4430', '#ece2c4');
+  [c, x] = makeCanvas(256);
+  x.fillStyle = '#4a4a46'; x.fillRect(0, 0, 256, 256); speckle(x, 256, 256, 6000, 0.25);
+  x.strokeStyle = '#e8e4d8'; x.lineWidth = 12; x.beginPath(); x.arc(128, 128, 110, 0, Math.PI * 2); x.stroke();
+  x.fillStyle = '#e8e4d8'; x.fillRect(80, 60, 24, 136); x.fillRect(152, 60, 24, 136); x.fillRect(80, 116, 96, 24);
+  TEX.helipad = new THREE.CanvasTexture(c); TEX.helipad.colorSpace = THREE.SRGBColorSpace;
+  // flame sprite
+  [c, x] = makeCanvas(64);
+  let fg = x.createRadialGradient(32, 32, 0, 32, 32, 30);
+  fg.addColorStop(0, 'rgba(255,240,180,1)'); fg.addColorStop(0.35, 'rgba(255,150,40,0.9)'); fg.addColorStop(1, 'rgba(160,30,0,0)');
+  x.fillStyle = fg; x.fillRect(0, 0, 64, 64);
+  TEX.fire = new THREE.CanvasTexture(c); TEX.fire.colorSpace = THREE.SRGBColorSpace;
 }
 
 // 512px tile = 4 bays (4 m each) x 4 floors (3.5 m each) → one tile covers 16 m x 14 m
@@ -963,6 +1004,14 @@ function makeMaterials() {
     cone: std({ color: 0xe8561a, roughness: 0.6 }),
     flag: std({ color: 0x1d3b82, roughness: 0.9, side: THREE.DoubleSide }),
     canopyLight: std({ color: 0x223355, emissive: 0x3a6cff, emissiveIntensity: night ? 2.5 : 0.3 }),
+    camo: std({ map: TEX.camo, roughness: 0.75, metalness: 0.25 }),
+    oliveDrab: std({ color: 0x4b5236, roughness: 0.8, metalness: 0.2 }),
+    canvas: std({ color: 0x5c5a40, roughness: 1, side: THREE.DoubleSide }),
+    hesco: std({ map: TEX.hesco, roughness: 1 }),
+    baseSign: std({ map: TEX.baseSign, emissive: 0xffffff, emissiveMap: TEX.baseSign, emissiveIntensity: 0.25, roughness: 0.6 }),
+    helipad: std({ map: TEX.helipad, roughness: 0.9 }),
+    wire: std({ color: 0x55585c, roughness: 0.4, metalness: 0.8 }),
+    bunker: std({ map: TEX.slab, color: 0xb8ad94, roughness: 0.95 }),
     hospital: TEX.facades.hospital.map((t) => std({ map: t.map, roughness: 0.75, emissive: 0xffffff, emissiveMap: t.em, emissiveIntensity: night || TM.rain ? 0.8 : 0 })),
     hospSign: std({ map: TEX.hospSign, emissive: 0xffffff, emissiveMap: TEX.hospSign, emissiveIntensity: 0.7, roughness: 0.5 }),
     erSign: std({ map: TEX.erSign, emissive: 0xffffff, emissiveMap: TEX.erSign, emissiveIntensity: 1.4, roughness: 0.5 }),
@@ -1116,6 +1165,97 @@ function addGurney(g, x, z, rot, body = true) {
   b.position.set(x, 0, z); b.rotation.y = rot; g.add(b);
   addCollider(x, z, 1.2, 1.2);
 }
+function rotCollider(x, z, w, d, rot) {
+  const c = Math.abs(Math.cos(rot)), s = Math.abs(Math.sin(rot));
+  addCollider(x, z, w * c + d * s, w * s + d * c);
+}
+function addTank(g, x, z, rot) {
+  const t = new THREE.Group();
+  boxMesh(t, 0, 1.0, 0, 3.3, 1.1, 6.6, M.camo);
+  boxMesh(t, 0, 0.55, 3.0, 3.2, 0.7, 0.9, M.camo).rotation.x = 0.5;
+  for (const sx of [-1.75, 1.75]) boxMesh(t, sx, 0.62, 0, 0.55, 1.1, 6.9, M.tire);
+  const tur = new THREE.Group(); tur.position.set(0, 1.9, -0.3); tur.rotation.y = rand(-0.6, 0.6); t.add(tur);
+  boxMesh(tur, 0, 0, 0, 2.3, 0.75, 3, M.camo);
+  const barrel = mesh(new THREE.CylinderGeometry(0.1, 0.12, 4.4, 10), M.oliveDrab, tur, 0, 0.05, 3.6); barrel.rotation.x = Math.PI / 2;
+  mesh(new THREE.CylinderGeometry(0.28, 0.3, 0.2, 12), M.oliveDrab, tur, 0.5, 0.45, -0.4);
+  t.position.set(x, 0, z); t.rotation.y = rot; g.add(t);
+  rotCollider(x, z, 4, 7, rot);
+}
+function addTruck(g, x, z, rot) {
+  const t = new THREE.Group();
+  boxMesh(t, 0, 1.35, 2.3, 2.3, 1.6, 1.8, M.oliveDrab);
+  boxMesh(t, 0, 1.75, 3.2, 2.0, 0.6, 0.06, M.glass, false);
+  boxMesh(t, 0, 1.0, -0.8, 2.4, 0.3, 4.6, M.oliveDrab);
+  const cover = mesh(new THREE.CylinderGeometry(1.2, 1.2, 4.4, 14, 1, true, 0, Math.PI), M.canvas, t, 0, 1.25, -0.8);
+  cover.rotation.order = 'ZYX'; cover.rotation.set(Math.PI / 2, 0, Math.PI / 2); // axis along the truck, arch on top
+  worldMeshes.push(cover);
+  for (const sx of [-1.1, 1.1]) for (const sz of [2.3, -0.3, -2.1]) mesh(G.wheel, M.tire, t, sx, 0.5, sz).scale.setScalar(1.45);
+  t.position.set(x, 0, z); t.rotation.y = rot; g.add(t);
+  rotCollider(x, z, 2.5, 6.4, rot);
+}
+function addHumvee(g, x, z, rot) {
+  const h = new THREE.Group();
+  boxMesh(h, 0, 0.95, 0, 2.2, 0.9, 4.6, M.camo);
+  boxMesh(h, 0, 1.65, -0.3, 2.0, 0.55, 2.2, M.oliveDrab);
+  boxMesh(h, 0, 1.65, 0.82, 1.8, 0.4, 0.04, M.glass, false);
+  for (const sx of [-1.05, 1.05]) for (const sz of [-1.5, 1.5]) mesh(G.wheel, M.tire, h, sx, 0.45, sz).scale.setScalar(1.35);
+  h.position.set(x, 0, z); h.rotation.y = rot; g.add(h);
+  rotCollider(x, z, 2.3, 4.7, rot);
+}
+function hescoRow(g, x, z, n, alongZ) {
+  for (let k = 0; k < n; k++) {
+    const o = (k - (n - 1) / 2) * 1.12;
+    boxMesh(g, alongZ ? x : x + o, 0.66, alongZ ? z + o : z, 1.1, 1.3, 1.1, M.hesco);
+  }
+  addCollider(x, z, alongZ ? 1.15 : n * 1.12, alongZ ? n * 1.12 : 1.15);
+}
+const WIRE_G = new THREE.TorusGeometry(0.42, 0.012, 4, 20);
+function barbedWire(g, x, z, len, alongZ) {
+  for (let o = -len / 2; o <= len / 2; o += 0.35) {
+    const m = mesh(WIRE_G, M.wire, g, alongZ ? x : x + o, 0.45, alongZ ? z + o : z, false);
+    m.rotation.y = alongZ ? 0 : Math.PI / 2; m.rotation.x = rand(-0.2, 0.2);
+  }
+  addCollider(x, z, alongZ ? 0.9 : len, alongZ ? len : 0.9);
+}
+function addWatchtower(g, x, z) {
+  for (const sx of [-1.3, 1.3]) for (const sz of [-1.3, 1.3]) boxMesh(g, x + sx, 3.2, z + sz, 0.18, 6.4, 0.18, M.oliveDrab);
+  boxMesh(g, x, 6.5, z, 3.2, 0.2, 3.2, M.oliveDrab);
+  for (const [sx, sz, w, d] of [[0, -1.55, 3.2, 0.1], [0, 1.55, 3.2, 0.1], [-1.55, 0, 0.1, 3.2], [1.55, 0, 0.1, 3.2]]) boxMesh(g, x + sx, 7.1, z + sz, w, 1, d, M.hesco);
+  boxMesh(g, x, 8.7, z, 3.6, 0.15, 3.6, M.oliveDrab);
+  for (const sx of [-1.5, 1.5]) for (const sz of [-1.5, 1.5]) boxMesh(g, x + sx, 8.1, z + sz, 0.1, 1.2, 0.1, M.oliveDrab, false);
+  addCollider(x, z, 3, 3);
+  lampPositions.push(new THREE.Vector3(x, 8.4, z));
+}
+function addHeliWreck(g, x, z, rot) {
+  const h = new THREE.Group();
+  const body = mesh(new THREE.CapsuleGeometry(1.1, 3.2, 6, 14), M.oliveDrab, h, 0, 1.1, 0); body.rotation.x = Math.PI / 2; body.scale.set(1, 1, 0.9);
+  worldMeshes.push(body);
+  boxMesh(h, 0, 1.5, -4.2, 0.35, 0.5, 4.4, M.oliveDrab);
+  boxMesh(h, 0.3, 2.1, -6.1, 0.05, 1.3, 0.6, M.oliveDrab, false);
+  boxMesh(h, 0, 1.55, 1.9, 1.5, 0.7, 0.05, M.glass, false);
+  const hub = new THREE.Group(); hub.position.set(0, 2.4, 0); hub.rotation.y = rand(0, 3); h.add(hub);
+  boxMesh(hub, 0, 0, 0, 0.3, 0.3, 0.3, M.metal, false);
+  for (let k = 0; k < 4; k++) { const b = boxMesh(hub, 0, 0, 0, 0.3, 0.04, 7, M.metal, false); b.rotation.y = k * Math.PI / 2; b.rotation.z = k % 2 ? 0.15 : -0.1; }
+  h.position.set(x, 0, z); h.rotation.set(0, rot, 0.25); g.add(h);
+  rotCollider(x, z, 2.4, 6, rot);
+}
+function buildBase(g, cx, cz) {
+  const pad = mesh(new THREE.PlaneGeometry(38, 38), M.slab, g, cx, 0.17, cz, false); pad.rotation.x = -Math.PI / 2;
+  // command bunker faces west toward the spawn street
+  addBuilding(g, cx + 9, cz - 6, 16, 22, 2 * 3.5, M.bunker, M.roof, true, true);
+  const front = cx + 1;
+  const sign = mesh(new THREE.PlaneGeometry(10, 1.6), M.baseSign, g, front - 0.06, 5.6, cz - 6, false); sign.rotation.y = -Math.PI / 2;
+  boxMesh(g, front - 0.05, 1.3, cz - 6, 0.1, 2.4, 3, M.metal);
+  const hp = mesh(new THREE.PlaneGeometry(12, 12), M.helipad, g, cx + 9, 0.19, cz + 12, false); hp.rotation.x = -Math.PI / 2;
+  addHeliWreck(g, cx + 10, cz + 12, 0.7);
+  addTank(g, cx - 8, cz - 11, 0.15); addTank(g, cx - 7, cz + 8, Math.PI - 0.2);
+  addTruck(g, cx - 13, cz + 15, Math.PI / 2);
+  addWatchtower(g, cx - 16, cz - 16); addWatchtower(g, cx - 16, cz + 16);
+  hescoRow(g, cx - 18.8, cz - 8, 6, true); hescoRow(g, cx - 18.8, cz + 8, 6, true);
+  sandbagWall(g, cx - 12, cz - 2, 4, true);
+  barbedWire(g, cx - 20.5, cz - 12, 8, true); barbedWire(g, cx - 20.5, cz + 12, 8, true);
+}
+
 function buildHospital(g, cx, cz) {
   const lot = mesh(new THREE.PlaneGeometry(38, 38), M.asphalt, g, cx, 0.17, cz, false); lot.rotation.x = -Math.PI / 2;
   const bx = cx + 7, w = 20, d = 34, h = 6 * 3.5;
@@ -1195,7 +1335,7 @@ function buildLevel() {
     const cx = blockCenter(bi), cz = blockCenter(bj);
     const bs = P - ROAD; // 44
     // block slab / sidewalk
-    const slabMat = theme === 'industrial' ? M.slab : M.pave;
+    const slabMat = theme === 'industrial' || theme === 'military' ? M.slab : M.pave;
     const sgeo = new THREE.BoxGeometry(bs, 0.16, bs); scaleBoxUV(sgeo, bs, 0.16, bs, 3, 3);
     const slab = mesh(sgeo, slabMat, g, cx, 0.08, cz, false); worldMeshes.push(slab);
     if (inside) for (const [ex, ez, rot] of [[1, 0, Math.PI / 2], [-1, 0, -Math.PI / 2], [0, 1, 0], [0, -1, Math.PI]]) {
@@ -1206,6 +1346,8 @@ function buildLevel() {
     const r = Math.random();
     if (theme === 'police' && bi === 2 && bj === 2) {
       buildPoliceStation(g, cx, cz);
+    } else if (theme === 'military' && bi === 2 && bj === 2) {
+      buildBase(g, cx, cz);
     } else if (theme === 'hospital' && bi === 2 && bj === 2) {
       buildHospital(g, cx, cz);
     } else if (theme === 'downtown' || theme === 'police' || theme === 'hospital') {
@@ -1327,10 +1469,20 @@ function buildLevel() {
       const rot = (alongZ ? 0 : Math.PI / 2) + (abandoned ? rand(-0.8, 0.8) : (Math.random() < 0.5 ? 0 : Math.PI));
       const cop = theme === 'police' && Math.random() < 0.45;
       const amb = theme === 'hospital' && Math.random() < 0.3;
+      const mil = theme === 'military' && Math.random() < 0.55;
       const [cx2, cz2] = alongZ ? [rc + off, t] : [t, rc + off];
-      if (cop) addPoliceCar(g, cx2, cz2, rot);
+      if (mil) { const r2 = Math.random(); if (r2 < 0.2) addTank(g, cx2, cz2, rot); else if (r2 < 0.55) addTruck(g, cx2, cz2, rot); else addHumvee(g, cx2, cz2, rot); }
+      else if (cop) addPoliceCar(g, cx2, cz2, rot);
       else if (amb) addAmbulance(g, cx2, cz2, rot);
       else addCar(g, cx2, cz2, rot, abandoned && Math.random() < 0.5);
+    }
+  }
+  if (theme === 'military') { // hesco checkpoints with wire at some intersections
+    for (const a of ROAD_CENTERS) for (const b of ROAD_CENTERS) {
+      if (Math.abs(a) > HALF - 1 || Math.abs(b) > HALF - 1 || Math.random() > 0.3) continue;
+      const alongX = Math.random() < 0.5, o = pick([-9, 9]), side = pick([-3.5, 3.5]);
+      if (alongX) { hescoRow(g, a + o, b + side, 3, true); barbedWire(g, a + o + 1.5, b - side, 3, true); }
+      else { hescoRow(g, a + side, b + o, 3, false); barbedWire(g, a - side, b + o + 1.5, 3, false); }
     }
   }
   if (theme === 'hospital') { // quarantine checkpoints and abandoned gurneys
@@ -1381,20 +1533,27 @@ const rain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color
 rain.frustumCulled = false; rain.visible = false; scene.add(rain);
 const rainSeed = new Float32Array(RAIN_N * 3);
 for (let i = 0; i < RAIN_N; i++) { rainSeed[i * 3] = rand(-25, 25); rainSeed[i * 3 + 1] = rand(0, 22); rainSeed[i * 3 + 2] = rand(-25, 25); }
-let rainAudio = null, thunderT = 8, lightning = 0;
+let rainAudio = null, thunderT = 8, lightning = 0, weather = null;
 function updateRain(dt) {
   if (!rain.visible) return;
   const pos = rainGeo.attributes.position.array, c = camera.position;
   const n = qLevel === 'low' ? 1400 : RAIN_N;
+  const dust = weather === 'dust';
   for (let i = 0; i < n; i++) {
-    let y = rainSeed[i * 3 + 1] - dt * 22; if (y < 0) y += 22; rainSeed[i * 3 + 1] = y;
-    // wrap drops around the camera so the rain always surrounds the player
-    const x = c.x + ((rainSeed[i * 3] + 1000) % 50) - 25, z = c.z + ((rainSeed[i * 3 + 2] + 1000) % 50) - 25;
+    let y;
+    if (dust) { // streaks blown sideways by the wind
+      rainSeed[i * 3] += dt * (13 + (i % 7)); rainSeed[i * 3 + 2] += dt * 3;
+      y = rainSeed[i * 3 + 1] + Math.sin(rainSeed[i * 3] * 0.3) * 0.02;
+    } else { y = rainSeed[i * 3 + 1] - dt * 22; if (y < 0) y += 22; rainSeed[i * 3 + 1] = y; }
+    // wrap particles around the camera so the weather always surrounds the player
+    const x = c.x + ((rainSeed[i * 3] % 50) + 50) % 50 - 25, z = c.z + ((rainSeed[i * 3 + 2] % 50) + 50) % 50 - 25;
     const yy = c.y - 4 + y;
-    pos.set([x, yy, z, x + 0.03, yy - 0.55, z + 0.02], i * 6);
+    if (dust) pos.set([x, yy, z, x - 0.45, yy - 0.02, z - 0.1], i * 6);
+    else pos.set([x, yy, z, x + 0.03, yy - 0.55, z + 0.02], i * 6);
   }
   rainGeo.setDrawRange(0, n * 2);
   rainGeo.attributes.position.needsUpdate = true;
+  if (dust) return;
   thunderT -= dt;
   if (thunderT <= 0) {
     thunderT = rand(12, 26); lightning = 1;
@@ -1406,14 +1565,17 @@ function updateRain(dt) {
     hemi.intensity = TM.hemiI + f * 5;
   } else hemi.intensity = TM.hemiI;
 }
-function setRain(on) {
+function setRain(mode) {
+  weather = mode || null; const on = !!weather;
   rain.visible = on;
+  rain.material.color.set(weather === 'dust' ? 0xd8c098 : 0xaab6c4); rain.material.opacity = weather === 'dust' ? 0.28 : 0.32;
+  hemi.intensity = TM.hemiI;
   if (rainAudio) { try { rainAudio.stop(); } catch {} rainAudio = null; }
   if (on && actx) {
     const src = actx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
-    const hp = actx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900;
-    const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 7000;
-    const gn = actx.createGain(); gn.gain.value = 0.07;
+    const hp = actx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = weather === 'dust' ? 150 : 900;
+    const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = weather === 'dust' ? 900 : 7000;
+    const gn = actx.createGain(); gn.gain.value = weather === 'dust' ? 0.16 : 0.07;
     src.connect(hp).connect(lp).connect(gn).connect(master); src.start();
     rainAudio = src;
   }
@@ -1421,7 +1583,7 @@ function setRain(on) {
 
 function applyTime() {
   const t = TM;
-  setRain(!!t.rain); thunderT = rand(5, 10);
+  setRain(t.rain ? 'rain' : t.dust ? 'dust' : null); thunderT = rand(5, 10);
   renderer.toneMappingExposure = t.exp;
   scene.fog = new THREE.FogExp2(t.fog, t.fogD);
   hemi.color.set(t.hemiSky); hemi.groundColor.set(t.hemiGround); hemi.intensity = t.hemiI;
@@ -1517,6 +1679,7 @@ function sfx(name, vol = 1) {
     case 'pickup': sTone(t, 0.08, 600, 900, 0.25, 'triangle'); sTone(t + 0.08, 0.1, 900, 1300, 0.25, 'triangle'); break;
     case 'copshot': sNoise(t, 0.2, 4200, 500, 0.7 * vol); sTone(t, 0.1, 150, 50, 0.5 * vol); break;
     case 'whiz': sNoise(t, 0.12, 6000, 2500, 0.25, 'bandpass'); break;
+    case 'flame': sNoise(t, 0.3, 1400, 500, 0.35 * vol, 'bandpass'); sNoise(t, 0.3, 300, 120, 0.25 * vol); break;
     case 'heal': sTone(t, 0.5, 520, 880, 0.18 * vol, 'sine'); sTone(t + 0.1, 0.5, 780, 1320, 0.12 * vol, 'sine'); break;
     case 'growl': sTone(t, 0.7, 70, 55, 0.5 * vol, 'sawtooth'); sNoise(t, 0.7, 600, 200, 0.3 * vol, 'bandpass'); break;
     case 'roar': sTone(t, 0.6, 180, 90, 0.5 * vol, 'sawtooth'); sNoise(t, 0.6, 1800, 400, 0.45 * vol, 'bandpass'); break;
@@ -1539,7 +1702,7 @@ function groan(z) {
   const d = z.pos.distanceTo(player.pos); if (d > 40) return;
   const t = actx.currentTime, vol = 0.35 * (1 - d / 40) * (z.type === 'brute' ? 1.6 : 1);
   const o = actx.createOscillator(); o.type = 'sawtooth';
-  const base = { brute: 55, runner: 140, crawler: 120, spitter: 165, bloater: 62, screamer: 210, armored: 88, riot: 95, gunner: 105, medic: 120, mutant: 48 }[z.type] || rand(80, 110);
+  const base = { brute: 55, runner: 140, crawler: 120, spitter: 165, bloater: 62, screamer: 210, armored: 88, riot: 95, gunner: 105, medic: 120, mutant: 48, dog: 260, flamer: 92 }[z.type] || rand(80, 110);
   o.frequency.setValueAtTime(base, t); o.frequency.linearRampToValueAtTime(base * rand(0.7, 1.2), t + 0.5); o.frequency.linearRampToValueAtTime(base * 0.6, t + 1.1);
   const lfo = actx.createOscillator(); lfo.frequency.value = rand(5, 9); const lg = actx.createGain(); lg.gain.value = base * 0.08;
   lfo.connect(lg).connect(o.frequency);
@@ -1739,6 +1902,11 @@ function zombieMats() {
     healCross: std({ color: 0x103018, emissive: 0x40ff80, emissiveIntensity: 2.2 }),
     yellowEye: std({ color: 0x222200, emissive: 0xffd020, emissiveIntensity: 2.6 }),
     claw: std({ color: 0x2a2622, roughness: 0.4 }),
+    fur: [std({ color: 0x4a3a2a, roughness: 1, map: TEX.skins[0] }), std({ color: 0x2a2622, roughness: 1, map: TEX.skins[1] }), std({ color: 0x7a6248, roughness: 1, map: TEX.skins[2] })],
+    camo: std({ map: TEX.camoCloth, roughness: 0.95 }),
+    helmetOD: std({ color: 0x4b5236, roughness: 0.7 }),
+    mask: std({ color: 0x1a1c1a, roughness: 0.6 }),
+    fuel: std({ color: 0x8a2a1a, roughness: 0.45, metalness: 0.5 }),
     boil: std({ color: 0xc8d060, emissive: 0x8a9a10, emissiveIntensity: 0.9, roughness: 0.25 }),
     acid: std({ color: 0x80ff40, emissive: 0x60ff20, emissiveIntensity: 2.5, roughness: 0.2 }),
     whiteEye: std({ color: 0x222222, emissive: 0xe8f0ff, emissiveIntensity: 2.2 }),
@@ -1759,6 +1927,9 @@ const UP = new THREE.Vector3(0, 1, 0);
 const CAP_G = new THREE.CylinderGeometry(0.15, 0.15, 0.09, 16);
 const BATON_G = new THREE.CylinderGeometry(0.022, 0.026, 0.62, 8);
 const CLAW_G = new THREE.ConeGeometry(0.03, 0.22, 6);
+const TANK_G = new THREE.CapsuleGeometry(0.1, 0.42, 4, 12);
+const FILTER_G = new THREE.CylinderGeometry(0.045, 0.05, 0.06, 10); FILTER_G.rotateX(Math.PI / 2);
+const EAR_G = new THREE.ConeGeometry(0.045, 0.12, 5);
 class Zombie {
   constructor(type, x, z) {
     const c = ZTYPES[type], zm = zombieMats();
@@ -1775,6 +1946,8 @@ class Zombie {
     let cloth = cop ? pick(zm.police) : pick(zm.cloth), pants = cop ? zm.policePants : pick(zm.pants);
     if (type === 'medic') { cloth = pick(zm.scrubs); pants = cloth; }
     if (type === 'mutant') { cloth = skin; pants = zm.gown; } // bare, swollen torso
+    if (type === 'flamer') { cloth = zm.camo; pants = zm.camo; }
+    this.tankHp = type === 'flamer' ? 50 : 0; this.flameTick = 0; this.flaming = false;
     this.healCd = rand(2, 4); this.leapCd = rand(1.5, 3); this.crouch = 0; this.leapT = 0; this.airY = 0;
     this.shieldHp = c.shield ? c.shield * LV.hpMul : 0; this.shieldMax = this.shieldHp; this.gunT = rand(1.5, 3); this.aimT = 0;
     const eyeMat = type === 'spitter' ? zm.acid : type === 'screamer' ? zm.whiteEye : type === 'mutant' ? zm.yellowEye : zm.eye;
@@ -1784,6 +1957,11 @@ class Zombie {
       m.userData.z = this; m.userData.part = part; m.userData.head = part === 'head';
       parent.add(m); this.meshes.push(m); return m;
     };
+    if (type === 'dog') {
+      this.buildDog(add, zm);
+      g.position.copy(this.pos); scene.add(g); zMeshes.push(...this.meshes);
+      return;
+    }
     const torsoScale = { bloater: [1.9, 1.08, 1.55], screamer: [1.0, 1.05, 0.62], mutant: [1.45, 1.05, 0.95] }[type] || [1.2, 1, 0.72];
     add(G.torso, cloth, body, 0, 1.32, 0).scale.set(...torsoScale);
     add(G.neck, skin, body, 0, 1.68, 0.02);
@@ -1828,6 +2006,15 @@ class Zombie {
       sh.scale.set(0.66, 1.34, 0.03); sh.castShadow = false;
       const baton = add(BATON_G, zm.baton, this.arms[1], 0, -0.68, 0.22); baton.rotation.x = Math.PI / 2;
     }
+    if (type === 'flamer') {
+      add(G.head, zm.helmetOD, hp, 0, 0.2, 0, 'head').scale.set(1.2, 0.85, 1.22);
+      add(G.box, zm.mask, hp, 0, 0.09, 0.14, 'head').scale.set(0.2, 0.15, 0.08);
+      add(FILTER_G, zm.mask, hp, 0, 0.04, 0.2, 'head');
+      for (const sx of [-0.2, 0.2]) add(TANK_G, zm.fuel, body, sx, 1.3, -0.25, 'tank');
+      add(G.box, zm.gun, body, 0, 1.6, -0.25, 'tank').scale.set(0.46, 0.05, 0.06);
+      const wand = add(G.box, zm.gun, this.arms[1], 0, -0.66, 0.26); wand.scale.set(0.045, 0.045, 0.5);
+      this.nozzle = new THREE.Object3D(); this.nozzle.position.set(0, -0.66, 0.54); this.arms[1].add(this.nozzle);
+    }
     if (type === 'medic') {
       add(G.box, zm.white, hp, 0, 0.08, 0.135, 'head').scale.set(0.2, 0.1, 0.04);          // surgical mask
       add(G.box, zm.white, hp, 0, 0.26, 0.02, 'head').scale.set(0.22, 0.06, 0.2);          // cap
@@ -1858,9 +2045,44 @@ class Zombie {
     zMeshes.push(...this.meshes);
   }
   // ud = userData of the mesh that was hit
+  buildDog(add, zm) {
+    const fur = pick(zm.fur), body = this.body;
+    const torso = add(G.torso, fur, body, 0, 0.6, 0); torso.rotation.x = Math.PI / 2; torso.scale.set(0.75, 1.05, 0.85);
+    const hp = this.headPivot = new THREE.Group(); hp.position.set(0, 0.74, 0.44); body.add(hp);
+    add(G.head, fur, hp, 0, 0.02, 0.06, 'head').scale.set(0.95, 0.85, 1.05);
+    add(G.box, fur, hp, 0, -0.03, 0.22, 'head').scale.set(0.1, 0.09, 0.17);
+    add(G.box, zm.shoe, hp, 0, -0.01, 0.31, 'head').scale.set(0.05, 0.04, 0.02);
+    for (const sx of [-0.07, 0.07]) { add(EAR_G, fur, hp, sx, 0.15, 0.02, 'head'); add(G.eye, zm.eye, hp, sx * 0.8, 0.05, 0.17, 'head'); }
+    this.dogLegs = [];
+    for (const [sx, sz] of [[-0.11, 0.28], [0.11, 0.28], [-0.11, -0.28], [0.11, -0.28]]) {
+      const l = new THREE.Group(); l.position.set(sx, 0.55, sz); body.add(l); this.dogLegs.push(l);
+      add(G.arm, fur, l, 0, -0.27, 0);
+    }
+    const tail = add(G.box, fur, body, 0, 0.72, -0.46); tail.scale.set(0.04, 0.04, 0.3); tail.rotation.x = -0.6; this.tail = tail;
+    this.lean = 0; this.limp = 0; this.radius = 0.35;
+  }
+  animateDog(dt, moving, dx, dz) {
+    this.phase += dt * (moving ? this.speed * 2.4 : 2);
+    const s = Math.sin(this.phase), amp = moving ? 0.9 : 0.1;
+    this.dogLegs[0].rotation.x = s * amp; this.dogLegs[1].rotation.x = Math.sin(this.phase + 0.4) * amp;
+    this.dogLegs[2].rotation.x = -Math.sin(this.phase + 0.2) * amp; this.dogLegs[3].rotation.x = -Math.sin(this.phase + 0.6) * amp;
+    const lunge = this.atkAnim > 0 ? Math.sin(this.atkAnim * Math.PI) : 0;
+    this.body.rotation.x = (moving ? Math.cos(this.phase) * 0.08 : 0) - lunge * 0.25;
+    this.body.position.z = lunge * 0.35;
+    this.headPivot.rotation.x = -0.1 + lunge * 0.5 + (this.hitT > 0 ? -0.4 : 0);
+    this.tail.rotation.y = Math.sin(this.phase * 1.5) * 0.4;
+    this.g.position.set(this.pos.x, moving ? Math.abs(Math.cos(this.phase)) * 0.08 : 0, this.pos.z);
+    let da = Math.atan2(dx, dz) - this.g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
+    this.g.rotation.y += da * Math.min(1, dt * 8);
+  }
   damage(dmg, ud, dir, ap = false) {
     if (this.dead) return false;
     let mul = 1; this.lastFx = 'blood';
+    if (ud.part === 'tank' && this.tankHp > 0) {
+      this.tankHp -= dmg; this.lastFx = 'spark';
+      if (this.tankHp <= 0) { this.tankBlown = true; this.hp = 0; this.die(dir || new THREE.Vector3(0, 0, 1)); return true; }
+      mul = 0.5;
+    }
     if (this.shieldHp > 0 && (ud.part === 'shield' || ud.part === 'blast')) {
       this.shieldHp -= dmg; this.lastFx = 'shield'; this.hitT = 0.03;
       if (this.shieldHp < this.shieldMax * 0.5 && this.shield.material !== zombieMats().shieldCracked) this.shield.material = zombieMats().shieldCracked;
@@ -1916,7 +2138,7 @@ class Zombie {
     if (this.laser) this.laser.visible = false;
     zMeshes = zMeshes.filter((m) => m.userData.z !== this);
     kills++; score += this.c.score; addCash(this.c.cash);
-    if (this.c.explode) { this.explode(); return; }
+    if (this.c.explode || this.tankBlown) { this.explode(); return; }
     this.pool = makePool(this.pos.x + dir.x * 0.8, this.pos.z + dir.z * 0.8, TEX.blood, this.c.scale * rand(0.8, 1.2));
     const r = Math.random();
     if (this.type === 'brute' || this.type === 'armored' || this.type === 'gunner' || r < 0.22) spawnPickup('ammo', this.pos);
@@ -1924,9 +2146,17 @@ class Zombie {
   }
   explode() {
     const p = this.pos.clone().setY(1.1);
-    burst(p, UP, acidPartMat, 34, 7); burst(p, UP, bloodMat, 26, 6);
-    makePool(this.pos.x, this.pos.z, TEX.acid, 2.2, true);
-    blastAt(p, 5.5, 170, 40, this);
+    if (this.type === 'flamer') {
+      for (let i = 0; i < 40; i++) emitFire(p, new THREE.Vector3(rand(-1, 1), rand(0.2, 1.2), rand(-1, 1)).normalize(), rand(3, 8));
+      burst(p, UP, bloodMat, 20, 6);
+      const sc = makePool(this.pos.x, this.pos.z, TEX.hole, 1); sc.scale.setScalar(3);
+      blastAt(p, 5, 190, 35, this);
+      showMsg('', '燃料罐爆炸！', 1.2);
+    } else {
+      burst(p, UP, acidPartMat, 34, 7); burst(p, UP, bloodMat, 26, 6);
+      makePool(this.pos.x, this.pos.z, TEX.acid, 2.2, true);
+      blastAt(p, 5.5, 170, 40, this);
+    }
     this.g.visible = false; this.deadT = 10.9;
     if (Math.random() < 0.4) spawnPickup('ammo', this.pos);
   }
@@ -1944,7 +2174,8 @@ class Zombie {
     if (this.dead) {
       this.deadT += dt;
       const k = Math.min(1, this.deadT / 0.55);
-      if (this.type === 'crawler') this.body.rotation.x += (1.55 - this.body.rotation.x) * Math.min(1, dt * 5);
+      if (this.type === 'dog') { g.rotation.z = this.fallDir * (Math.PI / 2) * (k * k); g.position.y = 0; }
+      else if (this.type === 'crawler') this.body.rotation.x += (1.55 - this.body.rotation.x) * Math.min(1, dt * 5);
       else { g.rotation.x = this.fallDir * (Math.PI / 2) * (k * k); g.position.y = Math.sin(k * Math.PI) * 0.15; }
       this.arms.forEach((a) => a.rotation.x += (-2.6 - a.rotation.x) * dt * 3);
       if (this.pool && this.pool.scale.x < this.pool.userData.grow) this.pool.scale.addScalar(dt * 0.6);
@@ -1989,6 +2220,21 @@ class Zombie {
         showMsg('', '尖叫者正在召喚屍群！', 2);
         for (const o of zombies) if (!o.dead && o.pos.distanceTo(this.pos) < 26) o.rage = 7;
         if (waveActive) queue.push('walker', 'runner');
+      }
+    }
+    if (this.c.flame) {
+      if (dist < 8 && this.los) this.flaming = true; else if (dist > 9.5 || !this.los) this.flaming = false;
+      if (this.flaming && this.nozzle) {
+        const from = this.nozzle.getWorldPosition(new THREE.Vector3());
+        const fwd = new THREE.Vector3(Math.sin(this.g.rotation.y), -0.05, Math.cos(this.g.rotation.y));
+        for (let k = 0; k < 2; k++) emitFire(from, fwd.clone().add(new THREE.Vector3(rand(-0.12, 0.12), rand(-0.05, 0.1), rand(-0.12, 0.12))).normalize(), rand(8, 12));
+        this.flameTick -= dt;
+        if (this.flameTick <= 0) {
+          this.flameTick = 0.25;
+          sfx('flame', clamp(1.2 - dist / 25, 0.2, 1));
+          let fa = Math.atan2(dx, dz) - this.g.rotation.y; fa = Math.atan2(Math.sin(fa), Math.cos(fa));
+          if (dist < 8.2 && Math.abs(fa) < 0.5) { hurtPlayer(this.c.dmg); fireFlash = Math.min(1, fireFlash + 0.5); }
+        }
       }
     }
     if (this.c.heal) {
@@ -2062,7 +2308,7 @@ class Zombie {
     const slow = this.hitT > 0 ? 0.3 : 1;
     let moving = false;
     if (dist > reach && !hold) {
-      const sp = this.speed * slow * (this.rage > 0 ? 1.6 : 1) * (1 - this.limp * (0.5 + 0.5 * Math.sin(this.phase)));
+      const sp = this.speed * slow * (this.flaming ? 0.4 : 1) * (this.rage > 0 ? 1.6 : 1) * (1 - this.limp * (0.5 + 0.5 * Math.sin(this.phase)));
       const px = this.pos.x, pz = this.pos.z;
       this.pos.x += mx * sp * dt; this.pos.z += mz * sp * dt;
       resolve(this.pos, this.radius);
@@ -2083,6 +2329,7 @@ class Zombie {
       if (this.atkAnim >= 1) { this.atkAnim = 0; this.atkHit = false; }
     }
 
+    if (this.type === 'dog') { this.animateDog(dt, moving, dx, dz); return true; }
     // ---- animation ----
     const t = this.type;
     const rate = t === 'runner' ? 2.2 : t === 'crawler' ? 2.4 : 2.6;
@@ -2119,6 +2366,7 @@ class Zombie {
       else if (this.atkAnim > 0) this.arms[1].rotation.x = -2.8 + Math.sin(this.atkAnim * Math.PI) * 2.4;
       else { this.arms[1].rotation.x = -0.2 + s * 0.25; this.arms[1].rotation.z = 0.25; }
     }
+    if (t === 'flamer') { this.arms[1].rotation.x = -1.25; this.arms[0].rotation.x = -1.2; this.arms[0].rotation.z = -0.5; }
     if (t === 'medic' && hold) { this.arms[0].rotation.x = -0.4; this.arms[1].rotation.x = -0.4; }
     if (t === 'gunner') {
       const aiming = this.aimT > 0 || this.flashT > 0;
@@ -2146,6 +2394,13 @@ class Zombie {
 // ---- pools, acid spit, explosion light ----
 const acidPartMat = new THREE.MeshBasicMaterial({ color: 0x8cff40 });
 const healMat = new THREE.MeshBasicMaterial({ color: 0x60ff90 });
+let fires = [], fireFlash = 0;
+function emitFire(from, dir, speed) {
+  if (fires.length > 220) { const f = fires.shift(); scene.remove(f.sp); f.sp.material.dispose(); }
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.fire, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+  sp.position.copy(from); sp.scale.setScalar(0.25); sp.material.rotation = rand(0, 6); scene.add(sp);
+  fires.push({ sp, v: dir.clone().multiplyScalar(speed), life: rand(0.4, 0.6), max: 0.6 });
+}
 const ringGeo = new THREE.RingGeometry(0.85, 1, 48); ringGeo.rotateX(-Math.PI / 2);
 let rings = [];
 function healRing(p) {
@@ -2242,6 +2497,15 @@ function updateHazards(dt) {
   if (inAcid && acidTick <= 0) { acidTick = 0.5; hurtPlayer(4); acidFlash = Math.min(1, acidFlash + 0.6); }
   acidFlash = Math.max(0, acidFlash - dt * 1.5);
   $('acidfx').style.opacity = acidFlash * 0.8;
+  fires = fires.filter((f) => {
+    f.life -= dt; f.v.multiplyScalar(1 - dt * 1.8); f.v.y += dt * 2.5;
+    f.sp.position.addScaledVector(f.v, dt);
+    const k = 1 - f.life / f.max; f.sp.scale.setScalar(0.25 + k * 1.6); f.sp.material.opacity = Math.max(0, f.life / f.max);
+    if (f.life <= 0) { scene.remove(f.sp); f.sp.material.dispose(); return false; }
+    return true;
+  });
+  fireFlash = Math.max(0, fireFlash - dt * 1.6);
+  $('firefx').style.opacity = fireFlash * 0.85;
   rings = rings.filter((r) => { r.t += dt; r.m.scale.setScalar(1 + r.t * 14); r.m.material.opacity = Math.max(0, 0.8 - r.t * 1.3); if (r.t > 0.6) { scene.remove(r.m); return false; } return true; });
   tracers = tracers.filter((t) => { t.life -= dt; t.l.material.opacity = Math.max(0, t.life / 0.09); if (t.life <= 0) { scene.remove(t.l); t.l.geometry.dispose(); return false; } return true; });
   if (boomT > 0) { boomT -= dt; boomLight.intensity = Math.max(0, boomT / 0.3) * 600; } else boomLight.intensity = 0;
@@ -2314,11 +2578,13 @@ function addCash(n) {
 const money = (n) => '$' + n.toLocaleString('en-US');
 function hitMarker(kill) { const h = $('hitmark'); h.className = kill ? 'kill' : ''; h.style.opacity = 1; hitTimer = 0.12; }
 let hurtAlpha = 0;
+let lastHurtSfx = 0;
 function hurtPlayer(dmg) {
   if (state !== 'playing') return;
   player.hp = Math.max(0, player.hp - dmg);
   hurtAlpha = Math.min(1, hurtAlpha + 0.5 + dmg / 40); shake = Math.min(1, shake + 0.5);
-  sfx('hurt');
+  const now = performance.now();
+  if (now - lastHurtSfx > 350) { sfx('hurt'); lastHurtSfx = now; }
   if (player.hp <= 0) gameOver();
 }
 function updateHUD() {
@@ -2354,7 +2620,8 @@ function clearDynamic() {
   spits.forEach((p) => scene.remove(p.m)); spits = [];
   tracers.forEach((t) => scene.remove(t.l)); tracers = [];
   grenades.forEach((g) => scene.remove(g.m)); grenades = [];
-  rings.forEach((r) => scene.remove(r.m)); rings = []; acidPools = []; boomT = 0; boomLight.intensity = 0; acidFlash = 0;
+  rings.forEach((r) => scene.remove(r.m)); rings = [];
+  fires.forEach((f) => { scene.remove(f.sp); f.sp.material.dispose(); }); fires = []; fireFlash = 0; acidPools = []; boomT = 0; boomLight.intensity = 0; acidFlash = 0;
 }
 
 function loadLevel(i) {
