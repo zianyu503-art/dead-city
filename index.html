@@ -80,7 +80,7 @@
     text-shadow: 0 4px 24px rgba(0,0,0,0.8); }
   .title span { color: var(--accent); }
   .subtitle { font-family: "Oswald"; letter-spacing: 0.6em; color: var(--dim); margin: 10px 0 34px; font-size: 14px; }
-  #levels { display: grid; grid-template-columns: repeat(5, minmax(0, 190px)); gap: 12px; max-width: 100%; }
+  #levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 180px)); justify-content: center; gap: 12px; width: min(1180px, 100%); }
   .card { pointer-events: auto; cursor: pointer; border: 1px solid var(--line); padding: 14px 14px 16px; min-height: 150px;
     position: relative; overflow: hidden; transition: transform 0.15s, border-color 0.15s; text-align: left; color: var(--fg);
     font: inherit; }
@@ -94,6 +94,7 @@
   .t-day { background: linear-gradient(160deg, rgba(90,120,150,0.55), rgba(20,20,20,0.85)); }
   .t-dusk { background: linear-gradient(160deg, rgba(190,100,50,0.55), rgba(20,15,15,0.85)); }
   .t-night { background: linear-gradient(160deg, rgba(30,40,80,0.7), rgba(5,5,10,0.9)); }
+  .t-rain { background: linear-gradient(160deg, rgba(70,95,110,0.6), rgba(10,14,18,0.9)); }
   .t-fog { background: linear-gradient(160deg, rgba(130,140,140,0.55), rgba(20,20,20,0.85)); }
   .controls { margin-top: 26px; font-size: 12px; color: var(--dim); letter-spacing: 0.05em; text-align: center; line-height: 1.9; }
   .controls b { color: var(--fg); font-weight: 400; border: 1px solid var(--line); padding: 1px 6px; margin: 0 2px; }
@@ -205,7 +206,7 @@
   @media (max-height: 520px) {
     #menu { justify-content: flex-start; padding-top: 14px; padding-bottom: 14px; overflow-y: auto; }
     .title { font-size: 40px; } .subtitle { margin: 4px 0 12px; }
-    #menu #levels { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+    #menu #levels { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
     .card { min-height: 0; padding: 10px; } .card .n { font-size: 22px; } .card .ds { display: none; }
     .controls { margin-top: 10px; }
     .panel { padding: 20px 26px; } .panel h2 { font-size: 28px; }
@@ -319,9 +320,11 @@ const LEVELS = [
     hpMul: 1.3, speedMul: 1.15, waves: [{ walker: 14, runner: 6, armored: 2 }, { walker: 14, runner: 8, crawler: 4, spitter: 3, armored: 3 }, { walker: 16, runner: 12, screamer: 2, bloater: 4, brute: 2 }, { runner: 18, armored: 5, spitter: 4, crawler: 4, brute: 3 }] },
   { name: '警察局', theme: 'police', time: 'night', desc: '市警局已經淪陷。感染的警察舉著防暴盾牌衝來，還有人拿著槍。',
     hpMul: 1.35, speedMul: 1.15, waves: [{ walker: 12, riot: 4 }, { walker: 12, runner: 6, riot: 5, gunner: 2 }, { walker: 12, runner: 8, riot: 6, gunner: 4, crawler: 4 }, { runner: 12, riot: 8, gunner: 6, armored: 3, brute: 2 }] },
-  // levels 6–9 are still to be made; the finale stays numbered 10 and is hidden from the menu until they exist
+  { num: 7, name: '市立醫院', theme: 'hospital', time: 'rain', desc: '感染從這裡爆發。暴雨中，醫護殭屍會治療屍群，實驗室逃出的突變體會從遠處撲向你。',
+    hpMul: 1.5, speedMul: 1.2, waves: [{ walker: 14, runner: 6, medic: 2 }, { walker: 14, runner: 8, medic: 3, spitter: 3, crawler: 4 }, { walker: 16, runner: 10, mutant: 1, medic: 3, bloater: 3 }, { runner: 14, medic: 4, mutant: 2, gunner: 3, riot: 3 }, { walker: 12, runner: 16, mutant: 3, medic: 4, screamer: 2, brute: 1 }] },
+  // levels 6, 8 and 9 are still to be made; the finale stays numbered 10 and is hidden from the menu until they exist
   { num: 10, hidden: true, name: '最後防線', theme: 'downtown', time: 'night', desc: '撤離直升機抵達前，守住市中心。所有種類的感染者都會出現。',
-    hpMul: 1.6, speedMul: 1.25, waves: [{ walker: 18, runner: 10, crawler: 5 }, { walker: 18, runner: 12, spitter: 4, bloater: 4, riot: 4, brute: 2 }, { walker: 20, runner: 14, armored: 5, gunner: 4, screamer: 2, brute: 3 }, { walker: 16, runner: 18, spitter: 5, bloater: 5, riot: 6, crawler: 5, brute: 4 }, { runner: 26, armored: 6, gunner: 6, screamer: 3, spitter: 5, bloater: 4, brute: 6 }] },
+    hpMul: 1.6, speedMul: 1.25, waves: [{ walker: 18, runner: 10, crawler: 5 }, { walker: 18, runner: 12, spitter: 4, bloater: 4, riot: 4, brute: 2 }, { walker: 20, runner: 14, armored: 5, gunner: 4, screamer: 2, brute: 3 }, { walker: 16, runner: 18, spitter: 5, bloater: 5, riot: 6, crawler: 5, brute: 4 }, { runner: 26, armored: 6, gunner: 6, screamer: 3, spitter: 5, bloater: 4, medic: 4, mutant: 3, brute: 6 }] },
 ];
 LEVELS.forEach((l, i) => { l.num ??= i + 1; });
 const nextVisible = (i) => { for (let k = i + 1; k < LEVELS.length; k++) if (!LEVELS[k].hidden) return k; return -1; };
@@ -334,6 +337,8 @@ const TIMES = {
            sun: 0xffa060, sunI: 2.6, hemiSky: 0x8a90b8, hemiGround: 0x3a2a22, hemiI: 0.55, exp: 0.62, envI: 0.55, night: false },
   night: { label: '夜晚', sky: false, bg: 0x05070c, fog: 0x06090e, fogD: 0.026,
            sun: 0x7f93c8, sunI: 0.3, hemiSky: 0x2a3550, hemiGround: 0x0a0a0a, hemiI: 0.35, exp: 1.0, envI: 0, night: true },
+  rain:  { label: '暴雨', sky: true, bgFog: true, rain: true, elev: 30, azi: 200, turb: 20, ray: 0.5, mie: 0.02, mieG: 0.8, fog: 0x565e67, fogD: 0.02,
+           sun: 0xc8d0dc, sunI: 0.7, hemiSky: 0x9aa6b4, hemiGround: 0x2c2c2c, hemiI: 0.85, exp: 0.78, envI: 0.35, night: false },
   fog:   { label: '濃霧', sky: true, bgFog: true, elev: 25, azi: 180, turb: 20, ray: 0.6, mie: 0.02, mieG: 0.8, fog: 0x8c9599, fogD: 0.03,
            sun: 0xdde4ea, sunI: 1.0, hemiSky: 0xa9b4bb, hemiGround: 0x3c3b38, hemiI: 1.0, exp: 0.7, envI: 0.5, night: false },
 };
@@ -357,6 +362,10 @@ const ZTYPES = {
               desc: '舉著防暴盾牌和警棍。盾牌擋得住所有子彈和爆炸，但承受一定傷害後會碎裂。可以繞到側面，或集中火力打碎盾牌。' },
   gunner:   { name: '持槍警察殭屍', color: '#d0a040', hp: 110, speed: 1.7, dmg: 9, scale: 1, rate: 1.2, cash: 35, score: 350, gun: true,
               desc: '還記得怎麼開槍。舉槍瞄準時會亮起紅色雷射，看到就躲到掩體後面。' },
+  medic:    { name: '醫護殭屍', color: '#5fc0a8', hp: 90, speed: 1.8, dmg: 10, scale: 1, rate: 1.1, cash: 40, score: 350, heal: true,
+              desc: '胸前的綠色十字會發光。它會躲在屍群後面，每隔幾秒治療附近的殭屍。優先擊殺。' },
+  mutant:   { name: '突變實驗體', color: '#d08a8a', hp: 460, speed: 2.0, dmg: 22, scale: 1.25, rate: 1.3, cash: 70, score: 600, leap: true,
+              desc: '實驗室逃出的怪物，右手異常巨大。會先蹲低蓄力，再從十幾公尺外撲過來，看到它蹲下就往旁邊跑。' },
   brute:    { name: '巨型感染者', color: '#9a3a2a', hp: 650, speed: 1.3, dmg: 30, scale: 1.45, rate: 1.6, cash: 60, score: 500,
               desc: '體型巨大、血量極高，一拳就能打掉你三成生命。' },
 };
@@ -685,6 +694,19 @@ function buildTextures() {
   for (let k = 0; k < 8; k++) { x.fillStyle = k % 2 ? '#f0f0f0' : '#1e46a0'; x.beginPath(); x.moveTo(k * 40 - 40, 64); x.lineTo(k * 40, 0); x.lineTo(k * 40 + 40, 0); x.lineTo(k * 40, 64); x.fill(); }
   speckle(x, 256, 64, 1500, 0.25);
   TEX.barrier = toTex(c);
+  [c, x] = makeCanvas(256, 64);
+  for (let k = 0; k < 8; k++) { x.fillStyle = k % 2 ? '#141414' : '#e8b820'; x.beginPath(); x.moveTo(k * 40 - 40, 64); x.lineTo(k * 40, 0); x.lineTo(k * 40 + 40, 0); x.lineTo(k * 40, 64); x.fill(); }
+  speckle(x, 256, 64, 1500, 0.3);
+  TEX.hazard = toTex(c);
+  TEX.hospSign = signTex('市 立 醫 院', 'HOSPITAL', '#f4f4f2', '#b01818');
+  TEX.erSign = signTex('急 診', 'EMERGENCY', '#b01818', '#ffffff');
+  [c, x] = makeCanvas(256);
+  x.fillStyle = '#f4f4f2'; x.beginPath(); x.arc(128, 128, 124, 0, Math.PI * 2); x.fill();
+  x.fillStyle = '#c81818'; x.fillRect(98, 40, 60, 176); x.fillRect(40, 98, 176, 60);
+  TEX.cross = new THREE.CanvasTexture(c); TEX.cross.colorSpace = THREE.SRGBColorSpace;
+  TEX.facades.hospital = [0, 1].map((i) => facadeTex('hospital', i));
+  TEX.scrubs = [clothTex('#4f9a90', 0.7), clothTex('#6aa8b8', 0.6)];
+  TEX.gown = clothTex('#a8c4c8', 0.8);
 }
 
 // 512px tile = 4 bays (4 m each) x 4 floors (3.5 m each) → one tile covers 16 m x 14 m
@@ -750,6 +772,19 @@ function facadeTex(style, v) {
       x.fillStyle = '#f0ece2'; x.fillRect(wx + ww / 2 - 2, wy, 4, wh); x.fillRect(wx, wy + wh / 2 - 2, ww, 4);
       x.fillStyle = `hsl(${(hue + 180) % 360},25%,28%)`; x.fillRect(wx - 26, wy - 6, 16, wh + 12); x.fillRect(wx + ww + 10, wy - 6, 16, wh + 12);
     }
+  } else if (style === 'hospital') {
+    x.fillStyle = ['#e2e4e2', '#d6dad8'][v]; x.fillRect(0, 0, S, S);
+    blotches(x, S, S, 30, '60,60,55', 20, 90, 0.1); speckle(x, S, S, 12000, 0.1);
+    for (let j = 0; j < 4; j++) {
+      x.fillStyle = '#5a9a94'; x.fillRect(0, j * B + B - 12, S, 8);
+      for (let i = 0; i < 4; i++) {
+        const wx = i * B + 12, wy = j * B + 14, ww = 104, wh = 84;
+        glass(wx, wy, ww, wh);
+        x.strokeStyle = '#f2f2f0'; x.lineWidth = 4; x.strokeRect(wx, wy, ww, wh);
+        x.fillStyle = '#f2f2f0'; x.fillRect(wx + ww / 2 - 2, wy, 4, wh);
+        grime(wx, wy + wh + 2, ww);
+      }
+    }
   } else if (style === 'police') {
     x.fillStyle = ['#c9c6bf', '#b9bcc0'][v]; x.fillRect(0, 0, S, S);
     blotches(x, S, S, 30, '50,50,50', 20, 80, 0.12); speckle(x, S, S, 15000, 0.12);
@@ -806,13 +841,13 @@ function shieldTex(cracked) {
   }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
-function signTex() {
+function signTex(zh = '市 警 察 局', en = 'POLICE', bg = '#14254f', fg = '#ffffff') {
   const [c, x] = makeCanvas(1024, 160);
-  x.fillStyle = '#14254f'; x.fillRect(0, 0, 1024, 160);
-  x.fillStyle = '#f2f2f2'; x.fillRect(0, 138, 1024, 8);
-  x.textAlign = 'center'; x.fillStyle = '#ffffff';
-  x.font = 'bold 84px "Noto Sans TC", sans-serif'; x.fillText('市 警 察 局', 330, 108);
-  x.font = '600 70px Oswald, Arial, sans-serif'; x.fillText('POLICE', 800, 104);
+  x.fillStyle = bg; x.fillRect(0, 0, 1024, 160);
+  x.fillStyle = fg; x.globalAlpha = 0.9; x.fillRect(0, 138, 1024, 8); x.globalAlpha = 1;
+  x.textAlign = 'center'; x.fillStyle = fg;
+  x.font = 'bold 84px "Noto Sans TC", sans-serif'; x.fillText(zh, 330, 108);
+  x.font = '600 70px Oswald, Arial, sans-serif'; x.fillText(en, 800, 104);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 function containerTex(col) {
@@ -893,8 +928,8 @@ function makeMaterials() {
   const fac = (set) => set.map((t) => std({ map: t.map, roughness: 0.82, metalness: 0.05,
     emissive: 0xffffff, emissiveMap: t.em, emissiveIntensity: winI }));
   M = {
-    asphalt: std({ map: TEX.asphalt, roughness: 0.93 }),
-    pave: std({ map: TEX.pave, roughness: 0.9 }),
+    asphalt: std({ map: TEX.asphalt, roughness: TM.rain ? 0.42 : 0.93, metalness: TM.rain ? 0.15 : 0 }),
+    pave: std({ map: TEX.pave, roughness: TM.rain ? 0.55 : 0.9, metalness: TM.rain ? 0.08 : 0 }),
     slab: std({ map: TEX.slab, roughness: 0.92 }),
     grass: std({ map: TEX.grass, roughness: 1 }),
     roof: std({ map: TEX.roof, roughness: 0.95 }),
@@ -928,6 +963,15 @@ function makeMaterials() {
     cone: std({ color: 0xe8561a, roughness: 0.6 }),
     flag: std({ color: 0x1d3b82, roughness: 0.9, side: THREE.DoubleSide }),
     canopyLight: std({ color: 0x223355, emissive: 0x3a6cff, emissiveIntensity: night ? 2.5 : 0.3 }),
+    hospital: TEX.facades.hospital.map((t) => std({ map: t.map, roughness: 0.75, emissive: 0xffffff, emissiveMap: t.em, emissiveIntensity: night || TM.rain ? 0.8 : 0 })),
+    hospSign: std({ map: TEX.hospSign, emissive: 0xffffff, emissiveMap: TEX.hospSign, emissiveIntensity: 0.7, roughness: 0.5 }),
+    erSign: std({ map: TEX.erSign, emissive: 0xffffff, emissiveMap: TEX.erSign, emissiveIntensity: 1.4, roughness: 0.5 }),
+    cross: std({ map: TEX.cross, emissive: 0xffffff, emissiveMap: TEX.cross, emissiveIntensity: 0.9, roughness: 0.5, side: THREE.DoubleSide }),
+    ambulance: std({ color: 0xf0f0ec, roughness: 0.35, metalness: 0.3 }),
+    redStripe: std({ color: 0xb81818, roughness: 0.4 }),
+    tent: std({ color: 0xdedcd2, roughness: 1, side: THREE.DoubleSide }),
+    hazard: std({ map: TEX.hazard, roughness: 0.6 }),
+    sheet: std({ color: 0xe6ecee, roughness: 0.95 }),
     carPaints: [0x7a1c1c, 0x1c2f4f, 0xb8b6b0, 0x222222, 0x3d4a3a, 0x8a7a5a, 0x4a4f55, 0x9a9890].map((c) =>
       std({ color: c, roughness: 0.35, metalness: 0.6 })),
   };
@@ -1031,14 +1075,68 @@ function addVan(g, x, z, rot) {
   const c = Math.abs(Math.cos(rot)), s = Math.abs(Math.sin(rot));
   addCollider(x, z, 2.4 * c + 5.9 * s, 2.4 * s + 5.9 * c);
 }
-function addBarrier(g, x, z, rot) {
+function addBarrier(g, x, z, rot, mat = M.barrier) {
   const b = new THREE.Group();
-  boxMesh(b, 0, 0.8, 0, 2.4, 0.3, 0.06, M.barrier);
+  boxMesh(b, 0, 0.8, 0, 2.4, 0.3, 0.06, mat);
   for (const sx of [-1, 1]) boxMesh(b, sx, 0.4, 0, 0.06, 0.8, 0.5, M.metal, false);
   b.position.set(x, 0, z); b.rotation.y = rot; g.add(b);
   const c = Math.abs(Math.cos(rot)), s = Math.abs(Math.sin(rot));
   addCollider(x, z, 2.4 * c + 0.4 * s, 2.4 * s + 0.4 * c);
 }
+function addAmbulance(g, x, z, rot) {
+  const v = new THREE.Group();
+  boxMesh(v, 0, 1.5, -0.6, 2.3, 2.4, 4.4, M.ambulance);          // box body
+  boxMesh(v, 0, 1.05, 2.25, 2.2, 1.5, 1.5, M.ambulance);          // cab
+  boxMesh(v, 0, 1.75, 2.9, 2.0, 0.6, 0.1, M.glass, false);
+  for (const sx of [-1.16, 1.16]) { boxMesh(v, sx, 1.2, -0.6, 0.02, 0.28, 4.4, M.redStripe, false);
+    const cr = mesh(new THREE.PlaneGeometry(1, 1), M.cross, v, sx * 1.01, 2.0, -0.8, false); cr.rotation.y = sx > 0 ? Math.PI / 2 : -Math.PI / 2; }
+  boxMesh(v, -0.5, 2.78, 0.9, 0.5, 0.14, 0.26, M.lightRed, false); boxMesh(v, 0.5, 2.78, 0.9, 0.5, 0.14, 0.26, M.lightBlue, false);
+  for (const sx of [-1.05, 1.05]) for (const sz of [-2.0, 1.9]) mesh(G.wheel, M.tire, v, sx, 0.4, sz).scale.setScalar(1.15);
+  v.position.set(x, 0, z); v.rotation.y = rot; g.add(v);
+  const c = Math.abs(Math.cos(rot)), s = Math.abs(Math.sin(rot));
+  addCollider(x, z, 2.4 * c + 6.2 * s, 2.4 * s + 6.2 * c);
+  POLICE_CARS.push(new THREE.Vector3(x, 3, z));
+}
+function addTent(g, x, z, rot) {
+  const t = new THREE.Group();
+  boxMesh(t, 0, 1.1, 0, 4, 2.2, 5, M.tent);
+  const roof = mesh(new THREE.ConeGeometry(Math.SQRT1_2 * 1.05, 1, 4, 1), M.tent, t, 0, 2.2 + 0.6, 0);
+  roof.rotation.y = Math.PI / 4; roof.scale.set(4, 1.2, 5);
+  const cr = mesh(new THREE.PlaneGeometry(1.2, 1.2), M.cross, t, 0, 1.4, 2.52, false);
+  t.position.set(x, 0.16, z); t.rotation.y = rot; g.add(t);
+  const c = Math.abs(Math.cos(rot)), s = Math.abs(Math.sin(rot));
+  addCollider(x, z, 4 * c + 5 * s, 4 * s + 5 * c);
+}
+function addGurney(g, x, z, rot, body = true) {
+  const b = new THREE.Group();
+  boxMesh(b, 0, 0.82, 0, 0.7, 0.06, 2, M.metal, false);
+  for (const sx of [-0.3, 0.3]) for (const sz of [-0.9, 0.9]) boxMesh(b, sx, 0.4, sz, 0.04, 0.8, 0.04, M.metal, false);
+  boxMesh(b, 0, 0.9, 0, 0.68, 0.1, 1.95, M.sheet, false);
+  if (body) boxMesh(b, 0, 1.02, 0.1, 0.45, 0.2, 1.6, M.sheet, false);
+  b.position.set(x, 0, z); b.rotation.y = rot; g.add(b);
+  addCollider(x, z, 1.2, 1.2);
+}
+function buildHospital(g, cx, cz) {
+  const lot = mesh(new THREE.PlaneGeometry(38, 38), M.asphalt, g, cx, 0.17, cz, false); lot.rotation.x = -Math.PI / 2;
+  const bx = cx + 7, w = 20, d = 34, h = 6 * 3.5;
+  addBuilding(g, bx, cz, w, d, h, M.hospital[0], M.roof, true);
+  addBuilding(g, bx + 2, cz - 10, 14, 12, h + 7, M.hospital[1], M.roof, true); // tower wing
+  const front = bx - w / 2;
+  const sign = mesh(new THREE.PlaneGeometry(16, 2.5), M.hospSign, g, front - 0.06, h - 1.8, cz + 3, false); sign.rotation.y = -Math.PI / 2;
+  const cr = mesh(new THREE.PlaneGeometry(3.4, 3.4), M.cross, g, front - 0.06, h - 1.8, cz - 8.5, false); cr.rotation.y = -Math.PI / 2;
+  // emergency entrance with a drive-through canopy
+  boxMesh(g, front - 4, 4, cz + 6, 8, 0.4, 9, M.concrete);
+  const er = mesh(new THREE.PlaneGeometry(8, 1.25), M.erSign, g, front - 8.02, 4.5, cz + 6, false); er.rotation.y = -Math.PI / 2;
+  for (const s of [-4, 4]) { boxMesh(g, front - 7.6, 2, cz + 6 + s, 0.35, 4, 0.35, M.concrete); addCollider(front - 7.6, cz + 6 + s, 0.35, 0.35); }
+  boxMesh(g, front - 0.05, 1.4, cz + 6, 0.1, 2.6, 5, M.glass);
+  addAmbulance(g, cx - 6, cz + 6, Math.PI / 2 + 0.1); addAmbulance(g, cx - 12, cz + 14, 0.3);
+  addAmbulance(g, cx - 14, cz - 14, -0.4);
+  // quarantine triage area
+  addTent(g, cx - 13, cz - 3, Math.PI / 2); addTent(g, cx - 4, cz - 12, 0);
+  for (let k = 0; k < 5; k++) addGurney(g, cx - 9 + rand(-2, 2), cz - 5 + k * 2.4 + rand(-0.4, 0.4), rand(-0.4, 0.4) + Math.PI / 2, Math.random() < 0.6);
+  for (const s of [-12, -6, 0, 6, 12]) addBarrier(g, cx - 19.5, cz + s, Math.PI / 2, M.hazard);
+}
+
 function addCone(g, x, z) { mesh(CONE_G, M.cone, g, x, 0.36, z); }
 const CONE_G = new THREE.ConeGeometry(0.2, 0.72, 12);
 function sandbagWall(g, x, z, len, alongZ) {
@@ -1108,7 +1206,9 @@ function buildLevel() {
     const r = Math.random();
     if (theme === 'police' && bi === 2 && bj === 2) {
       buildPoliceStation(g, cx, cz);
-    } else if (theme === 'downtown' || theme === 'police') {
+    } else if (theme === 'hospital' && bi === 2 && bj === 2) {
+      buildHospital(g, cx, cz);
+    } else if (theme === 'downtown' || theme === 'police' || theme === 'hospital') {
       if (inside && r < 0.1) { // parking lot
         const lot = mesh(new THREE.PlaneGeometry(38, 38), M.asphalt, g, cx, 0.17, cz, false); lot.rotation.x = -Math.PI / 2;
         for (let k = 0; k < 7; k++) addCar(g, cx - 15 + k * 5, cz + rand(-1, 1) + (Math.random() < 0.5 ? -8 : 8), Math.random() < 0.15 ? rand(0, 6) : 0, Math.random() < 0.2);
@@ -1226,8 +1326,19 @@ function buildLevel() {
       const off = abandoned ? rand(-2, 2) : side;
       const rot = (alongZ ? 0 : Math.PI / 2) + (abandoned ? rand(-0.8, 0.8) : (Math.random() < 0.5 ? 0 : Math.PI));
       const cop = theme === 'police' && Math.random() < 0.45;
+      const amb = theme === 'hospital' && Math.random() < 0.3;
       const [cx2, cz2] = alongZ ? [rc + off, t] : [t, rc + off];
-      if (cop) addPoliceCar(g, cx2, cz2, rot); else addCar(g, cx2, cz2, rot, abandoned && Math.random() < 0.5);
+      if (cop) addPoliceCar(g, cx2, cz2, rot);
+      else if (amb) addAmbulance(g, cx2, cz2, rot);
+      else addCar(g, cx2, cz2, rot, abandoned && Math.random() < 0.5);
+    }
+  }
+  if (theme === 'hospital') { // quarantine checkpoints and abandoned gurneys
+    for (const a of ROAD_CENTERS) for (const b of ROAD_CENTERS) {
+      if (Math.abs(a) > HALF - 1 || Math.abs(b) > HALF - 1 || Math.random() > 0.3) continue;
+      const alongX = Math.random() < 0.5, o = pick([-9, 9]);
+      for (const s of [-3.2, 3.2]) addBarrier(g, alongX ? a + o : a + s, alongX ? b + s : b + o, alongX ? Math.PI / 2 : 0, M.hazard);
+      if (Math.random() < 0.5) addGurney(g, a + rand(-4, 4), b + rand(-4, 4), rand(0, 6), Math.random() < 0.7);
     }
   }
   if (theme === 'police') { // roadblocks at some intersections
@@ -1263,8 +1374,54 @@ function stackContainers(x, z, rot, contInst, collide) {
   if (collide) { const vert = Math.abs(Math.sin(rot)) > 0.5; addCollider(x, z, vert ? 6.2 : 2.6, vert ? 2.6 : 6.2); }
 }
 
+const RAIN_N = 3500;
+const rainGeo = new THREE.BufferGeometry();
+rainGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(RAIN_N * 6), 3));
+const rain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color: 0xaab6c4, transparent: true, opacity: 0.32, fog: false }));
+rain.frustumCulled = false; rain.visible = false; scene.add(rain);
+const rainSeed = new Float32Array(RAIN_N * 3);
+for (let i = 0; i < RAIN_N; i++) { rainSeed[i * 3] = rand(-25, 25); rainSeed[i * 3 + 1] = rand(0, 22); rainSeed[i * 3 + 2] = rand(-25, 25); }
+let rainAudio = null, thunderT = 8, lightning = 0;
+function updateRain(dt) {
+  if (!rain.visible) return;
+  const pos = rainGeo.attributes.position.array, c = camera.position;
+  const n = qLevel === 'low' ? 1400 : RAIN_N;
+  for (let i = 0; i < n; i++) {
+    let y = rainSeed[i * 3 + 1] - dt * 22; if (y < 0) y += 22; rainSeed[i * 3 + 1] = y;
+    // wrap drops around the camera so the rain always surrounds the player
+    const x = c.x + ((rainSeed[i * 3] + 1000) % 50) - 25, z = c.z + ((rainSeed[i * 3 + 2] + 1000) % 50) - 25;
+    const yy = c.y - 4 + y;
+    pos.set([x, yy, z, x + 0.03, yy - 0.55, z + 0.02], i * 6);
+  }
+  rainGeo.setDrawRange(0, n * 2);
+  rainGeo.attributes.position.needsUpdate = true;
+  thunderT -= dt;
+  if (thunderT <= 0) {
+    thunderT = rand(12, 26); lightning = 1;
+    if (actx) { const t = actx.currentTime + rand(0.4, 1.4); sNoise(t, 3, 400, 30, 1.1); sTone(t, 2, 55, 28, 0.5, 'sawtooth'); }
+  }
+  if (lightning > 0) {
+    lightning -= dt * 2.2;
+    const f = lightning > 0.75 || (lightning > 0.35 && lightning < 0.5) ? 1 : 0;
+    hemi.intensity = TM.hemiI + f * 5;
+  } else hemi.intensity = TM.hemiI;
+}
+function setRain(on) {
+  rain.visible = on;
+  if (rainAudio) { try { rainAudio.stop(); } catch {} rainAudio = null; }
+  if (on && actx) {
+    const src = actx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
+    const hp = actx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900;
+    const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 7000;
+    const gn = actx.createGain(); gn.gain.value = 0.07;
+    src.connect(hp).connect(lp).connect(gn).connect(master); src.start();
+    rainAudio = src;
+  }
+}
+
 function applyTime() {
   const t = TM;
+  setRain(!!t.rain); thunderT = rand(5, 10);
   renderer.toneMappingExposure = t.exp;
   scene.fog = new THREE.FogExp2(t.fog, t.fogD);
   hemi.color.set(t.hemiSky); hemi.groundColor.set(t.hemiGround); hemi.intensity = t.hemiI;
@@ -1360,6 +1517,10 @@ function sfx(name, vol = 1) {
     case 'pickup': sTone(t, 0.08, 600, 900, 0.25, 'triangle'); sTone(t + 0.08, 0.1, 900, 1300, 0.25, 'triangle'); break;
     case 'copshot': sNoise(t, 0.2, 4200, 500, 0.7 * vol); sTone(t, 0.1, 150, 50, 0.5 * vol); break;
     case 'whiz': sNoise(t, 0.12, 6000, 2500, 0.25, 'bandpass'); break;
+    case 'heal': sTone(t, 0.5, 520, 880, 0.18 * vol, 'sine'); sTone(t + 0.1, 0.5, 780, 1320, 0.12 * vol, 'sine'); break;
+    case 'growl': sTone(t, 0.7, 70, 55, 0.5 * vol, 'sawtooth'); sNoise(t, 0.7, 600, 200, 0.3 * vol, 'bandpass'); break;
+    case 'roar': sTone(t, 0.6, 180, 90, 0.5 * vol, 'sawtooth'); sNoise(t, 0.6, 1800, 400, 0.45 * vol, 'bandpass'); break;
+    case 'slam': sNoise(t, 0.6, 900, 40, 1.1 * vol); sTone(t, 0.4, 70, 25, 0.9 * vol); break;
     case 'glass': sNoise(t, 0.5, 8000, 3000, 0.6, 'highpass'); sTone(t, 0.3, 3200, 2400, 0.12, 'triangle'); sTone(t + 0.05, 0.25, 4100, 3000, 0.1, 'triangle'); break;
     case 'thud': sNoise(t, 0.08, 900, 300, 0.4, 'bandpass'); break;
     case 'boom': sNoise(t, 1.3, 1800, 50, 1.6 * vol); sTone(t, 0.7, 95, 28, 1.3 * vol); break;
@@ -1378,7 +1539,7 @@ function groan(z) {
   const d = z.pos.distanceTo(player.pos); if (d > 40) return;
   const t = actx.currentTime, vol = 0.35 * (1 - d / 40) * (z.type === 'brute' ? 1.6 : 1);
   const o = actx.createOscillator(); o.type = 'sawtooth';
-  const base = { brute: 55, runner: 140, crawler: 120, spitter: 165, bloater: 62, screamer: 210, armored: 88, riot: 95, gunner: 105 }[z.type] || rand(80, 110);
+  const base = { brute: 55, runner: 140, crawler: 120, spitter: 165, bloater: 62, screamer: 210, armored: 88, riot: 95, gunner: 105, medic: 120, mutant: 48 }[z.type] || rand(80, 110);
   o.frequency.setValueAtTime(base, t); o.frequency.linearRampToValueAtTime(base * rand(0.7, 1.2), t + 0.5); o.frequency.linearRampToValueAtTime(base * 0.6, t + 1.1);
   const lfo = actx.createOscillator(); lfo.frequency.value = rand(5, 9); const lg = actx.createGain(); lg.gain.value = base * 0.08;
   lfo.connect(lg).connect(o.frequency);
@@ -1571,6 +1732,13 @@ function zombieMats() {
     acidSkin: tint(0xb4e08a, 0x183000, 0.5),
     bloatSkin: tint(0xe0d090),
     paleSkin: tint(0xf2ece6),
+    fleshSkin: tint(0xe0b0a8, 0x200808, 0.3),
+    scrubs: TEX.scrubs.map((t) => std({ map: t, roughness: 0.9 })),
+    gown: std({ map: TEX.gown, roughness: 0.95 }),
+    white: std({ color: 0xeef2f2, roughness: 0.8 }),
+    healCross: std({ color: 0x103018, emissive: 0x40ff80, emissiveIntensity: 2.2 }),
+    yellowEye: std({ color: 0x222200, emissive: 0xffd020, emissiveIntensity: 2.6 }),
+    claw: std({ color: 0x2a2622, roughness: 0.4 }),
     boil: std({ color: 0xc8d060, emissive: 0x8a9a10, emissiveIntensity: 0.9, roughness: 0.25 }),
     acid: std({ color: 0x80ff40, emissive: 0x60ff20, emissiveIntensity: 2.5, roughness: 0.2 }),
     whiteEye: std({ color: 0x222222, emissive: 0xe8f0ff, emissiveIntensity: 2.2 }),
@@ -1590,6 +1758,7 @@ function zombieMats() {
 const UP = new THREE.Vector3(0, 1, 0);
 const CAP_G = new THREE.CylinderGeometry(0.15, 0.15, 0.09, 16);
 const BATON_G = new THREE.CylinderGeometry(0.022, 0.026, 0.62, 8);
+const CLAW_G = new THREE.ConeGeometry(0.03, 0.22, 6);
 class Zombie {
   constructor(type, x, z) {
     const c = ZTYPES[type], zm = zombieMats();
@@ -1599,20 +1768,23 @@ class Zombie {
     this.phase = rand(0, 10); this.radius = (type === 'crawler' ? 0.45 : 0.35) * c.scale; this.hitT = 0;
     this.meshes = []; this.arms = []; this.legs = []; this.helmet = [];
     this.rage = 0; this.spitT = rand(1.5, 3); this.screamCd = rand(0, 2); this.screams = 0; this.screaming = 0; this.fuse = 0; this.losT = 0; this.los = false;
-    this.helmetHp = type === 'armored' ? 70 : 0;
+    this.helmetHp = type === 'armored' ? 70 : 0; this.maxHp = this.hp;
     const g = this.g = new THREE.Group(); g.scale.setScalar(c.scale * rand(0.93, 1.07));
-    const skin = pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' ? zm.paleSkin : zm.skins);
+    const skin = pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' ? zm.paleSkin : type === 'mutant' ? zm.fleshSkin : zm.skins);
     const cop = type === 'riot' || type === 'gunner';
-    const cloth = cop ? pick(zm.police) : pick(zm.cloth), pants = cop ? zm.policePants : pick(zm.pants);
+    let cloth = cop ? pick(zm.police) : pick(zm.cloth), pants = cop ? zm.policePants : pick(zm.pants);
+    if (type === 'medic') { cloth = pick(zm.scrubs); pants = cloth; }
+    if (type === 'mutant') { cloth = skin; pants = zm.gown; } // bare, swollen torso
+    this.healCd = rand(2, 4); this.leapCd = rand(1.5, 3); this.crouch = 0; this.leapT = 0; this.airY = 0;
     this.shieldHp = c.shield ? c.shield * LV.hpMul : 0; this.shieldMax = this.shieldHp; this.gunT = rand(1.5, 3); this.aimT = 0;
-    const eyeMat = type === 'spitter' ? zm.acid : type === 'screamer' ? zm.whiteEye : zm.eye;
+    const eyeMat = type === 'spitter' ? zm.acid : type === 'screamer' ? zm.whiteEye : type === 'mutant' ? zm.yellowEye : zm.eye;
     const body = this.body = new THREE.Group(); g.add(body);
     const add = (geo, mat, parent, px, py, pz, part = 'body') => {
       const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.castShadow = true;
       m.userData.z = this; m.userData.part = part; m.userData.head = part === 'head';
       parent.add(m); this.meshes.push(m); return m;
     };
-    const torsoScale = { bloater: [1.9, 1.08, 1.55], screamer: [1.0, 1.05, 0.62] }[type] || [1.2, 1, 0.72];
+    const torsoScale = { bloater: [1.9, 1.08, 1.55], screamer: [1.0, 1.05, 0.62], mutant: [1.45, 1.05, 0.95] }[type] || [1.2, 1, 0.72];
     add(G.torso, cloth, body, 0, 1.32, 0).scale.set(...torsoScale);
     add(G.neck, skin, body, 0, 1.68, 0.02);
     const hp = this.headPivot = new THREE.Group(); hp.position.set(0, 1.72, 0.03); body.add(hp);
@@ -1656,6 +1828,19 @@ class Zombie {
       sh.scale.set(0.66, 1.34, 0.03); sh.castShadow = false;
       const baton = add(BATON_G, zm.baton, this.arms[1], 0, -0.68, 0.22); baton.rotation.x = Math.PI / 2;
     }
+    if (type === 'medic') {
+      add(G.box, zm.white, hp, 0, 0.08, 0.135, 'head').scale.set(0.2, 0.1, 0.04);          // surgical mask
+      add(G.box, zm.white, hp, 0, 0.26, 0.02, 'head').scale.set(0.22, 0.06, 0.2);          // cap
+      add(G.box, zm.healCross, body, 0, 1.42, 0.16).scale.set(0.07, 0.2, 0.02);
+      add(G.box, zm.healCross, body, 0, 1.44, 0.16).scale.set(0.2, 0.07, 0.02);
+    }
+    if (type === 'mutant') { // one grotesquely oversized right arm with claws
+      const big = this.arms[1];
+      big.children.forEach((m) => m.scale.multiply(new THREE.Vector3(2.1, 1.3, 2.1)));
+      big.children.forEach((m) => { m.position.y *= 1.3; });
+      for (const cxw of [-0.07, 0, 0.07]) add(CLAW_G, zm.claw, big, cxw, -0.98, 0.04).rotation.x = Math.PI;
+      big.position.x += 0.12;
+    }
     if (type === 'gunner') {
       const gun = add(G.box, zm.gun, this.arms[1], 0, -0.7, 0.07); gun.scale.set(0.035, 0.12, 0.16);
       this.gunTip = new THREE.Object3D(); this.gunTip.position.set(0, -0.72, 0.17); this.arms[1].add(this.gunTip);
@@ -1666,7 +1851,7 @@ class Zombie {
       this.laser.visible = false; this.laser.frustumCulled = false; scene.add(this.laser);
     }
     if (type === 'crawler') { body.position.set(0, 0, -0.95); add(G.hand, pants, body, 0.1, 0.93, 0).scale.set(1.3, 1, 1.3); }
-    this.lean = { runner: 0.32, brute: 0.18, crawler: 1.36, bloater: -0.08, screamer: 0.12, armored: 0.1, riot: 0.06, gunner: 0.05 }[type] ?? rand(0.08, 0.2);
+    this.lean = { runner: 0.32, brute: 0.18, crawler: 1.36, bloater: -0.08, screamer: 0.12, armored: 0.1, riot: 0.06, gunner: 0.05, medic: 0.1, mutant: 0.42 }[type] ?? rand(0.08, 0.2);
     this.limp = type === 'walker' && Math.random() < 0.4 ? rand(0.2, 0.5) : 0;
     g.position.copy(this.pos);
     scene.add(g);
@@ -1806,6 +1991,49 @@ class Zombie {
         if (waveActive) queue.push('walker', 'runner');
       }
     }
+    if (this.c.heal) {
+      this.healCd -= dt;
+      if (dist < 11 && this.los) hold = true; // stays behind the horde
+      if (this.healCd <= 0) {
+        const hurt = zombies.filter((o) => !o.dead && o !== this && o.hp < o.maxHp && o.pos.distanceTo(this.pos) < 9);
+        if (hurt.length) {
+          this.healCd = 5;
+          hurt.forEach((o) => { o.hp = Math.min(o.maxHp, o.hp + o.maxHp * 0.4); burst(o.pos.clone().setY(1.2), UP, healMat, 6, 1.5); });
+          healRing(this.pos);
+          sfx('heal', clamp(1.2 - dist / 30, 0.2, 1));
+        } else this.healCd = 1;
+      }
+    }
+    if (this.c.leap) {
+      this.leapCd -= dt;
+      if (this.leapT > 0) {
+        this.leapT -= dt; hold = true;
+        const k = clamp(1 - this.leapT / this.leapDur, 0, 1);
+        this.pos.lerpVectors(this.leapFrom, this.leapTo, k);
+        this.airY = Math.sin(k * Math.PI) * 3;
+        if (this.leapT <= 0) {
+          this.airY = 0; resolve(this.pos, this.radius);
+          burst(this.pos.clone().setY(0.2), UP, dustMat, 18, 4);
+          const dl = Math.hypot(player.pos.x - this.pos.x, player.pos.z - this.pos.z);
+          sfx('slam', clamp(1.2 - dl / 30, 0.3, 1.2));
+          if (dl < 2.6 && player.pos.y < 1) { hurtPlayer(this.c.dmg + 8); shake = 1; }
+          else shake = Math.min(1, shake + clamp(0.6 - dl / 30, 0, 0.6));
+          this.atkT = 1.6;
+        }
+      } else if (this.crouch > 0) {
+        this.crouch -= dt; hold = true;
+        if (this.crouch <= 0) {
+          this.leapFrom = this.pos.clone();
+          const aim = player.pos.clone().addScaledVector(player.vel, 0.45); aim.y = 0;
+          const off = aim.clone().sub(this.pos); off.setLength(clamp(off.length() - 1.3, 0, 16)); // land just in front of the player
+          this.leapTo = this.pos.clone().add(off); this.leapDur = 0.75; this.leapT = this.leapDur;
+          sfx('roar', clamp(1.3 - dist / 30, 0.3, 1.2));
+        }
+      } else if (this.leapCd <= 0 && dist > 5 && dist < 16 && this.los) {
+        this.crouch = 0.7; this.leapCd = rand(4.5, 6.5);
+        sfx('growl', clamp(1.3 - dist / 30, 0.3, 1));
+      }
+    }
     if (this.c.gun) {
       this.gunT -= dt;
       if (this.flashT > 0) { this.flashT -= dt; if (this.flashT <= 0) this.flash.visible = false; }
@@ -1885,12 +2113,19 @@ class Zombie {
       this.arms[1].rotation.x = this.atkAnim > 0 ? -2.9 + Math.sin(this.atkAnim * Math.PI) * 2.2 : -0.35 + s * 0.2;
       this.arms[1].rotation.z = 0.08;
     }
+    if (t === 'mutant') {
+      if (this.crouch > 0) { this.arms[0].rotation.x = 0.6; this.arms[1].rotation.x = 0.7; this.body.rotation.x = 0.9; }
+      else if (this.leapT > 0) { this.arms[0].rotation.x = -2.4; this.arms[1].rotation.x = -2.6; }
+      else if (this.atkAnim > 0) this.arms[1].rotation.x = -2.8 + Math.sin(this.atkAnim * Math.PI) * 2.4;
+      else { this.arms[1].rotation.x = -0.2 + s * 0.25; this.arms[1].rotation.z = 0.25; }
+    }
+    if (t === 'medic' && hold) { this.arms[0].rotation.x = -0.4; this.arms[1].rotation.x = -0.4; }
     if (t === 'gunner') {
       const aiming = this.aimT > 0 || this.flashT > 0;
       this.arms[1].rotation.x = aiming ? -1.57 : (dist < 30 ? -1.2 : -0.4 + s * 0.2); this.arms[1].rotation.z = aiming ? 0.12 : 0.05;
       this.arms[0].rotation.x = aiming ? -1.45 : -0.5 - s * 0.2; this.arms[0].rotation.z = aiming ? -0.45 : -0.08;
     }
-    this.body.rotation.x = this.lean + (this.hitT > 0 ? -0.25 : 0) + (this.screaming > 0 ? -0.35 : 0);
+    this.body.rotation.x = this.crouch > 0 ? 0.9 : this.lean + (this.hitT > 0 ? -0.25 : 0) + (this.screaming > 0 ? -0.35 : 0);
     this.body.rotation.z = Math.sin(this.phase) * (t === 'bloater' ? 0.12 : 0.07);
     this.headPivot.rotation.z = Math.sin(this.phase * 0.37) * 0.3;
     let hx = -0.2 + Math.sin(this.phase * 0.5) * 0.1;
@@ -1899,7 +2134,7 @@ class Zombie {
     if (this.spitAnim > 0) hx = this.spitAnim < 0.55 ? 0.5 : -0.4;
     this.headPivot.rotation.x = hx;
     const bob = t === 'crawler' ? Math.abs(s) * 0.04 : Math.abs(Math.cos(this.phase)) * 0.05;
-    g.position.set(this.pos.x, moving ? bob : 0, this.pos.z);
+    g.position.set(this.pos.x, (moving ? bob : 0) + this.airY - (this.crouch > 0 ? 0.25 : 0), this.pos.z);
     const target = Math.atan2(dx, dz);
     let da = target - g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
     g.rotation.y += da * Math.min(1, dt * 6);
@@ -1910,6 +2145,13 @@ class Zombie {
 
 // ---- pools, acid spit, explosion light ----
 const acidPartMat = new THREE.MeshBasicMaterial({ color: 0x8cff40 });
+const healMat = new THREE.MeshBasicMaterial({ color: 0x60ff90 });
+const ringGeo = new THREE.RingGeometry(0.85, 1, 48); ringGeo.rotateX(-Math.PI / 2);
+let rings = [];
+function healRing(p) {
+  const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x60ff90, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }));
+  m.position.set(p.x, 0.1, p.z); scene.add(m); rings.push({ m, t: 0 });
+}
 const shardMat = new THREE.MeshBasicMaterial({ color: 0xcfe4ff, transparent: true, opacity: 0.8 });
 let tracers = [], grenades = [];
 const grenadeGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.07, 10); grenadeGeo.rotateX(Math.PI / 2);
@@ -2000,6 +2242,7 @@ function updateHazards(dt) {
   if (inAcid && acidTick <= 0) { acidTick = 0.5; hurtPlayer(4); acidFlash = Math.min(1, acidFlash + 0.6); }
   acidFlash = Math.max(0, acidFlash - dt * 1.5);
   $('acidfx').style.opacity = acidFlash * 0.8;
+  rings = rings.filter((r) => { r.t += dt; r.m.scale.setScalar(1 + r.t * 14); r.m.material.opacity = Math.max(0, 0.8 - r.t * 1.3); if (r.t > 0.6) { scene.remove(r.m); return false; } return true; });
   tracers = tracers.filter((t) => { t.life -= dt; t.l.material.opacity = Math.max(0, t.life / 0.09); if (t.life <= 0) { scene.remove(t.l); t.l.geometry.dispose(); return false; } return true; });
   if (boomT > 0) { boomT -= dt; boomLight.intensity = Math.max(0, boomT / 0.3) * 600; } else boomLight.intensity = 0;
 }
@@ -2110,7 +2353,8 @@ function clearDynamic() {
   pickups.forEach((p) => scene.remove(p.m)); pickups = [];
   spits.forEach((p) => scene.remove(p.m)); spits = [];
   tracers.forEach((t) => scene.remove(t.l)); tracers = [];
-  grenades.forEach((g) => scene.remove(g.m)); grenades = []; acidPools = []; boomT = 0; boomLight.intensity = 0; acidFlash = 0;
+  grenades.forEach((g) => scene.remove(g.m)); grenades = [];
+  rings.forEach((r) => scene.remove(r.m)); rings = []; acidPools = []; boomT = 0; boomLight.intensity = 0; acidFlash = 0;
 }
 
 function loadLevel(i) {
@@ -2196,6 +2440,7 @@ function gameOver() {
   $('dead').classList.add('show');
 }
 function toMenu() {
+  if (rainAudio) { try { rainAudio.stop(); } catch {} rainAudio = null; }
   state = 'menu'; releaseTouch(); $('touch').classList.remove('on');
   document.querySelectorAll('.overlay').forEach((o) => o.classList.remove('show'));
   $('menu').classList.add('show'); $('hud').style.display = 'none';
@@ -2741,7 +2986,7 @@ function frame(dt, now) {
     gunRoot.visible = false;
   }
   gunRoot.visible = state !== 'menu';
-  updateParticles(dt); updateLighting(dt);
+  updateParticles(dt); updateLighting(dt); updateRain(dt);
   if (msgTimer > 0) { msgTimer -= dt; if (msgTimer <= 0) $('msg').style.opacity = 0; }
   if (cashPopT > 0) { cashPopT -= dt; if (cashPopT <= 0) $('cashpop').style.opacity = 0; }
   if (hitTimer > 0) { hitTimer -= dt; if (hitTimer <= 0) $('hitmark').style.opacity = 0; }
