@@ -23,7 +23,7 @@
   .num { font-family: "Oswald", "Noto Sans TC", sans-serif; }
 
   /* ---------- HUD ---------- */
-  #hud { position: fixed; inset: 0; pointer-events: none; display: none; }
+  #hud { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 3; }
   #vignette { position: fixed; inset: 0; pointer-events: none;
     background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%); }
   #acidfx { position: fixed; inset: 0; pointer-events: none; opacity: 0;
@@ -153,6 +153,40 @@
   .card.sel { border-color: var(--accent2); box-shadow: 0 0 0 2px var(--accent2); }
   .padhelp, .has-pad .is-touch .padhelp { display: none; }
   .has-pad .padhelp { display: block; margin-top: 6px; color: var(--accent2); }
+  .cash { font-size: 20px; color: var(--accent2); margin-top: 4px; }
+  .cashpop { font-size: 16px; color: var(--accent2); opacity: 0; transition: opacity 0.3s; height: 20px; }
+  .wallet { color: var(--accent2); font-size: 18px; padding: 4px 12px; border: 1px solid rgba(232,180,74,0.4); align-self: center; }
+  #scope { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 2;
+    background: radial-gradient(circle at center, transparent 0, transparent min(36vh, 36vw), #000 calc(min(36vh, 36vw) + 2px)); }
+  #scope::before, #scope::after { content: ""; position: absolute; left: 50%; top: 50%; background: rgba(0,0,0,0.85); }
+  #scope::before { width: min(72vh, 72vw); height: 1.5px; transform: translate(-50%, -50%); }
+  #scope::after { height: min(72vh, 72vw); width: 1.5px; transform: translate(-50%, -50%); }
+  #shop { z-index: 12; }
+  #shop .panel { width: min(1000px, 100%); max-height: 90vh; overflow-y: auto; text-align: left; padding: 26px 30px; }
+  .shophead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .shopsub { margin: 6px 0 16px !important; }
+  #loadout { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .slot { border: 1px solid var(--fg); padding: 10px 12px; }
+  .slot .k { font-size: 11px; letter-spacing: 0.2em; color: var(--dim); }
+  .slot .v { font-size: 16px; font-weight: 700; margin-top: 2px; }
+  #wlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .wc { border: 1px solid var(--line); padding: 12px 14px; display: grid; gap: 7px; align-content: start; }
+  .wc.eq { border-color: rgba(232,180,74,0.6); }
+  .wc .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .wc .nm { font-weight: 700; font-size: 16px; }
+  .wc .ct { font-size: 11px; letter-spacing: 0.15em; color: var(--dim); }
+  .wc .pr { font-size: 14px; color: var(--accent2); }
+  .wc .ds { font-size: 12.5px; color: #cfc8bb; line-height: 1.6; }
+  .wc .bars { display: grid; grid-template-columns: 34px 1fr 38px; gap: 3px 8px; font-size: 11px; color: var(--dim); align-items: center; }
+  .wc .bar { height: 4px; background: rgba(255,255,255,0.1); }
+  .wc .bar i { display: block; height: 100%; background: var(--fg); }
+  .wc .act { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--dim); }
+  .wc .act .b { font-size: 13px; padding: 6px 14px; }
+  .wc .act .b:disabled { opacity: 0.4; cursor: not-allowed; background: transparent; color: var(--fg); }
+  .slotbtn { font: inherit; width: 34px; height: 30px; background: transparent; color: var(--fg); border: 1px solid var(--line); cursor: pointer; }
+  .slotbtn.on { background: var(--accent2); border-color: var(--accent2); color: #000; font-weight: 700; }
+  .slotbtn:hover:not(.on) { border-color: var(--fg); }
+  @media (max-width: 600px) { #loadout { grid-template-columns: 1fr; } }
   .menubtns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
   .menubtns .b { font-size: 13px; padding: 6px 16px; }
   #bestiary .panel { width: min(880px, 100%); max-height: 88vh; overflow-y: auto; text-align: left; }
@@ -192,17 +226,19 @@
 <div id="hurt"></div>
 <div id="acidfx"></div>
 
+<div id="scope"></div>
 <div id="hud">
   <div id="crosshair"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><i class="d"></i></div>
   <div id="hitmark"></div>
   <div id="topbar"><div id="lvname"></div><div id="wave"></div><div id="remain"></div></div>
   <div id="score"><div class="small">擊殺</div><div class="big num" id="kills">0</div>
+    <div class="cash num" id="cash">$0</div><div class="cashpop num" id="cashpop"></div>
     <div class="small">分數 <span class="num" id="pts">0</span></div></div>
   <div id="health"><div class="label">生命值</div><div id="hpnum" class="num">100</div>
     <div id="hpbar"><div id="hpfill"></div></div></div>
   <div id="ammo"><div id="wname"></div><div id="reloadtip"></div>
     <div id="ammonum" class="num">12 <small>/ 72</small></div>
-    <div id="slots"><span>1 手槍</span><span>2 步槍</span><span>3 霰彈槍</span></div></div>
+    <div id="slots"></div></div>
   <div id="msg"><div class="m1"></div><div class="m2"></div></div>
 </div>
 
@@ -210,7 +246,7 @@
   <div class="title">死城<span>突圍</span></div>
   <div class="subtitle">DEAD CITY</div>
   <div id="levels"></div>
-  <div class="menubtns"><button class="b" id="btnBestiary">感染者圖鑑</button><button class="b" id="quality">畫質：自動</button></div>
+  <div class="menubtns"><span class="wallet num" id="menuCash">$0</span><button class="b primary" id="btnShop">武器庫</button><button class="b" id="btnBestiary">感染者圖鑑</button><button class="b" id="quality">畫質：自動</button></div>
   <div class="controls">
     <span class="keyhelp"><b>W A S D</b> 移動　<b>Shift</b> 衝刺　<b>空白鍵</b> 跳躍　<b>滑鼠左鍵</b> 射擊　<b>右鍵</b> 瞄準<br>
     <b>R</b> 換彈　<b>1 2 3</b> / 滾輪 切換武器　<b>Esc</b> 暫停　·　</span>爆頭傷害 ×2.5
@@ -223,13 +259,20 @@
   <div class="btns"><button class="b primary" id="btnResume">繼續</button><button class="b" id="btnQuit">返回選單</button></div></div></div>
 
 <div id="dead" class="overlay"><div class="panel"><h2 style="color:var(--accent)">你已陣亡</h2><p id="deadStats"></p>
-  <div class="btns"><button class="b primary" id="btnRetry">重新挑戰</button><button class="b" id="btnQuit2">返回選單</button></div></div></div>
+  <div class="btns"><button class="b primary" id="btnRetry">重新挑戰</button><button class="b shopbtn">武器庫</button><button class="b" id="btnQuit2">返回選單</button></div></div></div>
 
 <div id="bestiary" class="overlay"><div class="panel"><h2>感染者圖鑑</h2><div id="zlist"></div>
   <div class="btns"><button class="b" id="btnCloseBestiary">關閉</button></div></div></div>
 
+<div id="shop" class="overlay"><div class="panel">
+  <div class="shophead"><h2>武器庫</h2><span class="wallet num" id="shopCash">$0</span></div>
+  <p class="shopsub">每擊殺一隻殭屍都能賺錢，過關還有獎勵。選三把武器帶上戰場。</p>
+  <div id="loadout"></div>
+  <div id="wlist"></div>
+  <div class="btns"><button class="b primary" id="btnCloseShop">完成</button></div></div></div>
+
 <div id="win" class="overlay"><div class="panel"><h2>區域已肅清</h2><p id="winStats"></p>
-  <div class="btns"><button class="b primary" id="btnNext">下一關</button><button class="b" id="btnQuit3">返回選單</button></div></div></div>
+  <div class="btns"><button class="b primary" id="btnNext">下一關</button><button class="b shopbtn">武器庫</button><button class="b" id="btnQuit3">返回選單</button></div></div></div>
 
 <div id="touch">
   <div id="stickHint"></div>
@@ -296,33 +339,64 @@ const TIMES = {
 };
 
 const ZTYPES = {
-  walker:   { name: '行屍', color: '#8f9a7c', hp: 100, speed: 1.5, dmg: 12, scale: 1, rate: 1.2, score: 100,
+  walker:   { name: '行屍', color: '#8f9a7c', hp: 100, speed: 1.5, dmg: 12, scale: 1, rate: 1.2, cash: 10, score: 100,
               desc: '最常見的感染者。行動緩慢，但總是成群出現。' },
-  runner:   { name: '奔跑者', color: '#c46a4a', hp: 65, speed: 4.6, dmg: 9, scale: 0.95, rate: 0.8, score: 150,
+  runner:   { name: '奔跑者', color: '#c46a4a', hp: 65, speed: 4.6, dmg: 9, scale: 0.95, rate: 0.8, cash: 15, score: 150,
               desc: '剛感染不久，速度極快，會直接衝向你。' },
-  crawler:  { name: '爬行者', color: '#7a6a5a', hp: 55, speed: 2.1, dmg: 8, scale: 1, rate: 0.9, score: 150,
+  crawler:  { name: '爬行者', color: '#7a6a5a', hp: 55, speed: 2.1, dmg: 8, scale: 1, rate: 0.9, cash: 15, score: 150,
               desc: '失去雙腿，貼著地面爬行。個子矮，很容易被忽略。' },
-  spitter:  { name: '吐酸者', color: '#8fdc4a', hp: 90, speed: 1.6, dmg: 6, scale: 1, rate: 1.2, score: 250, ranged: true,
+  spitter:  { name: '吐酸者', color: '#8fdc4a', hp: 90, speed: 1.6, dmg: 6, scale: 1, rate: 1.2, cash: 25, score: 250, ranged: true,
               desc: '在遠處吐出酸液，落地會形成腐蝕酸池，站在裡面會持續受傷。' },
-  bloater:  { name: '爆炸者', color: '#d8c65a', hp: 120, speed: 1.15, dmg: 0, scale: 1.15, rate: 1, score: 200, explode: true,
+  bloater:  { name: '爆炸者', color: '#d8c65a', hp: 120, speed: 1.15, dmg: 0, scale: 1.15, rate: 1, cash: 20, score: 200, explode: true,
               desc: '全身腫脹，靠近你或被擊殺時會爆炸。在屍群中射爆它，可以炸死一片。' },
-  screamer: { name: '尖叫者', color: '#e6e0f0', hp: 75, speed: 2.3, dmg: 8, scale: 0.98, rate: 1, score: 300, scream: true,
+  screamer: { name: '尖叫者', color: '#e6e0f0', hp: 75, speed: 2.3, dmg: 8, scale: 0.98, rate: 1, cash: 30, score: 300, scream: true,
               desc: '發現你時會尖叫，讓附近殭屍狂暴加速，還會引來更多屍群。優先擊殺。' },
-  armored:  { name: '防暴殭屍', color: '#4a6a9a', hp: 230, speed: 1.45, dmg: 16, scale: 1.05, rate: 1.3, score: 350, armor: true,
+  armored:  { name: '防暴殭屍', color: '#4a6a9a', hp: 230, speed: 1.45, dmg: 16, scale: 1.05, rate: 1.3, cash: 35, score: 350, armor: true,
               desc: '穿著防彈背心和頭盔，身體傷害減半。先打掉頭盔再爆頭，霰彈槍很有效。' },
-  riot:     { name: '警察殭屍', color: '#3a5a9a', hp: 140, speed: 1.6, dmg: 18, scale: 1.02, rate: 1.4, score: 300, shield: 260,
+  riot:     { name: '警察殭屍', color: '#3a5a9a', hp: 140, speed: 1.6, dmg: 18, scale: 1.02, rate: 1.4, cash: 30, score: 300, shield: 260,
               desc: '舉著防暴盾牌和警棍。盾牌擋得住所有子彈和爆炸，但承受一定傷害後會碎裂。可以繞到側面，或集中火力打碎盾牌。' },
-  gunner:   { name: '持槍警察殭屍', color: '#d0a040', hp: 110, speed: 1.7, dmg: 9, scale: 1, rate: 1.2, score: 350, gun: true,
+  gunner:   { name: '持槍警察殭屍', color: '#d0a040', hp: 110, speed: 1.7, dmg: 9, scale: 1, rate: 1.2, cash: 35, score: 350, gun: true,
               desc: '還記得怎麼開槍。舉槍瞄準時會亮起紅色雷射，看到就躲到掩體後面。' },
-  brute:    { name: '巨型感染者', color: '#9a3a2a', hp: 650, speed: 1.3, dmg: 30, scale: 1.45, rate: 1.6, score: 500,
+  brute:    { name: '巨型感染者', color: '#9a3a2a', hp: 650, speed: 1.3, dmg: 30, scale: 1.45, rate: 1.6, cash: 60, score: 500,
               desc: '體型巨大、血量極高，一拳就能打掉你三成生命。' },
 };
 
 const WEAPONS = [
-  { id: 'pistol', name: 'M9 手槍', dmg: 34, rate: 0.16, auto: false, mag: 12, reserve: 72, reload: 1.3, spread: 0.012, pellets: 1, recoil: 0.018 },
-  { id: 'rifle', name: 'M4 步槍', dmg: 30, rate: 0.095, auto: true, mag: 30, reserve: 180, reload: 2.0, spread: 0.028, pellets: 1, recoil: 0.011 },
-  { id: 'shotgun', name: 'M870 霰彈槍', dmg: 17, rate: 0.85, auto: false, mag: 6, reserve: 36, reload: 2.6, spread: 0.075, pellets: 9, recoil: 0.05 },
+  { id: 'pistol', name: 'M9 手槍', cat: '手槍', price: 0, sound: 'pistol', dmg: 34, rate: 0.16, auto: false, mag: 12, reserve: 72, reload: 1.3, spread: 0.012, pellets: 1, recoil: 0.018,
+    desc: '可靠的制式手槍，換彈快。' },
+  { id: 'deagle', name: '沙漠之鷹', cat: '手槍', price: 800, sound: 'magnum', dmg: 90, rate: 0.38, auto: false, mag: 7, reserve: 42, reload: 1.6, spread: 0.01, pellets: 1, recoil: 0.065, pierce: 2,
+    desc: '大口徑手槍，一發子彈能貫穿兩隻殭屍。' },
+  { id: 'mp5', name: 'MP5 衝鋒槍', cat: '衝鋒槍', price: 1200, sound: 'smg', dmg: 21, rate: 0.068, auto: true, mag: 30, reserve: 210, reload: 1.8, spread: 0.03, pellets: 1, recoil: 0.007, move: 1.06,
+    desc: '射速極快、後座力小，拿著跑得比較快。' },
+  { id: 'rifle', name: 'M4 步槍', cat: '突擊步槍', price: 0, sound: 'rifle', dmg: 30, rate: 0.095, auto: true, mag: 30, reserve: 180, reload: 2.0, spread: 0.028, pellets: 1, recoil: 0.011, zoom: 25,
+    desc: '各方面都很平衡的全自動步槍。' },
+  { id: 'ak', name: 'AK-47', cat: '突擊步槍', price: 2000, sound: 'ak', dmg: 44, rate: 0.11, auto: true, mag: 30, reserve: 180, reload: 2.3, spread: 0.034, pellets: 1, recoil: 0.021, zoom: 22, ap: true,
+    desc: '傷害高、後座力大。穿甲子彈打防彈背心和頭盔特別有效。' },
+  { id: 'shotgun', name: 'M870 霰彈槍', cat: '霰彈槍', price: 0, sound: 'shotgun', dmg: 17, rate: 0.85, auto: false, mag: 6, reserve: 36, reload: 2.6, spread: 0.075, pellets: 9, recoil: 0.05, falloff: true,
+    desc: '泵動式霰彈槍，近距離一槍就能打倒行屍。' },
+  { id: 'aa12', name: 'AA-12 自動霰彈槍', cat: '霰彈槍', price: 3500, sound: 'shotgun', dmg: 15, rate: 0.2, auto: true, mag: 20, reserve: 80, reload: 3.2, spread: 0.085, pellets: 8, recoil: 0.035, falloff: true,
+    desc: '全自動霰彈槍，配 20 發彈鼓，近距離清場利器。' },
+  { id: 'awm', name: 'AWM 狙擊槍', cat: '狙擊槍', price: 3000, sound: 'sniper', dmg: 240, rate: 1.25, auto: false, mag: 5, reserve: 30, reload: 3.0, spread: 0.001, hipSpread: 0.06, pellets: 1, recoil: 0.07,
+    pierce: 5, ap: true, scope: true, zoom: 57, move: 0.9, desc: '一槍貫穿一整排殭屍。按右鍵開鏡，不開鏡時非常不準。' },
+  { id: 'm249', name: 'M249 輕機槍', cat: '機槍', price: 5000, sound: 'heavy', dmg: 32, rate: 0.075, auto: true, mag: 100, reserve: 300, reload: 4.5, spread: 0.04, pellets: 1, recoil: 0.012, zoom: 18, move: 0.82,
+    desc: '100 發彈鏈，能持續壓制屍潮。移動比較慢，換彈要很久。' },
+  { id: 'm79', name: 'M79 榴彈發射器', cat: '爆裂物', price: 4000, sound: 'launcher', dmg: 260, rate: 0.9, auto: false, mag: 1, reserve: 16, reload: 1.9, spread: 0.004, pellets: 1, recoil: 0.05,
+    explosive: true, radius: 5.5, move: 0.95, desc: '發射會爆炸的榴彈，範圍傷害能炸碎盾牌。太近開火會炸到自己。' },
 ];
+const WEAPON = Object.fromEntries(WEAPONS.map((w) => [w.id, w]));
+const DEFAULT_KIT = ['pistol', 'rifle', 'shotgun'];
+
+// ---- money, owned weapons and the three-slot loadout (kept in this browser) ----
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+let cash = Math.max(0, +store.get('deadcity_cash', 0) || 0);
+let owned = store.get('deadcity_owned', DEFAULT_KIT).filter((id) => WEAPON[id]);
+DEFAULT_KIT.forEach((id) => { if (!owned.includes(id)) owned.push(id); });
+let loadout = store.get('deadcity_loadout', DEFAULT_KIT);
+if (!Array.isArray(loadout) || loadout.length !== 3 || !loadout.every((id) => owned.includes(id)) || new Set(loadout).size !== 3) loadout = [...DEFAULT_KIT];
+let levelCash = 0;
 
 // ============================================================
 //  Utilities
@@ -1272,6 +1346,13 @@ function sfx(name, vol = 1) {
     case 'pistol': sNoise(t, 0.22, 5000, 400, 0.9); sTone(t, 0.12, 160, 50, 0.7); break;
     case 'rifle': sNoise(t, 0.18, 6000, 500, 0.8); sTone(t, 0.1, 140, 45, 0.8); break;
     case 'shotgun': sNoise(t, 0.5, 3500, 200, 1.3); sTone(t, 0.25, 110, 35, 1.0); break;
+    case 'magnum': sNoise(t, 0.4, 4200, 250, 1.2); sTone(t, 0.2, 120, 40, 1.0); break;
+    case 'smg': sNoise(t, 0.12, 6500, 700, 0.6); sTone(t, 0.07, 170, 60, 0.5); break;
+    case 'ak': sNoise(t, 0.24, 4800, 350, 1.0); sTone(t, 0.12, 120, 40, 0.9); break;
+    case 'sniper': sNoise(t, 0.9, 3800, 120, 1.5); sTone(t, 0.35, 90, 30, 1.2); sNoise(t + 0.9, 0.15, 1500, 800, 0.2, 'bandpass'); break;
+    case 'heavy': sNoise(t, 0.2, 4500, 300, 0.9); sTone(t, 0.12, 110, 38, 0.9); break;
+    case 'launcher': sNoise(t, 0.25, 1500, 200, 0.7); sTone(t, 0.18, 220, 90, 0.6, 'triangle'); break;
+    case 'cash': sTone(t, 0.06, 1400, 1500, 0.08, 'triangle'); sTone(t + 0.05, 0.08, 2100, 2200, 0.07, 'triangle'); break;
     case 'empty': sTone(t, 0.04, 1800, 1200, 0.15, 'square'); break;
     case 'reload': sTone(t, 0.05, 900, 600, 0.2, 'square'); sTone(t + 0.35, 0.06, 700, 400, 0.25, 'square'); break;
     case 'hit': sNoise(t, 0.08, 1200, 300, 0.35 * vol, 'bandpass'); break;
@@ -1319,6 +1400,9 @@ function groan(z) {
 // ============================================================
 const gunRoot = new THREE.Group(); gunCam.add(gunRoot);
 const gunMats = {
+  silver: std({ color: 0x9a9ca0, roughness: 0.3, metalness: 0.9 }),
+  olive: std({ color: 0x3d4430, roughness: 0.75, metalness: 0.1 }),
+  lens: std({ color: 0x0a1a30, roughness: 0.05, metalness: 0.9, emissive: 0x081830, emissiveIntensity: 0.5 }),
   metal: std({ color: 0x131416, roughness: 0.42, metalness: 0.8 }),
   poly: std({ color: 0x111111, roughness: 0.8, metalness: 0.1 }),
   wood: std({ color: 0x5b3a20, roughness: 0.6 }),
@@ -1362,6 +1446,76 @@ function buildGun(id) {
     arm(g, 0, -0.08, 0.11, 0.05, -0.22, 0.42);
     arm(g, 0, -0.04, -0.32, -0.14, -0.22, -0.05);
     muzzle = new THREE.Vector3(0, 0.006, -0.7); hip = new THREE.Vector3(0.17, -0.17, -0.5); aim = new THREE.Vector3(0, -0.066, -0.3);
+  } else if (id === 'deagle') {
+    gb(g, 0.037, 0.043, 0.25, gunMats.silver, 0, 0.022, -0.04);
+    gb(g, 0.034, 0.03, 0.18, gunMats.silver, 0, -0.01, -0.02);
+    gb(g, 0.033, 0.12, 0.05, gunMats.poly, 0, -0.07, 0.055, 0.25);
+    gb(g, 0.006, 0.012, 0.006, gunMats.metal, 0, 0.05, -0.155); gb(g, 0.022, 0.012, 0.006, gunMats.metal, 0, 0.05, 0.075);
+    arm(g, 0, -0.075, 0.065, 0.04, -0.2, 0.4);
+    muzzle = new THREE.Vector3(0, 0.022, -0.17); hip = new THREE.Vector3(0.15, -0.15, -0.36); aim = new THREE.Vector3(0, -0.052, -0.3);
+  } else if (id === 'mp5') {
+    gb(g, 0.045, 0.065, 0.3, gunMats.metal, 0, 0, -0.02);
+    gb(g, 0.05, 0.055, 0.14, gunMats.poly, 0, -0.005, -0.24);
+    gc(g, 0.01, 0.08, gunMats.metal, 0, 0.005, -0.34);
+    gb(g, 0.024, 0.15, 0.045, gunMats.metal, 0, -0.1, -0.1, 0.3);
+    gb(g, 0.03, 0.09, 0.04, gunMats.poly, 0, -0.075, 0.08, 0.3);
+    gb(g, 0.012, 0.012, 0.2, gunMats.metal, 0.018, 0.01, 0.23); gb(g, 0.012, 0.012, 0.2, gunMats.metal, -0.018, 0.01, 0.23);
+    gb(g, 0.045, 0.07, 0.016, gunMats.metal, 0, -0.005, 0.33);
+    gb(g, 0.02, 0.028, 0.02, gunMats.metal, 0, 0.046, 0.08); gb(g, 0.006, 0.03, 0.006, gunMats.metal, 0, 0.046, -0.29);
+    arm(g, 0, -0.075, 0.09, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.24, -0.14, -0.22, -0.02);
+    muzzle = new THREE.Vector3(0, 0.005, -0.39); hip = new THREE.Vector3(0.16, -0.16, -0.42); aim = new THREE.Vector3(0, -0.058, -0.26);
+  } else if (id === 'ak') {
+    gb(g, 0.05, 0.07, 0.36, gunMats.metal, 0, 0, 0);
+    gb(g, 0.056, 0.06, 0.22, gunMats.wood, 0, -0.004, -0.28);
+    gc(g, 0.01, 0.2, gunMats.metal, 0, 0.034, -0.27);
+    gc(g, 0.011, 0.3, gunMats.metal, 0, 0.002, -0.52);
+    gb(g, 0.008, 0.045, 0.01, gunMats.metal, 0, 0.03, -0.64);
+    gb(g, 0.028, 0.12, 0.07, gunMats.metal, 0, -0.09, -0.08, 0.3); gb(g, 0.028, 0.1, 0.065, gunMats.metal, 0, -0.17, -0.12, 0.62);
+    gb(g, 0.03, 0.1, 0.04, gunMats.wood, 0, -0.08, 0.1, 0.35);
+    gb(g, 0.042, 0.08, 0.27, gunMats.wood, 0, -0.03, 0.3, 0.1);
+    gb(g, 0.02, 0.014, 0.03, gunMats.metal, 0, 0.042, -0.06);
+    arm(g, 0, -0.08, 0.11, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.3, -0.14, -0.22, -0.05);
+    muzzle = new THREE.Vector3(0, 0.002, -0.68); hip = new THREE.Vector3(0.17, -0.17, -0.5); aim = new THREE.Vector3(0, -0.049, -0.32);
+  } else if (id === 'aa12') {
+    gb(g, 0.07, 0.1, 0.5, gunMats.poly, 0, 0, -0.05);
+    gc(g, 0.017, 0.2, gunMats.metal, 0, 0.02, -0.4);
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.07, 20), gunMats.metal);
+    drum.rotation.z = Math.PI / 2; drum.position.set(0, -0.12, -0.1); g.add(drum);
+    gb(g, 0.03, 0.1, 0.045, gunMats.poly, 0, -0.09, 0.12, 0.3);
+    gb(g, 0.02, 0.03, 0.32, gunMats.metal, 0, 0.065, -0.06);
+    gb(g, 0.006, 0.02, 0.006, gunMats.metal, 0, 0.09, -0.26);
+    arm(g, 0, -0.09, 0.13, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.25, -0.14, -0.22, -0.02);
+    muzzle = new THREE.Vector3(0, 0.02, -0.51); hip = new THREE.Vector3(0.18, -0.19, -0.5); aim = new THREE.Vector3(0, -0.09, -0.33);
+  } else if (id === 'awm') {
+    gb(g, 0.05, 0.08, 0.5, gunMats.olive, 0, -0.01, 0.05);
+    gc(g, 0.012, 0.5, gunMats.metal, 0, 0.01, -0.45); gc(g, 0.017, 0.05, gunMats.metal, 0, 0.01, -0.71);
+    gc(g, 0.022, 0.3, gunMats.metal, 0, 0.075, -0.05); gc(g, 0.027, 0.05, gunMats.metal, 0, 0.075, -0.2); gc(g, 0.024, 0.006, gunMats.lens, 0, 0.075, -0.225);
+    gb(g, 0.012, 0.03, 0.02, gunMats.metal, 0, 0.045, -0.12); gb(g, 0.012, 0.03, 0.02, gunMats.metal, 0, 0.045, 0.03);
+    gb(g, 0.06, 0.012, 0.012, gunMats.metal, 0.04, 0.02, 0.12);
+    gb(g, 0.03, 0.06, 0.08, gunMats.metal, 0, -0.07, -0.02);
+    gb(g, 0.045, 0.1, 0.25, gunMats.olive, 0, -0.03, 0.36);
+    gb(g, 0.03, 0.1, 0.04, gunMats.olive, 0, -0.08, 0.18, 0.35);
+    arm(g, 0, -0.08, 0.19, 0.05, -0.22, 0.46); arm(g, 0, -0.04, -0.22, -0.14, -0.22, 0.02);
+    muzzle = new THREE.Vector3(0, 0.01, -0.74); hip = new THREE.Vector3(0.18, -0.19, -0.5); aim = new THREE.Vector3(0, -0.075, -0.2);
+  } else if (id === 'm249') {
+    gb(g, 0.07, 0.1, 0.34, gunMats.metal, 0, 0, 0);
+    gc(g, 0.014, 0.42, gunMats.metal, 0, 0.01, -0.45); gb(g, 0.032, 0.02, 0.22, gunMats.metal, 0, 0.032, -0.33);
+    gb(g, 0.075, 0.11, 0.11, gunMats.olive, -0.05, -0.11, -0.03);
+    gb(g, 0.008, 0.008, 0.25, gunMats.metal, 0.015, -0.03, -0.45); gb(g, 0.008, 0.008, 0.25, gunMats.metal, -0.015, -0.03, -0.45);
+    gb(g, 0.015, 0.03, 0.14, gunMats.metal, 0, 0.078, -0.1);
+    gb(g, 0.05, 0.09, 0.25, gunMats.poly, 0, -0.01, 0.3);
+    gb(g, 0.03, 0.1, 0.04, gunMats.poly, 0, -0.09, 0.12, 0.3);
+    gb(g, 0.006, 0.022, 0.006, gunMats.metal, 0, 0.06, -0.6); gb(g, 0.022, 0.012, 0.01, gunMats.metal, 0, 0.06, 0.06);
+    arm(g, 0, -0.09, 0.13, 0.05, -0.22, 0.42); arm(g, 0, -0.03, -0.24, -0.14, -0.22, -0.02);
+    muzzle = new THREE.Vector3(0, 0.01, -0.67); hip = new THREE.Vector3(0.19, -0.2, -0.5); aim = new THREE.Vector3(0, -0.066, -0.33);
+  } else if (id === 'm79') {
+    gc(g, 0.029, 0.36, gunMats.metal, 0, 0.02, -0.28);
+    gb(g, 0.045, 0.05, 0.12, gunMats.metal, 0, 0.01, -0.04);
+    gb(g, 0.05, 0.1, 0.34, gunMats.wood, 0, -0.045, 0.22, 0.15);
+    gb(g, 0.05, 0.035, 0.18, gunMats.wood, 0, -0.018, -0.2);
+    gb(g, 0.03, 0.04, 0.004, gunMats.metal, 0, 0.065, -0.1);
+    arm(g, 0, -0.07, 0.08, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.2, -0.14, -0.22, 0.0);
+    muzzle = new THREE.Vector3(0, 0.02, -0.47); hip = new THREE.Vector3(0.17, -0.18, -0.45); aim = new THREE.Vector3(0, -0.075, -0.34);
   } else {
     gb(g, 0.05, 0.075, 0.26, gunMats.metal, 0, 0, 0);
     gc(g, 0.014, 0.58, gunMats.metal, 0, 0.018, -0.41);
@@ -1394,7 +1548,8 @@ let menuT = 0;
 
 function resetWeapons() {
   weapons.forEach((w) => gunRoot.remove(w.view.group));
-  weapons = WEAPONS.map((c) => ({ c, ammo: c.mag, reserve: c.reserve, view: buildGun(c.id) }));
+  weapons = loadout.map((id) => WEAPON[id]).map((c) => ({ c, ammo: c.mag, reserve: c.reserve, view: buildGun(c.id) }));
+  $('slots').innerHTML = weapons.map((w, i) => `<span>${i + 1} ${w.c.name}</span>`).join('');
   weapons.forEach((w, i) => { gunRoot.add(w.view.group); w.view.group.visible = i === wi; });
 }
 
@@ -1518,7 +1673,7 @@ class Zombie {
     zMeshes.push(...this.meshes);
   }
   // ud = userData of the mesh that was hit
-  damage(dmg, ud, dir) {
+  damage(dmg, ud, dir, ap = false) {
     if (this.dead) return false;
     let mul = 1; this.lastFx = 'blood';
     if (this.shieldHp > 0 && (ud.part === 'shield' || ud.part === 'blast')) {
@@ -1529,9 +1684,9 @@ class Zombie {
     }
     if (ud.part === 'head') mul = 2.5;
     else if (ud.part === 'helmet') {
-      mul = 0.3; this.lastFx = 'spark'; this.helmetHp -= dmg;
+      mul = ap ? 0.6 : 0.3; this.lastFx = 'spark'; this.helmetHp -= dmg * (ap ? 2 : 1);
       if (this.helmetHp <= 0) this.dropHelmet();
-    } else if (ud.part === 'armor') { mul = 0.45; this.lastFx = 'spark'; }
+    } else if (ud.part === 'armor') { mul = ap ? 0.85 : 0.45; this.lastFx = 'spark'; }
     this.hp -= dmg * mul;
     this.hitT = this.type === 'brute' || this.type === 'armored' ? 0.06 : 0.15;
     if (this.type !== 'brute' && dir) { this.pos.x += dir.x * 0.12; this.pos.z += dir.z * 0.12; }
@@ -1575,7 +1730,7 @@ class Zombie {
     this.dead = true; this.deadT = 0; this.fallDir = Math.random() < 0.7 ? -1 : 1;
     if (this.laser) this.laser.visible = false;
     zMeshes = zMeshes.filter((m) => m.userData.z !== this);
-    kills++; score += this.c.score;
+    kills++; score += this.c.score; addCash(this.c.cash);
     if (this.c.explode) { this.explode(); return; }
     this.pool = makePool(this.pos.x + dir.x * 0.8, this.pos.z + dir.z * 0.8, TEX.blood, this.c.scale * rand(0.8, 1.2));
     const r = Math.random();
@@ -1585,17 +1740,8 @@ class Zombie {
   explode() {
     const p = this.pos.clone().setY(1.1);
     burst(p, UP, acidPartMat, 34, 7); burst(p, UP, bloodMat, 26, 6);
-    boomLight.position.copy(p); boomT = 0.3;
-    const dP = Math.hypot(player.pos.x - this.pos.x, player.pos.z - this.pos.z);
-    sfx('boom', clamp(1.2 - dP / 50, 0.25, 1.2));
-    shake = Math.min(1, shake + clamp(1 - dP / 25, 0, 1));
-    if (dP < 5.5) hurtPlayer(Math.round(40 * (1 - dP / 5.5)) + 6);
     makePool(this.pos.x, this.pos.z, TEX.acid, 2.2, true);
-    for (const o of zombies) {
-      if (o === this || o.dead) continue;
-      const d = o.pos.distanceTo(this.pos);
-      if (d < 5.5) o.damage(170 * (1 - d / 5.5) + 25, { part: o.shieldHp > 0 ? 'blast' : 'body' }, o.pos.clone().sub(this.pos).setY(0).normalize());
-    }
+    blastAt(p, 5.5, 170, 40, this);
     this.g.visible = false; this.deadT = 10.9;
     if (Math.random() < 0.4) spawnPickup('ammo', this.pos);
   }
@@ -1765,7 +1911,44 @@ class Zombie {
 // ---- pools, acid spit, explosion light ----
 const acidPartMat = new THREE.MeshBasicMaterial({ color: 0x8cff40 });
 const shardMat = new THREE.MeshBasicMaterial({ color: 0xcfe4ff, transparent: true, opacity: 0.8 });
-let tracers = [];
+let tracers = [], grenades = [];
+const grenadeGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.07, 10); grenadeGeo.rotateX(Math.PI / 2);
+const grenadeMat = new THREE.MeshStandardMaterial({ color: 0x4a5030, roughness: 0.6, metalness: 0.4 });
+function blastAt(p, radius, dmg, playerDmg, src = null) {
+  boomLight.position.copy(p); boomT = 0.3;
+  burst(p, UP, sparkMat, 16, 8); burst(p, UP, dustMat, 24, 6);
+  const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
+  sfx('boom', clamp(1.2 - dP / 50, 0.25, 1.2));
+  shake = Math.min(1, shake + clamp(1 - dP / 25, 0, 1));
+  if (dP < radius) hurtPlayer(Math.round(playerDmg * (1 - dP / radius)) + 5);
+  for (const o of zombies) {
+    if (o === src || o.dead) continue;
+    const d = Math.hypot(o.pos.x - p.x, o.pos.z - p.z);
+    if (d < radius) o.damage(dmg * (1 - d / radius) + 25, { part: o.shieldHp > 0 ? 'blast' : 'body' }, o.pos.clone().sub(p).setY(0).normalize());
+  }
+}
+function launchGrenade(from, dir, c) {
+  const m = new THREE.Mesh(grenadeGeo, grenadeMat); m.position.copy(from); m.castShadow = true; scene.add(m);
+  grenades.push({ m, v: dir.clone().multiplyScalar(36).add(new THREE.Vector3(0, 1.5, 0)), life: 4, c });
+}
+function updateGrenades(dt) {
+  grenades = grenades.filter((gr) => {
+    gr.life -= dt; gr.v.y -= 9.8 * dt;
+    gr.m.position.addScaledVector(gr.v, dt); gr.m.lookAt(gr.m.position.clone().add(gr.v));
+    const p = gr.m.position;
+    let hit = p.y <= 0.05 || gr.life <= 0 || (p.y < 14 && blocked(p.x, p.z, 0));
+    if (!hit) for (const z of zombies) {
+      if (z.dead) continue;
+      if (Math.hypot(z.pos.x - p.x, z.pos.z - p.z) < z.radius + 0.35 && p.y < 2 * z.c.scale) { hit = true; break; }
+    }
+    if (!hit) return true;
+    scene.remove(gr.m);
+    const at = p.clone(); at.y = Math.max(0.3, at.y);
+    blastAt(at, gr.c.radius, gr.c.dmg, 45);
+    const scorch = makePool(p.x, p.z, TEX.hole, 1); scorch.scale.setScalar(2.6);
+    return false;
+  });
+}
 function addTracer(a, b) {
   const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color: 0xffd890, transparent: true, opacity: 0.9 }));
   l.frustumCulled = false; scene.add(l); tracers.push({ l, life: 0.09 });
@@ -1879,6 +2062,13 @@ function showMsg(a, b = '', dur = 2.5) {
   $('msg').style.opacity = 1; msgTimer = dur;
 }
 let hitTimer = 0;
+let cashPopT = 0, cashPopSum = 0;
+function addCash(n) {
+  cash += n; levelCash += n; store.set('deadcity_cash', cash);
+  cashPopSum = cashPopT > 0 ? cashPopSum + n : n; cashPopT = 1.2;
+  $('cashpop').textContent = `+$${cashPopSum}`; $('cashpop').style.opacity = 1;
+}
+const money = (n) => '$' + n.toLocaleString('en-US');
 function hitMarker(kill) { const h = $('hitmark'); h.className = kill ? 'kill' : ''; h.style.opacity = 1; hitTimer = 0.12; }
 let hurtAlpha = 0;
 function hurtPlayer(dmg) {
@@ -1900,7 +2090,7 @@ function updateHUD() {
   $('wave').textContent = interT > 0 && !waveActive ? `下一波 ${Math.ceil(interT)}` : `第 ${waveIdx + 1} / ${LV.waves.length} 波`;
   const alive = zombies.filter((z) => !z.dead).length;
   $('remain').textContent = `剩餘感染者 ${queue.length + alive}`;
-  $('kills').textContent = kills; $('pts').textContent = score;
+  $('kills').textContent = kills; $('pts').textContent = score; $('cash').textContent = money(cash);
   const sp = 10 + spreadK * 40 + (aimT > 0.5 ? -6 : 0);
   const ch = $('crosshair').children;
   ch[0].style.top = `${-sp - 9}px`; ch[1].style.top = `${sp}px`; ch[2].style.left = `${-sp - 9}px`; ch[3].style.left = `${sp}px`;
@@ -1919,7 +2109,8 @@ function clearDynamic() {
   decals.forEach((d) => scene.remove(d)); decals = [];
   pickups.forEach((p) => scene.remove(p.m)); pickups = [];
   spits.forEach((p) => scene.remove(p.m)); spits = [];
-  tracers.forEach((t) => scene.remove(t.l)); tracers = []; acidPools = []; boomT = 0; boomLight.intensity = 0; acidFlash = 0;
+  tracers.forEach((t) => scene.remove(t.l)); tracers = [];
+  grenades.forEach((g) => scene.remove(g.m)); grenades = []; acidPools = []; boomT = 0; boomLight.intensity = 0; acidFlash = 0;
 }
 
 function loadLevel(i) {
@@ -1935,7 +2126,7 @@ function startLevel(i) {
   player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
   player.yaw = 0; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0);
   wi = 1; resetWeapons(); reloading = 0; switching = 0;
-  kills = 0; score = 0; waveIdx = 0; queue = []; waveActive = false; interT = 3;
+  kills = 0; score = 0; levelCash = 0; waveIdx = 0; queue = []; waveActive = false; interT = 3;
   showMsg(`第 ${LV.num} 關 · ${LV.name}`, `${TIMES[LV.time].label} — 撐過 ${LV.waves.length} 波感染者`, 3);
   document.querySelectorAll('.overlay').forEach((o) => o.classList.remove('show'));
   $('hud').style.display = 'block';
@@ -1984,11 +2175,13 @@ function updateWaves(dt) {
 }
 
 function levelComplete() {
+  $('scope').style.display = 'none';
   state = 'complete'; releaseTouch();
   const next = nextVisible(levelIndex);
   if (next > loadUnlocked()) saveUnlocked(next);
   unlockPointer();
-  const stats = `擊殺 ${kills} · 分數 ${score}`;
+  const bonus = 150 + LV.num * 100; addCash(bonus);
+  const stats = `擊殺 ${kills} · 分數 ${score}<br>本關賺得 ${money(levelCash)}（含過關獎勵 ${money(bonus)}）`;
   $('winStats').innerHTML = next >= 0 ? `${stats}<br>下一關已解鎖：第 ${LEVELS[next].num} 關 · ${LEVELS[next].name}`
     : LV.num === 10 ? `你守住了最後防線，撤離成功！<br>${stats}` : `${stats}<br>更多關卡製作中，敬請期待。`;
   $('btnNext').style.display = next >= 0 ? '' : 'none';
@@ -1996,9 +2189,10 @@ function levelComplete() {
   renderMenu();
 }
 function gameOver() {
+  $('scope').style.display = 'none';
   state = 'dead'; releaseTouch();
   unlockPointer();
-  $('deadStats').innerHTML = `第 ${LV.num} 關 · 第 ${waveIdx + 1} 波<br>擊殺 ${kills} · 分數 ${score}`;
+  $('deadStats').innerHTML = `第 ${LV.num} 關 · 第 ${waveIdx + 1} 波<br>擊殺 ${kills} · 分數 ${score}<br>賺到的 ${money(levelCash)} 已經存下來了`;
   $('dead').classList.add('show');
 }
 function toMenu() {
@@ -2011,6 +2205,7 @@ function toMenu() {
 
 function renderMenu() {
   const un = loadUnlocked();
+  $('menuCash').textContent = money(cash);
   $('levels').innerHTML = '';
   LEVELS.forEach((l, i) => {
     if (l.hidden) return;
@@ -2043,7 +2238,7 @@ document.addEventListener('pointerlockerror', () => { usingLock = false; });
 document.addEventListener('mousemove', (e) => {
   if (state !== 'playing') return;
   if (usingLock && document.pointerLockElement !== canvas) return;
-  const sens = aiming ? 0.0012 : 0.0022;
+  const sens = aiming ? (weapons[wi]?.c.scope ? 0.00045 : 0.0012) : 0.0022;
   player.yaw -= e.movementX * sens; player.pitch -= e.movementY * sens;
   player.pitch = clamp(player.pitch, -1.5, 1.5);
 });
@@ -2199,7 +2394,9 @@ function pollPad(dt) {
     if (hit(15)) dir = 1; if (hit(14)) dir = -1;
     if (Math.abs(lx) > 0.6 && !padAxisLatch) { dir = Math.sign(lx); padAxisLatch = 1; }
     if (Math.abs(lx) < 0.3) padAxisLatch = 0;
-    if (state === 'menu' && $('bestiary').classList.contains('show')) {
+    if ($('shop').classList.contains('show')) {
+      if (hit(1)) $('btnCloseShop').click();
+    } else if (state === 'menu' && $('bestiary').classList.contains('show')) {
       if (hit(1) || hit(0)) $('bestiary').classList.remove('show');
     } else if (state === 'menu') {
       const top = Math.min(un, LAST_VISIBLE);
@@ -2251,6 +2448,54 @@ $('quality').onclick = () => {
   try { localStorage.setItem('deadcity_quality', qSetting); } catch {}
   applyQuality(qSetting === 'auto' ? (IS_TOUCH || navigator.hardwareConcurrency <= 4 ? 'medium' : 'high') : qSetting);
 };
+function renderShop() {
+  $('shopCash').textContent = money(cash);
+  $('loadout').innerHTML = loadout.map((id, i) => `<div class="slot"><div class="k">欄位 ${i + 1}</div><div class="v">${WEAPON[id].name}</div></div>`).join('');
+  const bar = (v) => `<div class="bar"><i style="width:${Math.round(clamp(v, 0.04, 1) * 100)}%"></i></div>`;
+  $('wlist').innerHTML = WEAPONS.map((w) => {
+    const have = owned.includes(w.id), slot = loadout.indexOf(w.id);
+    const perShot = w.dmg * w.pellets, rpm = Math.round(60 / w.rate);
+    const acc = 1 - Math.min(1, (w.hipSpread || w.spread) / 0.09);
+    let act;
+    if (!have) {
+      act = cash >= w.price ? `<button class="b primary" data-buy="${w.id}">購買 ${money(w.price)}</button>`
+        : `<button class="b" disabled>購買 ${money(w.price)}</button><span>還差 ${money(w.price - cash)}</span>`;
+    } else {
+      act = `裝備到欄位 ${[0, 1, 2].map((k) => `<button class="slotbtn${slot === k ? ' on' : ''}" data-eq="${w.id}" data-slot="${k}" aria-label="裝備到欄位 ${k + 1}">${k + 1}</button>`).join('')}`;
+    }
+    const tags = [w.pierce > 1 ? `貫穿 ${w.pierce}` : '', w.ap ? '穿甲' : '', w.explosive ? '範圍爆炸' : '', w.scope ? '瞄準鏡' : '', w.move && w.move < 1 ? '移動較慢' : ''].filter(Boolean).join(' · ');
+    return `<div class="wc${slot >= 0 ? ' eq' : ''}">
+      <div class="top"><div><div class="nm">${w.name}</div><div class="ct">${w.cat}${tags ? ' · ' + tags : ''}</div></div>
+        <div class="pr num">${have ? (slot >= 0 ? `欄位 ${slot + 1}` : '已擁有') : money(w.price)}</div></div>
+      <div class="ds">${w.desc}</div>
+      <div class="bars"><span>傷害</span>${bar(perShot / 260)}<span class="num">${perShot}</span>
+        <span>射速</span>${bar(rpm / 900)}<span class="num">${rpm}</span>
+        <span>彈匣</span>${bar(w.mag / 100)}<span class="num">${w.mag}</span>
+        <span>精準</span>${bar(acc)}<span class="num">${Math.round(acc * 100)}</span></div>
+      <div class="act">${act}</div></div>`;
+  }).join('');
+}
+$('wlist').addEventListener('click', (e) => {
+  const buy = e.target.closest('[data-buy]'), eq = e.target.closest('[data-eq]');
+  if (buy) {
+    const w = WEAPON[buy.dataset.buy];
+    if (owned.includes(w.id) || cash < w.price) return;
+    cash -= w.price; owned.push(w.id);
+    store.set('deadcity_cash', cash); store.set('deadcity_owned', owned);
+    audio(); sfx('cash'); renderShop(); renderMenu();
+  } else if (eq) {
+    const id = eq.dataset.eq, k = +eq.dataset.slot, j = loadout.indexOf(id);
+    if (j === k) return;
+    if (j >= 0) loadout[j] = loadout[k]; // swap if it was already in another slot
+    loadout[k] = id;
+    store.set('deadcity_loadout', loadout); renderShop();
+  }
+});
+function openShop() { renderShop(); $('shop').classList.add('show'); }
+$('btnShop').onclick = openShop;
+document.querySelectorAll('.shopbtn').forEach((b) => (b.onclick = openShop));
+$('btnCloseShop').onclick = () => { $('shop').classList.remove('show'); renderMenu(); };
+
 function renderBestiary() {
   let seen = [];
   try { seen = JSON.parse(localStorage.getItem('deadcity_seen') || '[]'); } catch {}
@@ -2263,7 +2508,7 @@ function renderBestiary() {
     const hpBar = z.hp + (z.shield || 0);
     const bar = (v, m) => `<div class="bar"><i style="width:${Math.max(6, Math.min(100, v / m * 100))}%"></i></div>`;
     return `<div class="zc"><div class="zh"><span class="dot" style="background:${z.color}"></span>${known ? z.name : '？？？'}</div>
-      <div class="first">首次出現：第 ${LEVELS[lv].num} 關 · ${LEVELS[lv].name}</div>
+      <div class="first">首次出現：第 ${LEVELS[lv].num} 關 · ${LEVELS[lv].name} · 擊殺獎勵 ${money(z.cash)}</div>
       <div class="zd ${known ? '' : 'unk'}">${known ? z.desc : '還沒遇過。玩到這一關就會解鎖說明。'}</div>
       <div class="bars"><span>生命</span>${bar(hpBar, maxHp)}<span>速度</span>${bar(z.speed, maxSp)}<span>傷害</span>${bar(dmg, maxDmg)}</div></div>`;
   }).join('');
@@ -2277,6 +2522,7 @@ $('btnPortrait').onclick = () => document.documentElement.classList.add('allow-p
 // ============================================================
 function switchWeapon(i) {
   if (i === wi || switching > 0) return;
+  $('scope').style.display = 'none';
   weapons[wi].view.group.visible = false; wi = i; weapons[wi].view.group.visible = true;
   switching = 0.35; reloading = 0;
 }
@@ -2293,30 +2539,44 @@ function tryFire(click) {
   if (!w.c.auto && !click) return;
   if (w.ammo <= 0) { sfx('empty'); fireCd = 0.25; if (w.reserve > 0) startReload(); return; }
   w.ammo--; fireCd = w.c.rate;
-  sfx(w.c.id);
+  sfx(w.c.sound);
   kick = 1; flashT = 0.05; shake = Math.min(1, shake + w.c.recoil * 6);
   player.pitch += w.c.recoil * (aiming ? 0.6 : 1); player.yaw += rand(-1, 1) * w.c.recoil * 0.3;
   spreadK = Math.min(1, spreadK + 0.25);
   const origin = camera.getWorldPosition(new THREE.Vector3());
   const fwd = camera.getWorldDirection(new THREE.Vector3());
   const moveSpread = Math.hypot(player.vel.x, player.vel.z) / 8;
-  const spread = w.c.spread * (aiming ? 0.35 : 1) * (1 + spreadK + moveSpread);
+  const baseSpread = !aiming && w.c.hipSpread ? w.c.hipSpread : w.c.spread;
+  const spread = baseSpread * (aiming ? (w.c.scope ? 0.2 : 0.35) : 1) * (1 + spreadK + moveSpread);
+  if (w.c.explosive) {
+    const dir = fwd.clone().add(new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(spread)).normalize();
+    launchGrenade(origin.clone().addScaledVector(dir, 0.6).add(new THREE.Vector3(0, -0.1, 0)), dir, w.c);
+    return;
+  }
   let anyHit = false, anyKill = false;
   for (let p = 0; p < w.c.pellets; p++) {
     const dir = fwd.clone().add(new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(spread)).normalize();
     ray.set(origin, dir);
-    const zh = ray.intersectObjects(zMeshes, false)[0];
+    const zhs = ray.intersectObjects(zMeshes, false);
     const wh = ray.intersectObjects(worldMeshes, false)[0];
-    if (zh && (!wh || zh.distance < wh.distance)) {
+    const wallD = wh ? wh.distance : Infinity;
+    const struck = new Set(); let dmg = w.c.dmg;
+    for (const zh of zhs) {
+      if (zh.distance > wallD) break;
       const z = zh.object.userData.z;
-      const falloff = w.c.id === 'shotgun' ? clamp(1.3 - zh.distance / 25, 0.25, 1) : 1;
-      const killed = z.damage(w.c.dmg * falloff, zh.object.userData, dir);
+      if (struck.has(z) || z.dead) continue;
+      struck.add(z);
+      const falloff = w.c.falloff ? clamp(1.3 - zh.distance / 25, 0.25, 1) : 1;
+      const killed = z.damage(dmg * falloff, zh.object.userData, dir, w.c.ap);
       if (z.lastFx === 'spark') { burst(zh.point, dir.clone().negate(), sparkMat, 5, 4); sfx('ping'); }
       else if (z.lastFx === 'shield') { burst(zh.point, dir.clone().negate(), shardMat, 3, 3); sfx('thud'); }
       else burst(zh.point, dir.clone().negate(), z.c.explode ? acidPartMat : bloodMat, zh.object.userData.head ? 14 : 7, 3);
       anyHit = true; anyKill = anyKill || killed;
-      if (killed && zh.object.userData.head) score += 50;
-    } else if (wh) {
+      if (killed && zh.object.userData.head) { score += 50; addCash(5); }
+      if (z.lastFx === 'shield' || struck.size >= (w.c.pierce || 1)) break;
+      dmg *= 0.8; // each zombie the round passes through slows it down
+    }
+    if (!struck.size && wh) {
       const n = wh.face.normal.clone();
       if (wh.instanceId !== undefined) { wh.object.getMatrixAt(wh.instanceId, tmpM); n.transformDirection(tmpM); }
       n.transformDirection(wh.object.matrixWorld);
@@ -2333,7 +2593,7 @@ function tryFire(click) {
 const _v = new THREE.Vector3();
 function updatePlayer(dt) {
   const sprint = (keys.ShiftLeft && keys.KeyW || joyWantsSprint) && !aiming;
-  const speed = aiming ? 2.8 : sprint ? 8.2 : 5.2;
+  const speed = (aiming ? 2.8 : sprint ? 8.2 : 5.2) * (weapons[wi]?.c.move || 1);
   const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);
   let wx = 0, wz = 0;
   if (keys.KeyW) { wx += fx; wz += fz; } if (keys.KeyS) { wx -= fx; wz -= fz; }
@@ -2365,7 +2625,10 @@ function updatePlayer(dt) {
   camera.position.set(player.pos.x, player.pos.y + 1.7 + bobY, player.pos.z);
   camera.rotation.set(player.pitch + rand(-1, 1) * shake * 0.01, player.yaw + rand(-1, 1) * shake * 0.01, 0);
   aimT += ((aiming && reloading <= 0 ? 1 : 0) - aimT) * Math.min(1, dt * 12);
-  camera.fov = (camera.aspect < 1 ? 95 : 75) - aimT * (weapons[wi].c.id === 'rifle' ? 25 : 15); camera.updateProjectionMatrix();
+  camera.fov = (camera.aspect < 1 ? 95 : 75) - aimT * (weapons[wi].c.zoom ?? 15); camera.updateProjectionMatrix();
+  const scoped = weapons[wi].c.scope && aimT > 0.8;
+  $('scope').style.display = scoped && state === 'playing' ? 'block' : 'none';
+  weapons[wi].view.group.visible = !scoped;
   spreadK = Math.max(0, spreadK - dt * 2.5);
 }
 
@@ -2392,7 +2655,7 @@ function updateWeapon(dt) {
   v.group.position.copy(pos);
   v.group.rotation.set(kick * 0.12 - rl * 0.5, 0, rl * 0.4);
   v.flash.visible = flashT > 0;
-  if (flashT > 0) { v.flash.material.rotation = rand(0, 6); v.flash.scale.setScalar(rand(0.16, 0.28) * (w.c.id === 'shotgun' ? 1.4 : 1)); }
+  if (flashT > 0) { v.flash.material.rotation = rand(0, 6); v.flash.scale.setScalar(rand(0.16, 0.28) * (w.c.pellets > 1 || w.c.id === 'm249' || w.c.id === 'awm' ? 1.4 : 1)); }
   flashT -= dt;
   muzzleLight.intensity = flashT > 0 ? 45 : 0; gunMuzzle.intensity = flashT > 0 ? 6 : 0;
   gunMuzzle.position.copy(pos).add(v.muzzle);
@@ -2467,7 +2730,7 @@ function frame(dt, now) {
   pollPad(dt);
   if (state === 'playing') autoQuality(dt);
   if (state === 'playing') {
-    updatePlayer(dt); updateWeapon(dt); updateZombies(dt); updateHazards(dt); updateWaves(dt); updatePickups(dt);
+    updatePlayer(dt); updateWeapon(dt); updateZombies(dt); updateHazards(dt); updateGrenades(dt); updateWaves(dt); updatePickups(dt);
     updateHUD();
   } else if (state === 'menu') {
     menuT += dt;
@@ -2480,6 +2743,7 @@ function frame(dt, now) {
   gunRoot.visible = state !== 'menu';
   updateParticles(dt); updateLighting(dt);
   if (msgTimer > 0) { msgTimer -= dt; if (msgTimer <= 0) $('msg').style.opacity = 0; }
+  if (cashPopT > 0) { cashPopT -= dt; if (cashPopT <= 0) $('cashpop').style.opacity = 0; }
   if (hitTimer > 0) { hitTimer -= dt; if (hitTimer <= 0) $('hitmark').style.opacity = 0; }
   hurtAlpha = Math.max(0, hurtAlpha - dt * 1.2);
   const low = state === 'playing' && player.hp < 30 ? 0.35 + Math.sin(now / 250) * 0.1 : 0;
@@ -2499,6 +2763,7 @@ $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 window.__game = { get state() { return state; }, player, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
+  give(n) { addCash(n); }, loadout: () => loadout,
   spawnNear(type, d = 8) { const z = new Zombie(type, player.pos.x + rand(-2, 2), player.pos.z - d); zombies.push(z); return z; } };
 </script>
 </body>
