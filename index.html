@@ -26,6 +26,8 @@
   #hud { position: fixed; inset: 0; pointer-events: none; display: none; }
   #vignette { position: fixed; inset: 0; pointer-events: none;
     background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%); }
+  #acidfx { position: fixed; inset: 0; pointer-events: none; opacity: 0;
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(90,200,30,0.6) 100%); }
   #hurt { position: fixed; inset: 0; pointer-events: none; opacity: 0;
     background: radial-gradient(ellipse at center, transparent 35%, rgba(150,0,0,0.75) 100%); }
   #crosshair { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
@@ -151,7 +153,20 @@
   .card.sel { border-color: var(--accent2); box-shadow: 0 0 0 2px var(--accent2); }
   .padhelp, .has-pad .is-touch .padhelp { display: none; }
   .has-pad .padhelp { display: block; margin-top: 6px; color: var(--accent2); }
-  #quality { pointer-events: auto; margin-top: 12px; font-size: 13px; padding: 6px 16px; }
+  .menubtns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
+  .menubtns .b { font-size: 13px; padding: 6px 16px; }
+  #bestiary .panel { width: min(880px, 100%); max-height: 88vh; overflow-y: auto; text-align: left; }
+  #bestiary h2 { text-align: center; }
+  #zlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin: 18px 0 20px; }
+  .zc { border: 1px solid var(--line); padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
+  .zc .zh { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; }
+  .zc .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .zc .first { font-size: 11px; color: var(--accent2); letter-spacing: 0.1em; }
+  .zc .zd { font-size: 12.5px; color: #cfc8bb; line-height: 1.6; }
+  .zc .unk { color: var(--dim); }
+  .zc .bars { display: grid; grid-template-columns: 34px 1fr; gap: 3px 8px; font-size: 11px; color: var(--dim); align-items: center; }
+  .zc .bar { height: 4px; background: rgba(255,255,255,0.1); }
+  .zc .bar i { display: block; height: 100%; background: var(--fg); }
   #nosupport { display: none; }
   @media (max-height: 520px) {
     #menu { justify-content: flex-start; padding-top: 14px; padding-bottom: 14px; overflow-y: auto; }
@@ -175,6 +190,7 @@
 <div id="game"></div>
 <div id="vignette"></div>
 <div id="hurt"></div>
+<div id="acidfx"></div>
 
 <div id="hud">
   <div id="crosshair"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><i class="d"></i></div>
@@ -194,7 +210,7 @@
   <div class="title">死城<span>突圍</span></div>
   <div class="subtitle">DEAD CITY</div>
   <div id="levels"></div>
-  <button class="b" id="quality">畫質：自動</button>
+  <div class="menubtns"><button class="b" id="btnBestiary">感染者圖鑑</button><button class="b" id="quality">畫質：自動</button></div>
   <div class="controls">
     <span class="keyhelp"><b>W A S D</b> 移動　<b>Shift</b> 衝刺　<b>空白鍵</b> 跳躍　<b>滑鼠左鍵</b> 射擊　<b>右鍵</b> 瞄準<br>
     <b>R</b> 換彈　<b>1 2 3</b> / 滾輪 切換武器　<b>Esc</b> 暫停　·　</span>爆頭傷害 ×2.5
@@ -208,6 +224,9 @@
 
 <div id="dead" class="overlay"><div class="panel"><h2 style="color:var(--accent)">你已陣亡</h2><p id="deadStats"></p>
   <div class="btns"><button class="b primary" id="btnRetry">重新挑戰</button><button class="b" id="btnQuit2">返回選單</button></div></div></div>
+
+<div id="bestiary" class="overlay"><div class="panel"><h2>感染者圖鑑</h2><div id="zlist"></div>
+  <div class="btns"><button class="b" id="btnCloseBestiary">關閉</button></div></div></div>
 
 <div id="win" class="overlay"><div class="panel"><h2>區域已肅清</h2><p id="winStats"></p>
   <div class="btns"><button class="b primary" id="btnNext">下一關</button><button class="b" id="btnQuit3">返回選單</button></div></div></div>
@@ -248,15 +267,15 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 // ============================================================
 const LEVELS = [
   { name: '市中心', theme: 'downtown', time: 'day', desc: '商業區的高樓間，第一批感染者正在聚集。',
-    hpMul: 1, speedMul: 1, waves: [{ walker: 6 }, { walker: 10, runner: 2 }, { walker: 14, runner: 4 }] },
-  { name: '黃昏住宅區', theme: 'suburb', time: 'dusk', desc: '寧靜的郊區已經淪陷，小心從院子衝出來的奔跑者。',
-    hpMul: 1.1, speedMul: 1.05, waves: [{ walker: 10, runner: 3 }, { walker: 12, runner: 6 }, { walker: 14, runner: 8, brute: 1 }] },
-  { name: '夜間港區', theme: 'industrial', time: 'night', desc: '貨櫃堆之間一片漆黑，只有手電筒和路燈。',
-    hpMul: 1.2, speedMul: 1.1, waves: [{ walker: 12, runner: 4 }, { walker: 14, runner: 8, brute: 1 }, { walker: 16, runner: 10, brute: 2 }, { runner: 16, brute: 3 }] },
-  { name: '濃霧市區', theme: 'downtown', time: 'fog', desc: '濃霧吞沒了街道，聲音是你唯一的預警。',
-    hpMul: 1.3, speedMul: 1.15, waves: [{ walker: 14, runner: 8 }, { walker: 18, runner: 10, brute: 2 }, { walker: 20, runner: 14, brute: 3 }, { walker: 10, runner: 20, brute: 4 }] },
-  { name: '最後防線', theme: 'downtown', time: 'night', desc: '撤離直升機抵達前，守住市中心。',
-    hpMul: 1.45, speedMul: 1.2, waves: [{ walker: 18, runner: 10 }, { walker: 20, runner: 14, brute: 3 }, { walker: 24, runner: 16, brute: 4 }, { walker: 20, runner: 20, brute: 6 }, { runner: 30, brute: 8 }] },
+    hpMul: 1, speedMul: 1, waves: [{ walker: 6 }, { walker: 10, runner: 2 }, { walker: 12, runner: 3, crawler: 4 }] },
+  { name: '黃昏住宅區', theme: 'suburb', time: 'dusk', desc: '寧靜的郊區已經淪陷，腫脹的爆炸者在院子裡徘徊。',
+    hpMul: 1.1, speedMul: 1.05, waves: [{ walker: 10, runner: 3, crawler: 3 }, { walker: 12, runner: 5, bloater: 2 }, { walker: 12, runner: 8, bloater: 3, crawler: 3, brute: 1 }] },
+  { name: '夜間港區', theme: 'industrial', time: 'night', desc: '貨櫃堆之間一片漆黑，吐酸者躲在暗處，尖叫者會引來屍群。',
+    hpMul: 1.2, speedMul: 1.1, waves: [{ walker: 12, runner: 4, crawler: 3 }, { walker: 12, runner: 6, spitter: 2, bloater: 2 }, { walker: 14, runner: 8, spitter: 3, screamer: 1, brute: 1 }, { runner: 14, spitter: 4, bloater: 3, screamer: 1, brute: 2 }] },
+  { name: '濃霧市區', theme: 'downtown', time: 'fog', desc: '濃霧吞沒了街道，穿著防彈裝備的感染者出現了。',
+    hpMul: 1.3, speedMul: 1.15, waves: [{ walker: 14, runner: 6, armored: 2 }, { walker: 14, runner: 8, crawler: 4, spitter: 3, armored: 3 }, { walker: 16, runner: 12, screamer: 2, bloater: 4, brute: 2 }, { runner: 18, armored: 5, spitter: 4, crawler: 4, brute: 3 }] },
+  { name: '最後防線', theme: 'downtown', time: 'night', desc: '撤離直升機抵達前，守住市中心。所有種類的感染者都會出現。',
+    hpMul: 1.45, speedMul: 1.2, waves: [{ walker: 18, runner: 10, crawler: 5 }, { walker: 18, runner: 12, spitter: 4, bloater: 4, brute: 2 }, { walker: 20, runner: 14, armored: 5, screamer: 2, brute: 3 }, { walker: 16, runner: 18, spitter: 5, bloater: 5, armored: 5, crawler: 5, brute: 4 }, { runner: 26, armored: 6, screamer: 3, spitter: 5, bloater: 4, brute: 6 }] },
 ];
 
 const TIMES = {
@@ -271,9 +290,22 @@ const TIMES = {
 };
 
 const ZTYPES = {
-  walker: { hp: 100, speed: 1.5, dmg: 12, scale: 1, rate: 1.2 },
-  runner: { hp: 65, speed: 4.6, dmg: 9, scale: 0.95, rate: 0.8 },
-  brute:  { hp: 650, speed: 1.3, dmg: 30, scale: 1.45, rate: 1.6 },
+  walker:   { name: '行屍', color: '#8f9a7c', hp: 100, speed: 1.5, dmg: 12, scale: 1, rate: 1.2, score: 100,
+              desc: '最常見的感染者。行動緩慢，但總是成群出現。' },
+  runner:   { name: '奔跑者', color: '#c46a4a', hp: 65, speed: 4.6, dmg: 9, scale: 0.95, rate: 0.8, score: 150,
+              desc: '剛感染不久，速度極快，會直接衝向你。' },
+  crawler:  { name: '爬行者', color: '#7a6a5a', hp: 55, speed: 2.1, dmg: 8, scale: 1, rate: 0.9, score: 150,
+              desc: '失去雙腿，貼著地面爬行。個子矮，很容易被忽略。' },
+  spitter:  { name: '吐酸者', color: '#8fdc4a', hp: 90, speed: 1.6, dmg: 6, scale: 1, rate: 1.2, score: 250, ranged: true,
+              desc: '在遠處吐出酸液，落地會形成腐蝕酸池，站在裡面會持續受傷。' },
+  bloater:  { name: '爆炸者', color: '#d8c65a', hp: 120, speed: 1.15, dmg: 0, scale: 1.15, rate: 1, score: 200, explode: true,
+              desc: '全身腫脹，靠近你或被擊殺時會爆炸。在屍群中射爆它，可以炸死一片。' },
+  screamer: { name: '尖叫者', color: '#e6e0f0', hp: 75, speed: 2.3, dmg: 8, scale: 0.98, rate: 1, score: 300, scream: true,
+              desc: '發現你時會尖叫，讓附近殭屍狂暴加速，還會引來更多屍群。優先擊殺。' },
+  armored:  { name: '防暴殭屍', color: '#4a6a9a', hp: 230, speed: 1.45, dmg: 16, scale: 1.05, rate: 1.3, score: 350, armor: true,
+              desc: '穿著防彈背心和頭盔，身體傷害減半。先打掉頭盔再爆頭，霰彈槍很有效。' },
+  brute:    { name: '巨型感染者', color: '#9a3a2a', hp: 650, speed: 1.3, dmg: 30, scale: 1.45, rate: 1.6, score: 500,
+              desc: '體型巨大、血量極高，一拳就能打掉你三成生命。' },
 };
 
 const WEAPONS = [
@@ -511,6 +543,15 @@ function buildTextures() {
     x.fillStyle = gg; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
   }
   TEX.blood = new THREE.CanvasTexture(c); TEX.blood.colorSpace = THREE.SRGBColorSpace;
+  [c, x] = makeCanvas(256);
+  for (let i = 0; i < 22; i++) {
+    const r = i === 0 ? 90 : rand(10, 34), a = rand(0, Math.PI * 2), dd = i === 0 ? 0 : rand(40, 100);
+    const cx = 128 + Math.cos(a) * dd, cy = 128 + Math.sin(a) * dd;
+    const gg = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+    gg.addColorStop(0, 'rgba(170,255,70,0.95)'); gg.addColorStop(0.6, 'rgba(90,190,30,0.8)'); gg.addColorStop(1, 'rgba(40,90,10,0)');
+    x.fillStyle = gg; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
+  }
+  TEX.acid = new THREE.CanvasTexture(c); TEX.acid.colorSpace = THREE.SRGBColorSpace;
 
   // muzzle flash
   [c, x] = makeCanvas(128);
@@ -1073,6 +1114,14 @@ function sfx(name, vol = 1) {
     case 'hit': sNoise(t, 0.08, 1200, 300, 0.35 * vol, 'bandpass'); break;
     case 'hurt': sTone(t, 0.25, 180, 70, 0.6, 'sawtooth'); sNoise(t, 0.15, 800, 200, 0.4); break;
     case 'pickup': sTone(t, 0.08, 600, 900, 0.25, 'triangle'); sTone(t + 0.08, 0.1, 900, 1300, 0.25, 'triangle'); break;
+    case 'boom': sNoise(t, 1.3, 1800, 50, 1.6 * vol); sTone(t, 0.7, 95, 28, 1.3 * vol); break;
+    case 'ping': sTone(t, 0.18, 2600, 1900, 0.22, 'triangle'); sTone(t, 0.12, 3900, 3000, 0.1, 'triangle'); break;
+    case 'spit': sNoise(t, 0.35, 2200, 500, 0.4 * vol, 'bandpass'); sTone(t, 0.2, 300, 120, 0.2 * vol, 'sawtooth'); break;
+    case 'splash': sNoise(t, 0.4, 3000, 700, 0.3 * vol, 'bandpass'); break;
+    case 'hiss': sNoise(t, 0.9, 5000, 2500, 0.35 * vol, 'highpass'); break;
+    case 'scream':
+      sTone(t, 1.4, 950, 560, 0.3 * vol, 'sawtooth'); sTone(t, 1.4, 1310, 820, 0.2 * vol, 'sawtooth');
+      sNoise(t, 1.3, 3200, 1400, 0.35 * vol, 'bandpass'); break;
     case 'wave': sTone(t, 1.2, 70, 55, 0.5, 'sawtooth'); sTone(t, 1.2, 105, 82, 0.3, 'sawtooth'); break;
   }
 }
@@ -1081,7 +1130,7 @@ function groan(z) {
   const d = z.pos.distanceTo(player.pos); if (d > 40) return;
   const t = actx.currentTime, vol = 0.35 * (1 - d / 40) * (z.type === 'brute' ? 1.6 : 1);
   const o = actx.createOscillator(); o.type = 'sawtooth';
-  const base = z.type === 'brute' ? 55 : z.type === 'runner' ? 140 : rand(80, 110);
+  const base = { brute: 55, runner: 140, crawler: 120, spitter: 165, bloater: 62, screamer: 210, armored: 88 }[z.type] || rand(80, 110);
   o.frequency.setValueAtTime(base, t); o.frequency.linearRampToValueAtTime(base * rand(0.7, 1.2), t + 0.5); o.frequency.linearRampToValueAtTime(base * 0.6, t + 1.1);
   const lfo = actx.createOscillator(); lfo.frequency.value = rand(5, 9); const lg = actx.createGain(); lg.gain.value = base * 0.08;
   lfo.connect(lg).connect(o.frequency);
@@ -1188,6 +1237,7 @@ function resetWeapons() {
 let zMats = null;
 function zombieMats() {
   if (zMats) return zMats;
+  const tint = (col, em = 0x000000, ei = 0) => TEX.skins.map((t) => std({ map: t, color: col, roughness: 0.7, emissive: em, emissiveIntensity: ei }));
   zMats = {
     skins: TEX.skins.map((t) => std({ map: t, roughness: 0.75 })),
     cloth: TEX.cloth.map((t) => std({ map: t, roughness: 0.95 })),
@@ -1195,77 +1245,157 @@ function zombieMats() {
     shoe: std({ color: 0x1d1a17, roughness: 0.8 }),
     eye: std({ color: 0x220000, emissive: 0xff3a10, emissiveIntensity: 2.5 }),
     hair: std({ color: 0x1c1712, roughness: 1 }),
+    grayHair: std({ color: 0x9a968e, roughness: 1 }),
+    acidSkin: tint(0xb4e08a, 0x183000, 0.5),
+    bloatSkin: tint(0xe0d090),
+    paleSkin: tint(0xf2ece6),
+    boil: std({ color: 0xc8d060, emissive: 0x8a9a10, emissiveIntensity: 0.9, roughness: 0.25 }),
+    acid: std({ color: 0x80ff40, emissive: 0x60ff20, emissiveIntensity: 2.5, roughness: 0.2 }),
+    whiteEye: std({ color: 0x222222, emissive: 0xe8f0ff, emissiveIntensity: 2.2 }),
+    armor: std({ color: 0x1d2531, roughness: 0.5, metalness: 0.45 }),
+    visor: std({ color: 0x0b0e12, roughness: 0.08, metalness: 0.9 }),
   };
   return zMats;
 }
+const UP = new THREE.Vector3(0, 1, 0);
 class Zombie {
   constructor(type, x, z) {
     const c = ZTYPES[type], zm = zombieMats();
     this.type = type; this.c = c; this.hp = c.hp * LV.hpMul;
     this.speed = c.speed * rand(0.85, 1.15) * LV.speedMul;
     this.pos = new THREE.Vector3(x, 0, z); this.dead = false; this.deadT = 0; this.atkT = rand(0, 0.5); this.atkAnim = 0;
-    this.phase = rand(0, 10); this.radius = 0.35 * c.scale; this.hitT = 0; this.meshes = []; this.arms = []; this.legs = [];
+    this.phase = rand(0, 10); this.radius = (type === 'crawler' ? 0.45 : 0.35) * c.scale; this.hitT = 0;
+    this.meshes = []; this.arms = []; this.legs = []; this.helmet = [];
+    this.rage = 0; this.spitT = rand(1.5, 3); this.screamCd = rand(0, 2); this.screams = 0; this.screaming = 0; this.fuse = 0; this.losT = 0; this.los = false;
+    this.helmetHp = type === 'armored' ? 70 : 0;
     const g = this.g = new THREE.Group(); g.scale.setScalar(c.scale * rand(0.93, 1.07));
-    const skin = pick(zm.skins), cloth = pick(zm.cloth), pants = pick(zm.pants);
+    const skin = pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' ? zm.paleSkin : zm.skins);
+    const cloth = pick(zm.cloth), pants = pick(zm.pants);
+    const eyeMat = type === 'spitter' ? zm.acid : type === 'screamer' ? zm.whiteEye : zm.eye;
     const body = this.body = new THREE.Group(); g.add(body);
-    const add = (geo, mat, parent, px, py, pz, head = false) => {
+    const add = (geo, mat, parent, px, py, pz, part = 'body') => {
       const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.castShadow = true;
-      m.userData.z = this; m.userData.head = head; parent.add(m); this.meshes.push(m); return m;
+      m.userData.z = this; m.userData.part = part; m.userData.head = part === 'head';
+      parent.add(m); this.meshes.push(m); return m;
     };
-    add(G.torso, cloth, body, 0, 1.32, 0).scale.set(1.2, 1, 0.72);
+    const torsoScale = { bloater: [1.9, 1.08, 1.55], screamer: [1.0, 1.05, 0.62] }[type] || [1.2, 1, 0.72];
+    add(G.torso, cloth, body, 0, 1.32, 0).scale.set(...torsoScale);
     add(G.neck, skin, body, 0, 1.68, 0.02);
     const hp = this.headPivot = new THREE.Group(); hp.position.set(0, 1.72, 0.03); body.add(hp);
-    add(G.head, skin, hp, 0, 0.13, 0.02, true).scale.set(1, 1.15, 1.05);
-    if (Math.random() < 0.6) add(G.head, zm.hair, hp, 0, 0.19, -0.015, true).scale.set(1.04, 0.8, 1.05);
-    add(G.eye, zm.eye, hp, -0.05, 0.15, 0.15, true); add(G.eye, zm.eye, hp, 0.05, 0.15, 0.15, true);
-    for (const s of [-1, 1]) {
-      const a = new THREE.Group(); a.position.set(0.3 * s, 1.57, 0); body.add(a); this.arms.push(a);
-      add(G.sleeve, cloth, a, 0, -0.12, 0); add(G.arm, skin, a, 0, -0.36, 0); add(G.hand, skin, a, 0, -0.64, 0);
-      const l = new THREE.Group(); l.position.set(0.12 * s, 0.95, 0); body.add(l); this.legs.push(l);
-      add(G.leg, pants, l, 0, -0.45, 0); add(G.shoe, zm.shoe, l, 0, -0.9, 0.05);
+    const headS = type === 'spitter' ? 1.22 : type === 'bloater' ? 1.12 : 1;
+    add(G.head, skin, hp, 0, 0.13, 0.02, 'head').scale.set(headS, 1.15 * headS, 1.05 * headS);
+    if (type === 'screamer') add(G.head, zm.grayHair, hp, 0, 0.05, -0.05, 'head').scale.set(1.12, 1.75, 1.1);
+    else if (type !== 'armored' && type !== 'bloater' && Math.random() < 0.6) add(G.head, zm.hair, hp, 0, 0.19, -0.015, 'head').scale.set(1.04, 0.8, 1.05);
+    add(G.eye, eyeMat, hp, -0.05, 0.15, 0.15 * headS, 'head'); add(G.eye, eyeMat, hp, 0.05, 0.15, 0.15 * headS, 'head');
+    if (type === 'spitter') { // glowing throat sac
+      add(G.head, zm.acid, body, 0, 1.6, 0.12).scale.set(0.75, 0.6, 0.7);
     }
-    this.lean = type === 'runner' ? 0.32 : type === 'brute' ? 0.18 : rand(0.08, 0.2);
-    this.limp = Math.random() < 0.4 ? rand(0.2, 0.5) : 0;
+    if (type === 'bloater') { // pustules
+      for (let i = 0; i < 9; i++) {
+        const ang = rand(-1.6, 1.6), y = rand(1.05, 1.58);
+        add(G.hand, zm.boil, body, Math.sin(ang) * 0.37, y, Math.cos(ang) * 0.29).scale.setScalar(rand(0.9, 1.9));
+      }
+    }
+    if (type === 'armored') { // vest, helmet, visor, shoulder pads
+      add(G.box, zm.armor, body, 0, 1.33, 0.01, 'armor').scale.set(0.54, 0.56, 0.37);
+      this.helmet.push(add(G.head, zm.armor, hp, 0, 0.19, 0, 'helmet'));
+      this.helmet[0].scale.set(1.2, 0.95, 1.25);
+      this.helmet.push(add(G.box, zm.visor, hp, 0, 0.14, 0.155, 'helmet'));
+      this.helmet[1].scale.set(0.27, 0.09, 0.05);
+    }
+    const armThin = type === 'screamer' ? 0.8 : 1;
+    for (const s of [-1, 1]) {
+      const a = new THREE.Group(); a.position.set((type === 'bloater' ? 0.42 : 0.3) * s, 1.57, 0); body.add(a); this.arms.push(a);
+      add(G.sleeve, cloth, a, 0, -0.12, 0); add(G.arm, skin, a, 0, -0.36, 0).scale.set(armThin, type === 'screamer' ? 1.15 : 1, armThin);
+      add(G.hand, skin, a, 0, type === 'screamer' ? -0.7 : -0.64, 0);
+      if (type === 'armored') add(G.box, zm.armor, a, 0, -0.04, 0, 'armor').scale.set(0.2, 0.14, 0.22);
+      if (type === 'crawler') continue; // legs are gone
+      const l = new THREE.Group(); l.position.set(0.12 * s, 0.95, 0); body.add(l); this.legs.push(l);
+      add(G.leg, pants, l, 0, -0.45, 0).scale.set(type === 'bloater' ? 1.5 : 1, 1, type === 'bloater' ? 1.4 : 1);
+      add(G.shoe, zm.shoe, l, 0, -0.9, 0.05);
+    }
+    if (type === 'crawler') { body.position.set(0, 0, -0.95); add(G.hand, pants, body, 0.1, 0.93, 0).scale.set(1.3, 1, 1.3); }
+    this.lean = { runner: 0.32, brute: 0.18, crawler: 1.36, bloater: -0.08, screamer: 0.12, armored: 0.1 }[type] ?? rand(0.08, 0.2);
+    this.limp = type === 'walker' && Math.random() < 0.4 ? rand(0.2, 0.5) : 0;
     g.position.copy(this.pos);
     scene.add(g);
     zMeshes.push(...this.meshes);
   }
-  damage(dmg, head, dir) {
+  // ud = userData of the mesh that was hit
+  damage(dmg, ud, dir) {
     if (this.dead) return false;
-    this.hp -= dmg * (head ? 2.5 : 1);
-    this.hitT = 0.15;
-    if (this.type !== 'brute') { this.pos.x += dir.x * 0.12; this.pos.z += dir.z * 0.12; }
-    if (this.hp <= 0) { this.die(dir); return true; }
+    let mul = 1; this.lastFx = 'blood';
+    if (ud.part === 'head') mul = 2.5;
+    else if (ud.part === 'helmet') {
+      mul = 0.3; this.lastFx = 'spark'; this.helmetHp -= dmg;
+      if (this.helmetHp <= 0) this.dropHelmet();
+    } else if (ud.part === 'armor') { mul = 0.45; this.lastFx = 'spark'; }
+    this.hp -= dmg * mul;
+    this.hitT = this.type === 'brute' || this.type === 'armored' ? 0.06 : 0.15;
+    if (this.type !== 'brute' && dir) { this.pos.x += dir.x * 0.12; this.pos.z += dir.z * 0.12; }
+    if (this.hp <= 0) { this.die(dir || new THREE.Vector3(0, 0, 1)); return true; }
     return false;
   }
+  dropHelmet() {
+    const ids = new Set(this.helmet);
+    this.helmet.forEach((m) => m.parent && m.parent.remove(m));
+    zMeshes = zMeshes.filter((m) => !ids.has(m));
+    this.helmet = [];
+    const wp = this.headPivot.getWorldPosition(new THREE.Vector3());
+    burst(wp, UP, sparkMat, 10, 4);
+    showMsg('', '頭盔被打掉了！瞄準頭部', 1.2);
+  }
   die(dir) {
+    if (this.dead) return;
     this.dead = true; this.deadT = 0; this.fallDir = Math.random() < 0.7 ? -1 : 1;
     zMeshes = zMeshes.filter((m) => m.userData.z !== this);
-    kills++; score += this.type === 'brute' ? 500 : this.type === 'runner' ? 150 : 100;
-    // blood pool
-    const pool = new THREE.Mesh(G.pool, new THREE.MeshStandardMaterial({ map: TEX.blood, transparent: true, depthWrite: false, roughness: 0.3, polygonOffset: true, polygonOffsetFactor: -2 }));
-    pool.rotation.x = -Math.PI / 2; pool.rotation.z = rand(0, 6); pool.position.set(this.pos.x + dir.x * 0.8, 0.02 + Math.random() * 0.01, this.pos.z + dir.z * 0.8);
-    pool.scale.setScalar(0.1); pool.userData.grow = this.c.scale * rand(0.8, 1.2);
-    scene.add(pool); decals.push(pool); this.pool = pool;
+    kills++; score += this.c.score;
+    if (this.c.explode) { this.explode(); return; }
+    this.pool = makePool(this.pos.x + dir.x * 0.8, this.pos.z + dir.z * 0.8, TEX.blood, this.c.scale * rand(0.8, 1.2));
     const r = Math.random();
-    if (this.type === 'brute' || r < 0.22) spawnPickup('ammo', this.pos);
-    else if (r < 0.32) spawnPickup('med', this.pos);
+    if (this.type === 'brute' || this.type === 'armored' || r < 0.22) spawnPickup('ammo', this.pos);
+    else if (r < 0.32 || this.type === 'screamer') spawnPickup('med', this.pos);
+  }
+  explode() {
+    const p = this.pos.clone().setY(1.1);
+    burst(p, UP, acidPartMat, 34, 7); burst(p, UP, bloodMat, 26, 6);
+    boomLight.position.copy(p); boomT = 0.3;
+    const dP = Math.hypot(player.pos.x - this.pos.x, player.pos.z - this.pos.z);
+    sfx('boom', clamp(1.2 - dP / 50, 0.25, 1.2));
+    shake = Math.min(1, shake + clamp(1 - dP / 25, 0, 1));
+    if (dP < 5.5) hurtPlayer(Math.round(40 * (1 - dP / 5.5)) + 6);
+    makePool(this.pos.x, this.pos.z, TEX.acid, 2.2, true);
+    for (const o of zombies) {
+      if (o === this || o.dead) continue;
+      const d = o.pos.distanceTo(this.pos);
+      if (d < 5.5) o.damage(170 * (1 - d / 5.5) + 25, { part: 'body' }, o.pos.clone().sub(this.pos).setY(0).normalize());
+    }
+    this.g.visible = false; this.deadT = 10.9;
+    if (Math.random() < 0.4) spawnPickup('ammo', this.pos);
+  }
+  canSee() {
+    // cheap line-of-sight test along the ground against building footprints
+    const n = 10;
+    for (let i = 1; i < n; i++) {
+      const t = i / n;
+      if (blocked(this.pos.x + (player.pos.x - this.pos.x) * t, this.pos.z + (player.pos.z - this.pos.z) * t, 0)) return false;
+    }
+    return true;
   }
   update(dt) {
     const g = this.g;
     if (this.dead) {
       this.deadT += dt;
       const k = Math.min(1, this.deadT / 0.55);
-      g.rotation.x = this.fallDir * (Math.PI / 2) * (k * k);
-      g.position.y = Math.sin(k * Math.PI) * 0.15;
-      this.arms.forEach((a, i) => a.rotation.x += (-2.6 - a.rotation.x) * dt * 3);
+      if (this.type === 'crawler') this.body.rotation.x += (1.55 - this.body.rotation.x) * Math.min(1, dt * 5);
+      else { g.rotation.x = this.fallDir * (Math.PI / 2) * (k * k); g.position.y = Math.sin(k * Math.PI) * 0.15; }
+      this.arms.forEach((a) => a.rotation.x += (-2.6 - a.rotation.x) * dt * 3);
       if (this.pool && this.pool.scale.x < this.pool.userData.grow) this.pool.scale.addScalar(dt * 0.6);
       if (this.deadT > 8) g.position.y -= dt * 0.3;
       return this.deadT < 11;
     }
     const dx = player.pos.x - this.pos.x, dz = player.pos.z - this.pos.z, dist = Math.hypot(dx, dz);
     let mx = dx / (dist || 1), mz = dz / (dist || 1);
-    // separation
     for (const o of zombies) {
       if (o === this || o.dead) continue;
       const ox = this.pos.x - o.pos.x, oz = this.pos.z - o.pos.z, d2 = ox * ox + oz * oz, rr = (this.radius + o.radius) * 1.6;
@@ -1274,14 +1404,53 @@ class Zombie {
     const ml = Math.hypot(mx, mz) || 1; mx /= ml; mz /= ml;
     const reach = 1.25 * this.c.scale;
     this.hitT = Math.max(0, this.hitT - dt);
+    this.rage = Math.max(0, this.rage - dt);
+    this.losT -= dt;
+    if (this.losT <= 0) { this.losT = 0.4; this.los = dist < 40 && this.canSee(); }
+
+    // ---- special behaviours ----
+    let hold = false; // stand still this frame
+    if (this.c.ranged) {
+      this.spitT -= dt;
+      if (dist < 17 && dist > 4 && this.los) {
+        hold = dist < 14;
+        if (this.spitT <= 0) { this.spitT = rand(2.4, 3.4); this.spitAnim = 0.001; }
+      }
+      if (this.spitAnim > 0) {
+        this.spitAnim += dt * 2.5;
+        if (this.spitAnim > 0.55 && !this.spat) { this.spat = true; spawnSpit(this); }
+        if (this.spitAnim >= 1) { this.spitAnim = 0; this.spat = false; }
+      }
+    }
+    if (this.c.scream) {
+      this.screamCd -= dt;
+      if (this.screaming > 0) {
+        this.screaming -= dt; hold = true;
+      } else if (this.screams < 2 && this.screamCd <= 0 && dist < 30 && this.los) {
+        this.screaming = 1.5; this.screams++; this.screamCd = 14;
+        sfx('scream', clamp(1.3 - dist / 35, 0.3, 1.2));
+        showMsg('', '尖叫者正在召喚屍群！', 2);
+        for (const o of zombies) if (!o.dead && o.pos.distanceTo(this.pos) < 26) o.rage = 7;
+        if (waveActive) queue.push('walker', 'runner');
+      }
+    }
+    if (this.c.explode) {
+      if (!this.fuse && dist < 2.4) { this.fuse = 0.9; sfx('hiss'); }
+      if (this.fuse > 0) {
+        this.fuse -= dt; hold = true;
+        const sw = 1 + (0.9 - this.fuse) * 0.35 + Math.sin(this.fuse * 40) * 0.03;
+        this.body.scale.set(sw, 1 + (sw - 1) * 0.4, sw);
+        if (this.fuse <= 0) { this.hp = 0; this.die(new THREE.Vector3(0, 0, 1)); return true; }
+      }
+    }
+
     const slow = this.hitT > 0 ? 0.3 : 1;
     let moving = false;
-    if (dist > reach) {
-      const sp = this.speed * slow * (1 - this.limp * (0.5 + 0.5 * Math.sin(this.phase)));
+    if (dist > reach && !hold) {
+      const sp = this.speed * slow * (this.rage > 0 ? 1.6 : 1) * (1 - this.limp * (0.5 + 0.5 * Math.sin(this.phase)));
       const px = this.pos.x, pz = this.pos.z;
       this.pos.x += mx * sp * dt; this.pos.z += mz * sp * dt;
       resolve(this.pos, this.radius);
-      // stuck against a wall: slide sideways
       if (Math.hypot(this.pos.x - px, this.pos.z - pz) < sp * dt * 0.3) {
         this.side = this.side || (Math.random() < 0.5 ? 1 : -1);
         this.pos.x += -mz * this.side * sp * dt; this.pos.z += mx * this.side * sp * dt;
@@ -1290,7 +1459,7 @@ class Zombie {
       moving = true;
     }
     this.atkT -= dt;
-    if (dist <= reach + 0.3 && this.atkT <= 0 && player.hp > 0) {
+    if (this.c.dmg > 0 && dist <= reach + 0.3 && this.atkT <= 0 && player.hp > 0 && !this.screaming) {
       this.atkT = this.c.rate; this.atkAnim = 0.001;
     }
     if (this.atkAnim > 0) {
@@ -1298,35 +1467,102 @@ class Zombie {
       if (this.atkAnim > 0.5 && !this.atkHit) { this.atkHit = true; if (dist <= reach + 0.5) hurtPlayer(this.c.dmg); }
       if (this.atkAnim >= 1) { this.atkAnim = 0; this.atkHit = false; }
     }
-    // animation
-    const rate = this.type === 'runner' ? 2.2 : 2.6;
-    this.phase += dt * (moving ? this.speed * rate : 1);
+
+    // ---- animation ----
+    const t = this.type;
+    const rate = t === 'runner' ? 2.2 : t === 'crawler' ? 2.4 : 2.6;
+    this.phase += dt * (moving ? this.speed * (this.rage > 0 ? 1.6 : 1) * rate : 1);
     const s = Math.sin(this.phase);
-    const legAmp = this.type === 'runner' ? 0.85 : 0.45;
-    this.legs[0].rotation.x = moving ? s * legAmp : 0; this.legs[1].rotation.x = moving ? -s * legAmp : 0;
+    const legAmp = t === 'runner' || this.rage > 0 ? 0.85 : t === 'bloater' ? 0.3 : 0.45;
+    if (this.legs.length) { this.legs[0].rotation.x = moving ? s * legAmp : 0; this.legs[1].rotation.x = moving ? -s * legAmp : 0; }
     const atk = this.atkAnim > 0 ? Math.sin(this.atkAnim * Math.PI) * 1.1 : 0;
-    if (this.type === 'runner' && moving) {
-      this.arms[0].rotation.x = -0.6 - s * 0.9 - atk; this.arms[1].rotation.x = -0.6 + s * 0.9 - atk;
+    if (t === 'crawler') {
+      this.arms[0].rotation.x = -2.55 + (moving ? s * 0.5 : 0) - atk * 0.4; this.arms[1].rotation.x = -2.55 - (moving ? s * 0.5 : 0) - atk * 0.4;
+      this.arms[0].rotation.z = -0.25; this.arms[1].rotation.z = 0.25;
+    } else if (this.screaming > 0) {
+      this.arms[0].rotation.x = -0.5; this.arms[1].rotation.x = -0.5;
+      this.arms[0].rotation.z = -1.1 + Math.sin(this.phase * 12) * 0.08; this.arms[1].rotation.z = 1.1 - Math.sin(this.phase * 12) * 0.08;
     } else {
-      this.arms[0].rotation.x = -1.35 + Math.sin(this.phase * 0.5) * 0.12 - atk;
-      this.arms[1].rotation.x = -1.3 + Math.sin(this.phase * 0.5 + 1.3) * 0.12 - atk;
+      if ((t === 'runner' || this.rage > 0) && moving) {
+        this.arms[0].rotation.x = -0.6 - s * 0.9 - atk; this.arms[1].rotation.x = -0.6 + s * 0.9 - atk;
+      } else if (t === 'bloater') {
+        this.arms[0].rotation.x = -0.5 + s * 0.15; this.arms[1].rotation.x = -0.5 - s * 0.15;
+      } else {
+        this.arms[0].rotation.x = -1.35 + Math.sin(this.phase * 0.5) * 0.12 - atk;
+        this.arms[1].rotation.x = -1.3 + Math.sin(this.phase * 0.5 + 1.3) * 0.12 - atk;
+      }
+      this.arms[0].rotation.z = t === 'bloater' ? -0.45 : -0.08; this.arms[1].rotation.z = t === 'bloater' ? 0.45 : 0.08;
     }
-    this.arms[0].rotation.z = -0.08; this.arms[1].rotation.z = 0.08;
-    this.body.rotation.x = this.lean + (this.hitT > 0 ? -0.25 : 0);
-    this.body.rotation.z = Math.sin(this.phase) * 0.07;
+    this.body.rotation.x = this.lean + (this.hitT > 0 ? -0.25 : 0) + (this.screaming > 0 ? -0.35 : 0);
+    this.body.rotation.z = Math.sin(this.phase) * (t === 'bloater' ? 0.12 : 0.07);
     this.headPivot.rotation.z = Math.sin(this.phase * 0.37) * 0.3;
-    this.headPivot.rotation.x = -0.2 + Math.sin(this.phase * 0.5) * 0.1;
-    g.position.set(this.pos.x, Math.abs(Math.cos(this.phase)) * (moving ? 0.05 : 0), this.pos.z);
+    let hx = -0.2 + Math.sin(this.phase * 0.5) * 0.1;
+    if (t === 'crawler') hx = -1.2 + Math.sin(this.phase * 0.5) * 0.1;
+    if (this.screaming > 0) hx = 0.55;
+    if (this.spitAnim > 0) hx = this.spitAnim < 0.55 ? 0.5 : -0.4;
+    this.headPivot.rotation.x = hx;
+    const bob = t === 'crawler' ? Math.abs(s) * 0.04 : Math.abs(Math.cos(this.phase)) * 0.05;
+    g.position.set(this.pos.x, moving ? bob : 0, this.pos.z);
     const target = Math.atan2(dx, dz);
     let da = target - g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
     g.rotation.y += da * Math.min(1, dt * 6);
     return true;
   }
-  remove() {
-    scene.remove(this.g);
-    if (this.pool) { /* pool stays as decal */ }
-  }
+  remove() { scene.remove(this.g); }
 }
+
+// ---- pools, acid spit, explosion light ----
+const acidPartMat = new THREE.MeshBasicMaterial({ color: 0x8cff40 });
+const boomLight = new THREE.PointLight(0xffb060, 0, 30, 1.5); scene.add(boomLight);
+let boomT = 0, spits = [], acidPools = [], acidTick = 0;
+const spitGeo = new THREE.SphereGeometry(0.14, 10, 8);
+function makePool(x, z, tex, grow, acid = false) {
+  const mat = new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: 0.3,
+    polygonOffset: true, polygonOffsetFactor: -2, emissive: acid ? 0x3a8a10 : 0x000000, emissiveMap: acid ? tex : null, emissiveIntensity: acid ? 1.2 : 0 });
+  const pool = new THREE.Mesh(G.pool, mat);
+  pool.rotation.x = -Math.PI / 2; pool.rotation.z = rand(0, 6);
+  pool.position.set(x, 0.02 + Math.random() * 0.01, z);
+  pool.scale.setScalar(acid ? grow : 0.1); pool.userData.grow = grow;
+  scene.add(pool); decals.push(pool);
+  if (acid) acidPools.push({ m: pool, x, z, r: 0.9 * grow, life: 7 });
+  return pool;
+}
+function spawnSpit(z) {
+  const from = z.headPivot.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.1, 0));
+  const target = camera.position.clone().addScaledVector(player.vel, 0.5); target.y -= 0.3;
+  const d = Math.hypot(target.x - from.x, target.z - from.z), T = clamp(d / 15, 0.4, 1.4);
+  const v = new THREE.Vector3((target.x - from.x) / T, (target.y - from.y + 0.5 * 9.8 * T * T) / T, (target.z - from.z) / T);
+  const m = new THREE.Mesh(spitGeo, zombieMats().acid); m.position.copy(from); scene.add(m);
+  spits.push({ m, v, life: 3 });
+  sfx('spit', clamp(1.2 - d / 30, 0.3, 1));
+}
+function updateHazards(dt) {
+  const eye = camera.position;
+  spits = spits.filter((p) => {
+    p.life -= dt; p.v.y -= 9.8 * dt; p.m.position.addScaledVector(p.v, dt);
+    if (Math.random() < 0.5) burst(p.m.position, UP, acidPartMat, 1, 0.5);
+    const done = (fx) => { scene.remove(p.m); return false; };
+    if (p.m.position.distanceTo(eye) < 0.75) { hurtPlayer(ZTYPES.spitter.dmg + 4); acidFlash = 1; sfx('splash'); return done(); }
+    if (p.m.position.y <= 0.05) { makePool(p.m.position.x, p.m.position.z, TEX.acid, 1.5, true); burst(p.m.position, UP, acidPartMat, 8, 2.5); sfx('splash', 0.6); return done(); }
+    if (p.m.position.y < 10 && blocked(p.m.position.x, p.m.position.z, 0)) { burst(p.m.position, UP, acidPartMat, 8, 2.5); return done(); }
+    if (p.life <= 0) return done();
+    return true;
+  });
+  acidTick -= dt;
+  let inAcid = false;
+  acidPools = acidPools.filter((a) => {
+    a.life -= dt;
+    if (a.life < 1.5) a.m.material.opacity = Math.max(0, a.life / 1.5);
+    if (a.life <= 0) { scene.remove(a.m); return false; }
+    if (player.pos.y < 0.3 && Math.hypot(player.pos.x - a.x, player.pos.z - a.z) < a.r) inAcid = true;
+    return true;
+  });
+  if (inAcid && acidTick <= 0) { acidTick = 0.5; hurtPlayer(4); acidFlash = Math.min(1, acidFlash + 0.6); }
+  acidFlash = Math.max(0, acidFlash - dt * 1.5);
+  $('acidfx').style.opacity = acidFlash * 0.8;
+  if (boomT > 0) { boomT -= dt; boomLight.intensity = Math.max(0, boomT / 0.3) * 600; } else boomLight.intensity = 0;
+}
+let acidFlash = 0;
 
 function spawnZombie(type) {
   for (let tries = 0; tries < 40; tries++) {
@@ -1424,6 +1660,7 @@ function clearDynamic() {
   particles.forEach((p) => scene.remove(p.m)); particles = [];
   decals.forEach((d) => scene.remove(d)); decals = [];
   pickups.forEach((p) => scene.remove(p.m)); pickups = [];
+  spits.forEach((p) => scene.remove(p.m)); spits = []; acidPools = []; boomT = 0; boomLight.intensity = 0; acidFlash = 0;
 }
 
 function loadLevel(i) {
@@ -1457,7 +1694,13 @@ function startWave() {
   for (const [t, n] of Object.entries(w)) for (let k = 0; k < n; k++) queue.push(t);
   queue.sort(() => Math.random() - 0.5);
   waveActive = true; spawnT = 0.5;
-  showMsg(`第 ${waveIdx + 1} 波`, w.brute ? '偵測到巨型感染者！' : '它們來了', 2.5);
+  let seen = [];
+  try { seen = JSON.parse(localStorage.getItem('deadcity_seen') || '[]'); } catch {}
+  const fresh = Object.keys(w).filter((t) => t !== 'walker' && !seen.includes(t));
+  if (fresh.length) {
+    showMsg(`新感染者：${fresh.map((t) => ZTYPES[t].name).join('、')}`, ZTYPES[fresh[0]].desc, 5);
+    try { localStorage.setItem('deadcity_seen', JSON.stringify([...seen, ...fresh])); } catch {}
+  } else showMsg(`第 ${waveIdx + 1} 波`, w.brute ? '偵測到巨型感染者！' : '它們來了', 2.5);
   sfx('wave');
 }
 
@@ -1694,7 +1937,9 @@ function pollPad(dt) {
     if (hit(15)) dir = 1; if (hit(14)) dir = -1;
     if (Math.abs(lx) > 0.6 && !padAxisLatch) { dir = Math.sign(lx); padAxisLatch = 1; }
     if (Math.abs(lx) < 0.3) padAxisLatch = 0;
-    if (state === 'menu') {
+    if (state === 'menu' && $('bestiary').classList.contains('show')) {
+      if (hit(1) || hit(0)) $('bestiary').classList.remove('show');
+    } else if (state === 'menu') {
       if (dir) { menuSel = clamp(menuSel + dir, 0, un); renderMenu(); }
       if (hit(0)) { audio(); startLevel(clamp(menuSel, 0, un)); }
     } else if (state === 'paused') {
@@ -1743,6 +1988,23 @@ $('quality').onclick = () => {
   try { localStorage.setItem('deadcity_quality', qSetting); } catch {}
   applyQuality(qSetting === 'auto' ? (IS_TOUCH || navigator.hardwareConcurrency <= 4 ? 'medium' : 'high') : qSetting);
 };
+function renderBestiary() {
+  let seen = [];
+  try { seen = JSON.parse(localStorage.getItem('deadcity_seen') || '[]'); } catch {}
+  const maxHp = 650, maxSp = 4.6, maxDmg = 40;
+  $('zlist').innerHTML = Object.entries(ZTYPES).map(([id, z]) => {
+    const lv = LEVELS.findIndex((l) => l.waves.some((w) => w[id]));
+    const known = id === 'walker' || seen.includes(id);
+    const dmg = z.explode ? 46 : z.ranged ? z.dmg + 4 : z.dmg;
+    const bar = (v, m) => `<div class="bar"><i style="width:${Math.max(6, Math.min(100, v / m * 100))}%"></i></div>`;
+    return `<div class="zc"><div class="zh"><span class="dot" style="background:${z.color}"></span>${known ? z.name : '？？？'}</div>
+      <div class="first">首次出現：第 ${lv + 1} 關 · ${LEVELS[lv].name}</div>
+      <div class="zd ${known ? '' : 'unk'}">${known ? z.desc : '還沒遇過。玩到這一關就會解鎖說明。'}</div>
+      <div class="bars"><span>生命</span>${bar(z.hp, maxHp)}<span>速度</span>${bar(z.speed, maxSp)}<span>傷害</span>${bar(dmg, maxDmg)}</div></div>`;
+  }).join('');
+}
+$('btnBestiary').onclick = () => { renderBestiary(); $('bestiary').classList.add('show'); };
+$('btnCloseBestiary').onclick = () => $('bestiary').classList.remove('show');
 $('btnPortrait').onclick = () => document.documentElement.classList.add('allow-portrait');
 
 // ============================================================
@@ -1783,8 +2045,9 @@ function tryFire(click) {
     if (zh && (!wh || zh.distance < wh.distance)) {
       const z = zh.object.userData.z;
       const falloff = w.c.id === 'shotgun' ? clamp(1.3 - zh.distance / 25, 0.25, 1) : 1;
-      const killed = z.damage(w.c.dmg * falloff, zh.object.userData.head, dir);
-      burst(zh.point, dir.clone().negate(), bloodMat, zh.object.userData.head ? 14 : 7, 3);
+      const killed = z.damage(w.c.dmg * falloff, zh.object.userData, dir);
+      if (z.lastFx === 'spark') { burst(zh.point, dir.clone().negate(), sparkMat, 5, 4); sfx('ping'); }
+      else burst(zh.point, dir.clone().negate(), z.c.explode ? acidPartMat : bloodMat, zh.object.userData.head ? 14 : 7, 3);
       anyHit = true; anyKill = anyKill || killed;
       if (killed && zh.object.userData.head) score += 50;
     } else if (wh) {
@@ -1923,7 +2186,7 @@ function frame(dt, now) {
   pollPad(dt);
   if (state === 'playing') autoQuality(dt);
   if (state === 'playing') {
-    updatePlayer(dt); updateWeapon(dt); updateZombies(dt); updateWaves(dt); updatePickups(dt);
+    updatePlayer(dt); updateWeapon(dt); updateZombies(dt); updateHazards(dt); updateWaves(dt); updatePickups(dt);
     updateHUD();
   } else if (state === 'menu') {
     menuT += dt;
@@ -1954,7 +2217,8 @@ renderMenu();
 $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 window.__game = { get state() { return state; }, player, zombies: () => zombies, startLevel, spawnZombie,
-  tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true) };
+  tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
+  spawnNear(type, d = 8) { const z = new Zombie(type, player.pos.x + rand(-2, 2), player.pos.z - d); zombies.push(z); return z; } };
 </script>
 </body>
 </html>
