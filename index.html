@@ -706,7 +706,14 @@ function buildTextures() {
     warehouse: [0, 1, 2].map((i) => facadeTex('warehouse', i)),
   };
   TEX.containers = ['#8a2a1e', '#1f4a78', '#2f6b3a', '#b07a1c', '#6c6f73', '#7a3b62'].map(containerTex);
-  TEX.skins = ['#7f8c6f', '#8a8a78', '#6f7a66'].map((col) => fleshTex(col));
+  TEX.skins = ['#6c7a5c', '#7a7866', '#5d6a55'].map((col) => fleshTex(col));
+  [c, x] = makeCanvas(128);
+  x.fillStyle = '#3a0606'; x.fillRect(0, 0, 128, 128);
+  let wg = x.createRadialGradient(64, 64, 4, 64, 64, 64);
+  wg.addColorStop(0, '#1a0202'); wg.addColorStop(0.45, '#6a0a0a'); wg.addColorStop(0.8, '#9a3a30'); wg.addColorStop(1, '#6a5a48');
+  x.fillStyle = wg; x.fillRect(0, 0, 128, 128);
+  blotches(x, 128, 128, 10, '220,200,120', 3, 8, 0.6); speckle(x, 128, 128, 2500, 0.35);
+  TEX.wound = new THREE.CanvasTexture(c); TEX.wound.colorSpace = THREE.SRGBColorSpace;
   TEX.cloth = ['#3a4a5e', '#6a2b24', '#5e5a4c', '#2b2b2e', '#7a7f86', '#3b5236'].map((col) => clothTex(col));
   TEX.pants = ['#2e3a55', '#4d4636', '#1f1f22', '#5a5550'].map((col) => clothTex(col, 0.4));
   TEX.police = [clothTex('#1d2842', 0.7), clothTex('#232e4a', 0.5)];
@@ -1896,11 +1903,16 @@ function resetWeapons() {
 let zMats = null;
 function zombieMats() {
   if (zMats) return zMats;
-  const tint = (col, em = 0x000000, ei = 0) => TEX.skins.map((t) => std({ map: t, color: col, roughness: 0.7, emissive: em, emissiveIntensity: ei }));
+  const tint = (col, em = 0x000000, ei = 0) => TEX.skins.map((t) => std({ map: t, bumpMap: t, bumpScale: 2.5, color: col, roughness: 0.7, emissive: em, emissiveIntensity: ei }));
   zMats = {
-    skins: TEX.skins.map((t) => std({ map: t, roughness: 0.75 })),
-    cloth: TEX.cloth.map((t) => std({ map: t, roughness: 0.95 })),
-    pants: TEX.pants.map((t) => std({ map: t, roughness: 0.95 })),
+    skins: TEX.skins.map((t) => std({ map: t, bumpMap: t, bumpScale: 2.5, roughness: 0.78, color: 0xc4c6bc, envMapIntensity: 0.5 })),
+    cloth: TEX.cloth.map((t) => std({ map: t, bumpMap: t, bumpScale: 1.5, roughness: 0.95 })),
+    pants: TEX.pants.map((t) => std({ map: t, bumpMap: t, bumpScale: 1.5, roughness: 0.95 })),
+    teeth: std({ color: 0xbdb393, roughness: 0.45 }),
+    mouth: std({ color: 0x1a0303, roughness: 0.5 }),
+    socket: std({ color: 0x0e0707, roughness: 1 }),
+    wound: std({ map: TEX.wound, bumpMap: TEX.wound, bumpScale: 3, roughness: 0.3 }),
+    bone: std({ color: 0xd8d0b8, roughness: 0.6 }),
     shoe: std({ color: 0x1d1a17, roughness: 0.8 }),
     eye: std({ color: 0x220000, emissive: 0xff3a10, emissiveIntensity: 2.5 }),
     hair: std({ color: 0x1c1712, roughness: 1 }),
@@ -1937,6 +1949,41 @@ function zombieMats() {
   return zMats;
 }
 const UP = new THREE.Vector3(0, 1, 0);
+function makeHeadGeo() {
+  const g = new THREE.SphereGeometry(0.14, 24, 18), p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    let x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    if (y < 0) { const k = -y / 0.14; x *= 1 - 0.3 * k; z *= 1 - 0.08 * k; } // taper toward the chin
+    if (z < 0) z *= 1.1;                                                       // longer back of the skull
+    if (z > 0.07 && y > -0.005 && y < 0.05) z -= 0.012;                        // sunken brow line
+    p.setXYZ(i, x, y, z);
+  }
+  g.computeVertexNormals(); return g;
+}
+// humanoid body parts, shared by every zombie
+const HB = {
+  head: makeHeadGeo(),
+  jaw: new THREE.SphereGeometry(0.075, 14, 10),
+  mouth: new THREE.SphereGeometry(0.045, 10, 8),
+  teeth: new THREE.BoxGeometry(0.075, 0.018, 0.02),
+  nose: new THREE.ConeGeometry(0.019, 0.055, 6).rotateX(Math.PI / 2),
+  ear: new THREE.SphereGeometry(0.035, 8, 6),
+  socket: new THREE.SphereGeometry(0.028, 10, 8),
+  chest: new THREE.SphereGeometry(0.2, 20, 14),
+  abdomen: new THREE.CapsuleGeometry(0.15, 0.16, 4, 14),
+  pelvis: new THREE.SphereGeometry(0.17, 16, 10),
+  shoulder: new THREE.SphereGeometry(0.075, 12, 8),
+  upper: new THREE.CapsuleGeometry(0.058, 0.2, 4, 10),
+  fore: new THREE.CapsuleGeometry(0.05, 0.2, 4, 10),
+  hand: new THREE.CapsuleGeometry(0.038, 0.05, 4, 8),
+  fingers: new THREE.BoxGeometry(0.075, 0.075, 0.022),
+  thigh: new THREE.CapsuleGeometry(0.083, 0.28, 4, 12),
+  shin: new THREE.CapsuleGeometry(0.066, 0.3, 4, 10),
+  wound: new THREE.SphereGeometry(0.06, 10, 6),
+  rib: new THREE.BoxGeometry(0.15, 0.014, 0.02),
+};
+// tiny parts are skipped in the shadow pass; they are invisible in shadows anyway
+const NO_SHADOW = new Set([G.eye, HB.socket, HB.nose, HB.teeth, HB.mouth, HB.ear, HB.fingers, HB.wound, HB.rib, HB.jaw]);
 const CAP_G = new THREE.CylinderGeometry(0.15, 0.15, 0.09, 16);
 const BATON_G = new THREE.CylinderGeometry(0.022, 0.026, 0.62, 8);
 const CLAW_G = new THREE.ConeGeometry(0.03, 0.22, 6);
@@ -1950,10 +1997,11 @@ class Zombie {
     this.speed = c.speed * rand(0.85, 1.15) * LV.speedMul;
     this.pos = new THREE.Vector3(x, 0, z); this.dead = false; this.deadT = 0; this.atkT = rand(0, 0.5); this.atkAnim = 0;
     this.phase = rand(0, 10); this.radius = (type === 'crawler' ? 0.45 : 0.35) * c.scale; this.hitT = 0;
-    this.meshes = []; this.arms = []; this.legs = []; this.helmet = [];
+    this.meshes = []; this.arms = []; this.legs = []; this.helmet = []; this.elbows = []; this.knees = []; this.hands = [];
     this.rage = 0; this.spitT = rand(1.5, 3); this.screamCd = rand(0, 2); this.screams = 0; this.screaming = 0; this.fuse = 0; this.losT = 0; this.los = false;
     this.helmetHp = type === 'armored' ? 70 : 0; this.maxHp = this.hp;
-    const g = this.g = new THREE.Group(); g.scale.setScalar(c.scale * rand(0.93, 1.07));
+    const g = this.g = new THREE.Group();
+    const sw = c.scale * rand(0.93, 1.07); g.scale.set(sw, sw * rand(0.95, 1.07), sw); // varied height and build
     const skin = pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' ? zm.paleSkin : type === 'mutant' ? zm.fleshSkin : zm.skins);
     const cop = type === 'riot' || type === 'gunner';
     let cloth = cop ? pick(zm.police) : pick(zm.cloth), pants = cop ? zm.policePants : pick(zm.pants);
@@ -1975,25 +2023,55 @@ class Zombie {
       g.position.copy(this.pos); scene.add(g); zMeshes.push(...this.meshes);
       return;
     }
-    const torsoScale = { bloater: [1.9, 1.08, 1.55], screamer: [1.0, 1.05, 0.62], mutant: [1.45, 1.05, 0.95] }[type] || [1.2, 1, 0.72];
-    add(G.torso, cloth, body, 0, 1.32, 0).scale.set(...torsoScale);
-    add(G.neck, skin, body, 0, 1.68, 0.02);
+    // ---- torso: one group so each type can reshape it around the waist ----
+    const torsoScale = { bloater: [1.6, 1.05, 1.5], screamer: [0.85, 1.05, 0.8], mutant: [1.35, 1.05, 1.1], brute: [1.1, 1, 1.05] }[type] || [1, 1, 1];
+    const tg = this.torsoG = new THREE.Group(); tg.position.y = 1.2; tg.scale.set(...torsoScale); body.add(tg);
+    const belly = type === 'walker' ? rand(0.92, 1.15) : 1;
+    add(HB.chest, cloth, tg, 0, 0.23, 0).scale.set(1.22, 0.95, 0.74);
+    add(HB.abdomen, cloth, tg, 0, -0.03, 0.01).scale.set(1.12 * belly, 1, 0.9 * belly);
+    add(HB.pelvis, pants, tg, 0, -0.24, 0).scale.set(1.05, 0.62, 0.78);
+    for (const sx of [-1, 1]) add(HB.shoulder, cloth, tg, 0.235 * sx, 0.35, 0);
+    const gory = !['armored', 'riot', 'gunner', 'flamer', 'medic'].includes(type);
+    if (gory) for (let k = 0; k < randi(1, 3); k++) { // bite wounds and torn flesh
+      const front = Math.random() < 0.7 ? 1 : -1;
+      add(HB.wound, zm.wound, tg, rand(-0.16, 0.16), rand(-0.08, 0.3), 0.135 * front).scale.set(rand(0.8, 1.3), rand(0.8, 1.5), 0.35);
+    }
+    if (gory && (type === 'walker' || type === 'crawler') && Math.random() < 0.2) { // ribs showing through a torn shirt
+      add(HB.wound, zm.wound, tg, 0.06, 0.08, 0.14).scale.set(1.8, 1.9, 0.3);
+      for (let k = 0; k < 3; k++) add(HB.rib, zm.bone, tg, 0.06, 0.02 + k * 0.055, 0.155).rotation.z = 0.15;
+    }
+    add(G.neck, skin, body, 0, 1.68, 0.02).scale.set(1.35, 1, 1.25);
+
+    // ---- head: skull, sunken eyes, nose, ears and a hinged, slack jaw ----
     const hp = this.headPivot = new THREE.Group(); hp.position.set(0, 1.72, 0.03); body.add(hp);
     const headS = type === 'spitter' ? 1.22 : type === 'bloater' ? 1.12 : 1;
-    add(G.head, skin, hp, 0, 0.13, 0.02, 'head').scale.set(headS, 1.15 * headS, 1.05 * headS);
+    add(HB.head, skin, hp, 0, 0.13, 0.02, 'head').scale.set(headS, 1.12 * headS, 1.05 * headS);
+    for (const sx of [-1, 1]) {
+      add(HB.socket, zm.socket, hp, 0.05 * sx, 0.148, 0.116 * headS, 'head').scale.set(1.3, 1, 0.55);
+      add(G.eye, eyeMat, hp, 0.05 * sx, 0.15, 0.128 * headS, 'head');
+      add(HB.ear, skin, hp, 0.138 * headS * sx, 0.12, -0.005, 'head').scale.set(0.45, 1, 0.8);
+    }
+    add(HB.nose, skin, hp, 0, 0.1, 0.152 * headS, 'head');
+    add(HB.mouth, zm.mouth, hp, 0, 0.05, 0.1 * headS, 'head').scale.set(1.25, 0.8, 1);
+    add(HB.teeth, zm.teeth, hp, 0, 0.066, 0.122 * headS, 'head');
+    const jw = this.jaw = new THREE.Group(); jw.position.set(0, 0.07, 0.03); hp.add(jw);
+    add(HB.jaw, skin, jw, 0, -0.035, 0.055 * headS, 'head').scale.set(1.05 * headS, 0.62, 1.05 * headS);
+    add(HB.teeth, zm.teeth, jw, 0, -0.012, 0.1 * headS, 'head').scale.set(0.9, 1, 1);
     if (type === 'screamer') add(G.head, zm.grayHair, hp, 0, 0.05, -0.05, 'head').scale.set(1.12, 1.75, 1.1);
     else if (cop) { // police cap and badge
       add(CAP_G, zm.cap, hp, 0, 0.25, 0, 'head'); add(G.box, zm.cap, hp, 0, 0.2, 0.15, 'head').scale.set(0.22, 0.02, 0.1);
-      add(G.box, zm.badge, body, -0.12, 1.5, 0.17).scale.set(0.06, 0.07, 0.02);
-    } else if (type !== 'armored' && type !== 'bloater' && Math.random() < 0.6) add(G.head, zm.hair, hp, 0, 0.19, -0.015, 'head').scale.set(1.04, 0.8, 1.05);
-    add(G.eye, eyeMat, hp, -0.05, 0.15, 0.15 * headS, 'head'); add(G.eye, eyeMat, hp, 0.05, 0.15, 0.15 * headS, 'head');
+      add(G.box, zm.badge, body, -0.12, 1.5, 0.155).scale.set(0.06, 0.07, 0.02);
+    } else if (type !== 'armored' && type !== 'bloater' && type !== 'flamer' && type !== 'medic' && Math.random() < 0.65) {
+      const long = Math.random() < 0.35; // scalp hair, sometimes long and matted
+      add(G.head, zm.hair, hp, 0, long ? 0.12 : 0.19, long ? -0.03 : -0.015, 'head').scale.set(1.05, long ? 1.3 : 0.8, 1.07);
+    }
     if (type === 'spitter') { // glowing throat sac
       add(G.head, zm.acid, body, 0, 1.6, 0.12).scale.set(0.75, 0.6, 0.7);
     }
     if (type === 'bloater') { // pustules
       for (let i = 0; i < 9; i++) {
         const ang = rand(-1.6, 1.6), y = rand(1.05, 1.58);
-        add(G.hand, zm.boil, body, Math.sin(ang) * 0.37, y, Math.cos(ang) * 0.29).scale.setScalar(rand(0.9, 1.9));
+        add(G.hand, zm.boil, body, Math.sin(ang) * 0.37, y, Math.cos(ang) * 0.25).scale.setScalar(rand(0.9, 1.9));
       }
     }
     if (type === 'armored') { // vest, helmet, visor, shoulder pads
@@ -2003,21 +2081,40 @@ class Zombie {
       this.helmet.push(add(G.box, zm.visor, hp, 0, 0.14, 0.155, 'helmet'));
       this.helmet[1].scale.set(0.27, 0.09, 0.05);
     }
-    const armThin = type === 'screamer' ? 0.8 : 1;
-    for (const s of [-1, 1]) {
-      const a = new THREE.Group(); a.position.set((type === 'bloater' ? 0.42 : 0.3) * s, 1.57, 0); body.add(a); this.arms.push(a);
-      add(G.sleeve, cloth, a, 0, -0.12, 0); add(G.arm, skin, a, 0, -0.36, 0).scale.set(armThin, type === 'screamer' ? 1.15 : 1, armThin);
-      add(G.hand, skin, a, 0, type === 'screamer' ? -0.7 : -0.64, 0);
+
+    // ---- arms with elbows, legs with knees ----
+    const uniform = cop || ['medic', 'armored', 'flamer'].includes(type);
+    const sleeve = type === 'mutant' ? 'none' : uniform ? pick(['long', 'long', 'short']) : pick(['long', 'short', 'short', 'none']);
+    const shorts = !uniform && type !== 'crawler' && Math.random() < 0.15;
+    this.oneArm = type === 'walker' && Math.random() < 0.12;
+    for (const [i, s] of [[0, -1], [1, 1]]) {
+      const a = new THREE.Group(); a.position.set((type === 'bloater' ? 0.42 : 0.3) * s, 1.56, 0); body.add(a); this.arms.push(a);
+      if (type === 'screamer') a.scale.set(0.8, 1.12, 0.8);
+      add(HB.upper, sleeve === 'none' ? skin : cloth, a, 0, -0.15, 0);
+      const el = new THREE.Group(); el.position.y = -0.31; a.add(el); this.elbows.push(el);
+      if (i === 0 && this.oneArm) { // torn off below the elbow
+        add(HB.wound, zm.wound, el, 0, 0, 0).scale.set(1, 0.7, 1);
+        add(HB.rib, zm.bone, el, 0, -0.04, 0).scale.set(0.2, 3, 1.4);
+        this.hands.push(el);
+      } else {
+        add(HB.fore, sleeve === 'long' ? cloth : skin, el, 0, -0.14, 0);
+        const h = new THREE.Group(); h.position.y = -0.29; el.add(h); this.hands.push(h);
+        add(HB.hand, skin, h, 0, -0.04, 0).scale.set(1.25, 1, 0.65);
+        add(HB.fingers, skin, h, 0, -0.1, 0.012).rotation.x = 0.55;
+      }
       if (type === 'armored') add(G.box, zm.armor, a, 0, -0.04, 0, 'armor').scale.set(0.2, 0.14, 0.22);
       if (type === 'crawler') continue; // legs are gone
-      const l = new THREE.Group(); l.position.set(0.12 * s, 0.95, 0); body.add(l); this.legs.push(l);
-      add(G.leg, pants, l, 0, -0.45, 0).scale.set(type === 'bloater' ? 1.5 : 1, 1, type === 'bloater' ? 1.4 : 1);
-      add(G.shoe, zm.shoe, l, 0, -0.9, 0.05);
+      const l = new THREE.Group(); l.position.set(0.11 * s, 0.95, 0); body.add(l); this.legs.push(l);
+      if (type === 'bloater') l.scale.set(1.45, 1, 1.4);
+      add(HB.thigh, pants, l, 0, -0.22, 0);
+      const kn = new THREE.Group(); kn.position.y = -0.45; l.add(kn); this.knees.push(kn);
+      add(HB.shin, shorts ? skin : pants, kn, 0, -0.2, 0);
+      add(G.shoe, zm.shoe, kn, 0, -0.46, 0.05);
     }
     if (type === 'riot') {
       const sh = this.shield = add(G.box, zm.shield, body, -0.04, 1.14, 0.44, 'shield');
       sh.scale.set(0.66, 1.34, 0.03); sh.castShadow = false;
-      const baton = add(BATON_G, zm.baton, this.arms[1], 0, -0.68, 0.22); baton.rotation.x = Math.PI / 2;
+      const baton = add(BATON_G, zm.baton, this.hands[1], 0, -0.06, 0.2); baton.rotation.x = Math.PI / 2;
     }
     if (type === 'flamer') {
       add(G.head, zm.helmetOD, hp, 0, 0.2, 0, 'head').scale.set(1.2, 0.85, 1.22);
@@ -2025,8 +2122,8 @@ class Zombie {
       add(FILTER_G, zm.mask, hp, 0, 0.04, 0.2, 'head');
       for (const sx of [-0.2, 0.2]) add(TANK_G, zm.fuel, body, sx, 1.3, -0.25, 'tank');
       add(G.box, zm.gun, body, 0, 1.6, -0.25, 'tank').scale.set(0.46, 0.05, 0.06);
-      const wand = add(G.box, zm.gun, this.arms[1], 0, -0.66, 0.26); wand.scale.set(0.045, 0.045, 0.5);
-      this.nozzle = new THREE.Object3D(); this.nozzle.position.set(0, -0.66, 0.54); this.arms[1].add(this.nozzle);
+      const wand = add(G.box, zm.gun, this.hands[1], 0, -0.05, 0.24); wand.scale.set(0.045, 0.045, 0.5);
+      this.nozzle = new THREE.Object3D(); this.nozzle.position.set(0, -0.05, 0.52); this.hands[1].add(this.nozzle);
     }
     if (type === 'medic') {
       add(G.box, zm.white, hp, 0, 0.08, 0.135, 'head').scale.set(0.2, 0.1, 0.04);          // surgical mask
@@ -2036,14 +2133,13 @@ class Zombie {
     }
     if (type === 'mutant') { // one grotesquely oversized right arm with claws
       const big = this.arms[1];
-      big.children.forEach((m) => m.scale.multiply(new THREE.Vector3(2.1, 1.3, 2.1)));
-      big.children.forEach((m) => { m.position.y *= 1.3; });
-      for (const cxw of [-0.07, 0, 0.07]) add(CLAW_G, zm.claw, big, cxw, -0.98, 0.04).rotation.x = Math.PI;
+      big.scale.set(1.9, 1.3, 1.9);
+      for (const cxw of [-0.035, 0, 0.035]) add(CLAW_G, zm.claw, this.hands[1], cxw, -0.17, 0.02).rotation.x = Math.PI;
       big.position.x += 0.12;
     }
     if (type === 'gunner') {
-      const gun = add(G.box, zm.gun, this.arms[1], 0, -0.7, 0.07); gun.scale.set(0.035, 0.12, 0.16);
-      this.gunTip = new THREE.Object3D(); this.gunTip.position.set(0, -0.72, 0.17); this.arms[1].add(this.gunTip);
+      const gun = add(G.box, zm.gun, this.hands[1], 0, -0.08, 0.06); gun.scale.set(0.035, 0.12, 0.16);
+      this.gunTip = new THREE.Object3D(); this.gunTip.position.set(0, -0.1, 0.16); this.hands[1].add(this.gunTip);
       this.flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.flash, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
       this.flash.scale.setScalar(0.45); this.flash.visible = false; this.gunTip.add(this.flash);
       this.laser = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
@@ -2053,6 +2149,7 @@ class Zombie {
     if (type === 'crawler') { body.position.set(0, 0, -0.95); add(G.hand, pants, body, 0.1, 0.93, 0).scale.set(1.3, 1, 1.3); }
     this.lean = { runner: 0.32, brute: 0.18, crawler: 1.36, bloater: -0.08, screamer: 0.12, armored: 0.1, riot: 0.06, gunner: 0.05, medic: 0.1, mutant: 0.42 }[type] ?? rand(0.08, 0.2);
     this.limp = type === 'walker' && Math.random() < 0.4 ? rand(0.2, 0.5) : 0;
+    this.meshes.forEach((m) => { if (NO_SHADOW.has(m.geometry)) m.castShadow = false; });
     g.position.copy(this.pos);
     scene.add(g);
     zMeshes.push(...this.meshes);
@@ -2191,6 +2288,9 @@ class Zombie {
       else if (this.type === 'crawler') this.body.rotation.x += (1.55 - this.body.rotation.x) * Math.min(1, dt * 5);
       else { g.rotation.x = this.fallDir * (Math.PI / 2) * (k * k); g.position.y = Math.sin(k * Math.PI) * 0.15; }
       this.arms.forEach((a) => a.rotation.x += (-2.6 - a.rotation.x) * dt * 3);
+      this.knees.forEach((kn) => kn.rotation.x += (1.1 - kn.rotation.x) * Math.min(1, dt * 6));
+      this.elbows.forEach((el) => el.rotation.x += (-0.2 - el.rotation.x) * Math.min(1, dt * 4));
+      if (this.jaw) this.jaw.rotation.x = 0.6;
       if (this.pool && this.pool.scale.x < this.pool.userData.grow) this.pool.scale.addScalar(dt * 0.6);
       if (this.deadT > 8) g.position.y -= dt * 0.3;
       return this.deadT < 11;
@@ -2386,6 +2486,29 @@ class Zombie {
       this.arms[1].rotation.x = aiming ? -1.57 : (dist < 30 ? -1.2 : -0.4 + s * 0.2); this.arms[1].rotation.z = aiming ? 0.12 : 0.05;
       this.arms[0].rotation.x = aiming ? -1.45 : -0.5 - s * 0.2; this.arms[0].rotation.z = aiming ? -0.45 : -0.08;
     }
+    // elbows: reaching zombies keep a slight bend, runners pump their arms, attacks straighten them
+    let e0 = -0.35, e1 = -0.35;
+    if ((t === 'runner' || this.rage > 0) && moving) { e0 = -1.3 - s * 0.2; e1 = -1.3 + s * 0.2; }
+    else if (t === 'crawler') { e0 = -0.6 - Math.max(0, s) * 0.6; e1 = -0.6 - Math.max(0, -s) * 0.6; }
+    else if (this.screaming > 0) { e0 = e1 = -0.15; }
+    else if (t === 'bloater') { e0 = e1 = -0.45; }
+    if (atk > 0) { e0 += atk * 0.3; e1 += atk * 0.3; }
+    if (t === 'riot') { e0 = -1.25; e1 = this.atkAnim > 0 ? -0.4 : -0.9; }
+    if (t === 'gunner') { const aim = this.aimT > 0 || this.flashT > 0; e1 = aim ? 0 : -0.9; e0 = aim ? -0.5 : -0.4; }
+    if (t === 'flamer') { e0 = -0.9; e1 = -0.3; }
+    if (t === 'mutant') { e0 = -0.6; e1 = -0.15; }
+    if (t === 'medic' && hold) { e0 = e1 = -1.5; }
+    this.elbows[0].rotation.x = e0; this.elbows[1].rotation.x = e1;
+    // knees bend while each leg swings forward
+    if (this.knees.length) {
+      const kAmp = t === 'runner' || this.rage > 0 ? 1.35 : t === 'bloater' ? 0.4 : 0.75;
+      const crouchK = this.crouch > 0 ? 1.3 : 0;
+      this.knees[0].rotation.x = (moving ? Math.max(0, -Math.cos(this.phase)) * kAmp : 0) + 0.06 + crouchK;
+      this.knees[1].rotation.x = (moving ? Math.max(0, Math.cos(this.phase)) * kAmp : 0) + 0.06 + crouchK;
+      if (this.crouch > 0) { this.legs[0].rotation.x = this.legs[1].rotation.x = -0.9; }
+    }
+    // slack jaw that gapes wider when attacking, screaming or spitting
+    this.jaw.rotation.x = this.screaming > 0 ? 0.7 : this.spitAnim > 0 ? 0.6 : 0.1 + Math.abs(Math.sin(this.phase * 0.6)) * 0.2 + atk * 0.4;
     this.body.rotation.x = this.crouch > 0 ? 0.9 : this.lean + (this.hitT > 0 ? -0.25 : 0) + (this.screaming > 0 ? -0.35 : 0);
     this.body.rotation.z = Math.sin(this.phase) * (t === 'bloater' ? 0.12 : 0.07);
     this.headPivot.rotation.z = Math.sin(this.phase * 0.37) * 0.3;
