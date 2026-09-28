@@ -76,8 +76,13 @@
   .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
     flex-direction: column; background: rgba(0,0,0,0.55); backdrop-filter: blur(3px); z-index: 10; padding: 16px; }
   .overlay.show { display: flex; }
+  /* auto margins centre content when it fits and fall back to top-aligned scrolling when it doesn't,
+     so a tall menu never pushes the title off the top of a small screen */
+  .overlay { justify-content: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .overlay > .panel { margin-block: auto; }
+  #menu > .title { margin-top: auto; }
   #menu { background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.75) 100%); backdrop-filter: none;
-    justify-content: flex-end; padding-bottom: 6vh; }
+    justify-content: flex-start; padding-bottom: 6vh; }
   .title { font-size: clamp(44px, 8vw, 96px); font-weight: 900; letter-spacing: 0.12em; line-height: 1;
     text-shadow: 0 4px 24px rgba(0,0,0,0.8); }
   .title span { color: var(--accent); }
@@ -215,6 +220,14 @@
     .panel { padding: 20px 26px; } .panel h2 { font-size: 28px; }
   }
   @media (max-width: 1000px) { #levels { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 600px) {
+    #menu { padding-top: max(20px, env(safe-area-inset-top, 0px)); padding-bottom: max(20px, env(safe-area-inset-bottom, 0px)); }
+    .title { font-size: 42px; } .subtitle { margin: 6px 0 16px; letter-spacing: 0.4em; }
+    #levels { gap: 8px; }
+    .card { min-height: 0; padding: 10px 12px; } .card .n { font-size: 24px; } .card .nm { font-size: 15px; margin-top: 4px; }
+    .card .ds { display: none; }
+    .menubtns { margin-top: 14px; }
+  }
 </style>
 <script async src="./vendor/es-module-shims.js"></script>
 <script type="importmap">
