@@ -26,6 +26,8 @@
   #hud { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 3; }
   #vignette { position: fixed; inset: 0; pointer-events: none;
     background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%); }
+  #shockfx { position: fixed; inset: 0; pointer-events: none; opacity: 0;
+    background: radial-gradient(ellipse at center, rgba(120,180,255,0.15) 20%, rgba(60,120,255,0.7) 100%); }
   #firefx { position: fixed; inset: 0; pointer-events: none; opacity: 0;
     background: radial-gradient(ellipse at center, transparent 30%, rgba(255,120,20,0.65) 100%); }
   #acidfx { position: fixed; inset: 0; pointer-events: none; opacity: 0;
@@ -43,6 +45,10 @@
   #hitmark::after { transform: rotate(-45deg); }
   #hitmark.kill::before, #hitmark.kill::after { background: #ff3b2a; }
 
+  #bossbar { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); width: min(520px, 70vw); display: none; text-align: center; }
+  #bossbar .bn { font-size: 14px; font-weight: 900; letter-spacing: 0.4em; color: #ff6a50; text-shadow: 0 1px 4px #000; margin-bottom: 4px; }
+  #bossbar .bb { height: 10px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,120,90,0.6); }
+  #bossbar .bb i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #8a1010, #ff4a2a); transition: width 0.2s; }
   #topbar { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); text-align: center;
     text-shadow: 0 1px 3px #000; }
   #lvname { font-size: 13px; letter-spacing: 0.2em; color: var(--dim); }
@@ -101,6 +107,7 @@
   .t-day { background: linear-gradient(160deg, rgba(90,120,150,0.55), rgba(20,20,20,0.85)); }
   .t-dusk { background: linear-gradient(160deg, rgba(190,100,50,0.55), rgba(20,15,15,0.85)); }
   .t-night { background: linear-gradient(160deg, rgba(30,40,80,0.7), rgba(5,5,10,0.9)); }
+  .t-bloodmoon { background: linear-gradient(160deg, rgba(170,40,30,0.6), rgba(20,4,4,0.92)); }
   .t-snow { background: linear-gradient(160deg, rgba(150,175,210,0.55), rgba(10,14,24,0.9)); }
   .t-dust { background: linear-gradient(160deg, rgba(170,130,80,0.6), rgba(25,18,10,0.9)); }
   .t-rain { background: linear-gradient(160deg, rgba(70,95,110,0.6), rgba(10,14,18,0.9)); }
@@ -215,7 +222,7 @@
   @media (max-height: 520px) {
     #menu { justify-content: flex-start; padding-top: 14px; padding-bottom: 14px; overflow-y: auto; }
     .title { font-size: 40px; } .subtitle { margin: 4px 0 12px; }
-    #menu #levels { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+    #menu #levels { grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 6px; }
     .card { min-height: 0; padding: 10px; } .card .n { font-size: 22px; } .card .ds { display: none; }
     .controls { margin-top: 10px; }
     .panel { padding: 20px 26px; } .panel h2 { font-size: 28px; }
@@ -244,12 +251,14 @@
 <div id="hurt"></div>
 <div id="acidfx"></div>
 <div id="firefx"></div>
+<div id="shockfx"></div>
 
 <div id="scope"></div>
 <div id="hud">
   <div id="crosshair"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><i class="d"></i></div>
   <div id="hitmark"></div>
   <div id="topbar"><div id="lvname"></div><div id="wave"></div><div id="remain"></div></div>
+  <div id="bossbar"><div class="bn">屍王</div><div class="bb"><i id="bossfill"></i></div></div>
   <div id="score"><div class="small">擊殺</div><div class="big num" id="kills">0</div>
     <div class="cash num" id="cash">$0</div><div class="cashpop num" id="cashpop"></div>
     <div class="small">分數 <span class="num" id="pts">0</span></div></div>
@@ -344,9 +353,11 @@ const LEVELS = [
     hpMul: 1.5, speedMul: 1.2, waves: [{ walker: 14, runner: 6, medic: 2 }, { walker: 14, runner: 8, medic: 3, spitter: 3, crawler: 4 }, { walker: 16, runner: 10, mutant: 1, medic: 3, bloater: 3 }, { runner: 14, medic: 4, mutant: 2, gunner: 3, riot: 3 }, { walker: 12, runner: 16, mutant: 3, medic: 4, screamer: 2, brute: 1 }] },
   { num: 8, name: '星光購物中心', theme: 'mall', time: 'snow', desc: '大雪夜裡的購物中心。看不見的潛行者在風雪中逼近，分裂者死後會放出成群的幼體。',
     hpMul: 1.58, speedMul: 1.22, waves: [{ walker: 16, runner: 8, stalker: 2 }, { walker: 14, runner: 10, splitter: 2, crawler: 4, stalker: 2 }, { walker: 16, runner: 10, stalker: 4, splitter: 3, spitter: 3, medic: 2 }, { runner: 16, stalker: 5, splitter: 4, mutant: 2, dog: 6 }, { walker: 14, runner: 18, stalker: 6, splitter: 4, armored: 4, brute: 2 }] },
-  // level 9 is still to be made; the finale stays numbered 10 and is hidden from the menu until it exists
+  { num: 9, name: '撤離公路', theme: 'highway', time: 'bloodmoon', desc: '通往城外的撤離公路塞滿棄置車輛。血月下，電擊殭屍在車陣間放電，屍王正朝這裡走來。',
+    hpMul: 1.65, speedMul: 1.25, waves: [{ walker: 18, runner: 10, shocker: 2 }, { walker: 16, runner: 12, shocker: 3, spitter: 3, dog: 6 }, { walker: 18, runner: 12, shocker: 4, flamer: 3, stalker: 3, bloater: 3 }, { runner: 18, shocker: 4, splitter: 3, gunner: 4, armored: 4, brute: 2 }, { walker: 16, runner: 14, shocker: 3, mutant: 2, behemoth: 1 }] },
+  // the finale stays numbered 10 and is hidden from the menu until it is released
   { num: 10, hidden: true, name: '最後防線', theme: 'downtown', time: 'night', desc: '撤離直升機抵達前，守住市中心。所有種類的感染者都會出現。',
-    hpMul: 1.6, speedMul: 1.25, waves: [{ walker: 18, runner: 10, crawler: 5 }, { walker: 18, runner: 12, spitter: 4, bloater: 4, riot: 4, brute: 2 }, { walker: 20, runner: 14, armored: 5, gunner: 4, screamer: 2, brute: 3 }, { walker: 16, runner: 18, spitter: 5, bloater: 5, riot: 6, crawler: 5, brute: 4 }, { runner: 26, armored: 6, gunner: 6, screamer: 3, spitter: 5, bloater: 4, medic: 4, mutant: 3, dog: 8, flamer: 4, stalker: 5, splitter: 4, brute: 6 }] },
+    hpMul: 1.6, speedMul: 1.25, waves: [{ walker: 18, runner: 10, crawler: 5 }, { walker: 18, runner: 12, spitter: 4, bloater: 4, riot: 4, brute: 2 }, { walker: 20, runner: 14, armored: 5, gunner: 4, screamer: 2, brute: 3 }, { walker: 16, runner: 18, spitter: 5, bloater: 5, riot: 6, crawler: 5, brute: 4 }, { runner: 26, armored: 6, gunner: 6, screamer: 3, spitter: 5, bloater: 4, medic: 4, mutant: 3, dog: 8, flamer: 4, stalker: 5, splitter: 4, shocker: 4, brute: 6, behemoth: 2 }] },
 ];
 LEVELS.forEach((l, i) => { l.num ??= i + 1; });
 const nextVisible = (i) => { for (let k = i + 1; k < LEVELS.length; k++) if (!LEVELS[k].hidden) return k; return -1; };
@@ -359,6 +370,8 @@ const TIMES = {
            sun: 0xffa060, sunI: 2.6, hemiSky: 0x8a90b8, hemiGround: 0x3a2a22, hemiI: 0.55, exp: 0.62, envI: 0.55, night: false },
   night: { label: '夜晚', sky: false, bg: 0x05070c, fog: 0x06090e, fogD: 0.026,
            sun: 0x7f93c8, sunI: 0.3, hemiSky: 0x2a3550, hemiGround: 0x0a0a0a, hemiI: 0.35, exp: 1.0, envI: 0, night: true },
+  bloodmoon: { label: '血月', sky: false, bg: 0x160607, moon: true, fog: 0x2a0c0c, fogD: 0.02,
+           sun: 0xff6a50, sunI: 0.75, hemiSky: 0x7a3030, hemiGround: 0x1a0a0a, hemiI: 0.55, exp: 1.0, envI: 0, night: true },
   snow:  { label: '雪夜', sky: false, bg: 0x141a24, snow: true, fog: 0x1e2734, fogD: 0.022,
            sun: 0x9fb4e0, sunI: 0.5, hemiSky: 0x6a7a98, hemiGround: 0x3a3a44, hemiI: 0.6, exp: 0.9, envI: 0, night: true },
   dust:  { label: '沙塵暴', sky: true, bgFog: true, dust: true, elev: 18, azi: 110, turb: 20, ray: 1, mie: 0.05, mieG: 0.8, fog: 0xa98b64, fogD: 0.021,
@@ -392,6 +405,10 @@ const ZTYPES = {
               desc: '基地的軍犬也被感染了。速度比你跑得還快，而且成群出現。個子矮，要往下瞄。' },
   flamer:   { name: '火焰兵殭屍', color: '#e0702a', hp: 160, speed: 1.5, dmg: 5, scale: 1.05, rate: 1.2, cash: 45, score: 400, flame: true,
               desc: '背著燃料罐的士兵，靠近到 8 公尺內會持續噴火。從側面或背後打爆燃料罐，它會當場爆炸。' },
+  shocker:  { name: '電擊殭屍', color: '#5ab0ff', hp: 170, speed: 1.7, dmg: 16, scale: 1.05, rate: 1.2, cash: 55, score: 500, shock: true,
+              desc: '被高壓電擊中的電力工人。全身冒出藍色電弧，蓄電一秒後放出閃電，被打中會減速。蓄電時躲到建築物後面，或拉開到 16 公尺外就能閃過。' },
+  behemoth: { name: '屍王', color: '#c83a2a', hp: 3600, speed: 1.5, dmg: 35, scale: 2.6, rate: 2.2, cash: 500, score: 3000, boss: true,
+              desc: '身高接近五公尺的巨型殭屍。會把水泥塊丟向遠處（地上的紅圈是落點），近身時一腳踩出震波。血量低於四成會狂暴。' },
   stalker:  { name: '潛行者', color: '#9ab0c8', hp: 120, speed: 3.4, dmg: 20, scale: 1.05, rate: 1.0, cash: 50, score: 450, ghost: true,
               desc: '幾乎透明的獵手，十公尺外只看得到一對微弱的眼睛。會左右閃避著逼近，被打中會現形幾秒。' },
   splitter: { name: '分裂者', color: '#9a5a8a', hp: 300, speed: 1.3, dmg: 18, scale: 1.3, rate: 1.4, cash: 45, score: 400, split: 3,
@@ -569,6 +586,7 @@ const flTarget = new THREE.Object3D(); flTarget.position.set(0, -0.3, -10); came
 const muzzleLight = new THREE.PointLight(0xffb866, 0, 18, 1.8);
 camera.add(muzzleLight); muzzleLight.position.set(0.2, -0.1, -0.8);
 
+let moonMesh = null, fireEmitT = 0;
 const COP_LIGHTS = [new THREE.PointLight(0xff2020, 0, 22, 1.6), new THREE.PointLight(0x2050ff, 0, 22, 1.6)];
 COP_LIGHTS.forEach((l) => scene.add(l));
 let copLightT = 0, copFlash = 0;
@@ -790,6 +808,24 @@ function buildTextures() {
   blotches(x, 1024, 1024, 50, '95,100,110', 30, 140, 0.45); blotches(x, 1024, 1024, 30, '200,206,214', 30, 120, 0.5);
   speckle(x, 1024, 1024, 60000, 0.25);
   TEX.snowRoad = toTex(c);
+  TEX.storeSign = signTex('24H 便利商店', 'OPEN 24H', '#0e5a36', '#ffffff');
+  [c, x] = makeCanvas(1024, 448);
+  x.fillStyle = '#1a3e8a'; x.fillRect(0, 0, 1024, 448);
+  x.fillStyle = '#f2f2f2'; x.fillRect(16, 16, 992, 416); x.fillStyle = '#1a3e8a'; x.fillRect(28, 28, 968, 392);
+  x.fillStyle = '#ffffff'; x.textAlign = 'center';
+  x.font = 'bold 120px "Noto Sans TC", sans-serif'; x.fillText('撤離路線', 420, 200);
+  x.font = '600 72px Oswald, Arial, sans-serif'; x.fillText('EVACUATION ROUTE', 420, 320);
+  x.beginPath(); x.moveTo(800, 130); x.lineTo(960, 224); x.lineTo(800, 318); x.closePath(); x.fill();
+  blotches(x, 1024, 448, 20, '60,40,30', 20, 90, 0.35); blotches(x, 1024, 448, 8, '90,10,10', 10, 50, 0.6);
+  TEX.billboard = new THREE.CanvasTexture(c); TEX.billboard.colorSpace = THREE.SRGBColorSpace;
+  [c, x] = makeCanvas(256, 128);
+  x.fillStyle = '#a8261c'; x.fillRect(0, 0, 256, 128);
+  for (let k = 0; k < 256; k += 32) { x.fillStyle = 'rgba(0,0,0,0.2)'; x.fillRect(k, 0, 4, 128); }
+  x.fillStyle = '#e8b820'; x.fillRect(0, 50, 256, 28);
+  x.fillStyle = '#111'; x.font = 'bold 22px Oswald, Arial, sans-serif'; x.textAlign = 'center'; x.fillText('FLAMMABLE', 128, 72);
+  blotches(x, 256, 128, 14, '60,30,10', 6, 20, 0.5); speckle(x, 256, 128, 2500, 0.2);
+  TEX.barrel = toTex(c);
+  TEX.hiVis = clothTex('#d8701a', 0.5);
   TEX.mallSign = signTex('星光購物中心', 'STAR MALL', '#160a24', '#ff6ad8');
   TEX.facades.mall = [0, 1].map((i) => facadeTex('mall', i));
 }
@@ -1031,6 +1067,14 @@ function makeMaterials() {
     slab: std({ map: TEX.slab, roughness: 0.92 }),
     grass: std({ map: TM.snow ? TEX.snow : TEX.grass, roughness: 1 }),
     roof: std({ map: TM.snow ? TEX.snow : TEX.roof, roughness: 0.95 }),
+    field: std({ map: TEX.grass, color: 0x8a7654, roughness: 1 }),
+    barrel: std({ map: TEX.barrel, roughness: 0.5, metalness: 0.4 }),
+    tank: std({ color: 0xb8bcc2, roughness: 0.3, metalness: 0.85 }),
+    billboard: std({ map: TEX.billboard, roughness: 0.8, emissive: 0xffffff, emissiveMap: TEX.billboard, emissiveIntensity: 0.12 }),
+    storeSign: std({ map: TEX.storeSign, emissive: 0xffffff, emissiveMap: TEX.storeSign, emissiveIntensity: 1.2, roughness: 0.5 }),
+    stationLight: std({ color: 0xffffff, emissive: 0xfff2e0, emissiveIntensity: 1.6, side: THREE.DoubleSide }),
+    pump: std({ color: 0xc8c8c4, roughness: 0.5, metalness: 0.3 }),
+    carBody: std({ color: 0xffffff, roughness: 0.4, metalness: 0.55 }),
     snowCap: std({ color: 0xc4cad4, roughness: 0.9 }),
     mall: TEX.facades.mall.map((t) => std({ map: t.map, roughness: 0.3, metalness: 0.3, emissive: 0xffffff, emissiveMap: t.em, emissiveIntensity: night ? 0.9 : 0.2 })),
     mallSign: std({ map: TEX.mallSign, emissive: 0xffffff, emissiveMap: TEX.mallSign, emissiveIntensity: 2.4, roughness: 0.5 }),
@@ -1325,6 +1369,96 @@ function buildBase(g, cx, cz) {
   barbedWire(g, cx - 20.5, cz - 12, 8, true); barbedWire(g, cx - 20.5, cz + 12, 8, true);
 }
 
+// explosive barrels and tankers: shooting one sets it off, blasts chain to their neighbours
+const BARRELS = [];
+let barrelQueue = [];
+function registerBarrel(m, x, z, big) {
+  const b = { m, x, z, big, col: colliders[colliders.length - 1], gone: false };
+  m.userData.barrel = b; worldMeshes.push(m); BARRELS.push(b);
+}
+function addBarrel(g, x, z, y = 0) {
+  const m = mesh(BARREL_G, M.barrel, g, x, y + 0.45, z); m.rotation.y = rand(0, 6);
+  addCollider(x, z, 0.6, 0.6); registerBarrel(m, x, z, false);
+}
+const BARREL_G = new THREE.CylinderGeometry(0.3, 0.3, 0.9, 16);
+function explodeBarrel(b) {
+  if (b.gone) return;
+  b.gone = true;
+  b.m.parent && b.m.parent.remove(b.m);
+  const ci = colliders.indexOf(b.col); if (ci >= 0) colliders.splice(ci, 1);
+  const wi2 = worldMeshes.indexOf(b.m); if (wi2 >= 0) worldMeshes.splice(wi2, 1);
+  const p = new THREE.Vector3(b.x, b.big ? 1.6 : 0.6, b.z);
+  for (let i = 0; i < (b.big ? 60 : 26); i++) emitFire(p, new THREE.Vector3(rand(-1, 1), rand(0.3, 1.4), rand(-1, 1)).normalize(), rand(3, b.big ? 12 : 8));
+  const sc = makePool(b.x, b.z, TEX.hole, 1); sc.scale.setScalar(b.big ? 5 : 2.6);
+  blastAt(p, b.big ? 9 : 5, b.big ? 420 : 230, b.big ? 60 : 40);
+}
+function addTanker(g, x, z, rot) {
+  const t = new THREE.Group();
+  boxMesh(t, 0, 1.4, 3.6, 2.4, 2.2, 2.2, M.ambulance);
+  boxMesh(t, 0, 1.9, 4.72, 2.1, 0.8, 0.06, M.glass, false);
+  const tank = mesh(new THREE.CylinderGeometry(1.15, 1.15, 7, 20), M.tank, t, 0, 1.75, -1.2); tank.rotation.x = Math.PI / 2;
+  boxMesh(t, 0, 1.75, -1.2, 0.06, 0.5, 7.02, M.redStripe, false);
+  for (const sx of [-1.1, 1.1]) for (const sz of [3.6, -0.5, -3.4]) mesh(G.wheel, M.tire, t, sx, 0.45, sz).scale.setScalar(1.35);
+  t.position.set(x, 0, z); t.rotation.y = rot; g.add(t);
+  rotCollider(x, z, 2.6, 9.6, rot);
+  registerBarrel(tank, x, z, true);
+}
+function addBillboard(g, x, z, rot) {
+  const b = new THREE.Group();
+  for (const sx of [-2.6, 2.6]) mesh(new THREE.CylinderGeometry(0.16, 0.2, 7, 8), M.metal, b, sx, 3.5, 0);
+  boxMesh(b, 0, 7.4, 0, 8.4, 3.7, 0.2, M.metal);
+  const face = mesh(new THREE.PlaneGeometry(8.2, 3.5), M.billboard, b, 0, 7.4, 0.11, false);
+  b.position.set(x, 0.16, z); b.rotation.y = rot; g.add(b);
+  const c = Math.cos(rot), s = Math.sin(rot);
+  for (const sx of [-2.6, 2.6]) addCollider(x + c * sx, z - s * sx, 0.45, 0.45);
+}
+// the jammed evacuation traffic uses instancing: hundreds of cars for a handful of draw calls
+function buildJam(g, cars) {
+  const parts = [
+    { geo: G.box, mat: M.carBody, local: [0, 0.62, 0], size: [1.82, 0.62, 4.4], color: true },
+    { geo: G.box, mat: M.tire, local: [0, 0.38, 0], size: [1.7, 0.2, 4.2] },
+    { geo: G.box, mat: M.glass, local: [0, 1.18, -0.15], size: [1.62, 0.55, 2.3] },
+    { geo: G.box, mat: M.carBody, local: [0, 1.47, -0.15], size: [1.5, 0.05, 1.9], color: true },
+  ];
+  const wheels = [[-0.84, 0.34, -1.38], [0.84, 0.34, -1.38], [-0.84, 0.34, 1.38], [0.84, 0.34, 1.38]];
+  const carM = new THREE.Matrix4(), partM = new THREE.Matrix4(), q = new THREE.Quaternion(), col = new THREE.Color();
+  const paints = [0x7a1c1c, 0x1c2f4f, 0xb8b6b0, 0x222222, 0x3d4a3a, 0x8a7a5a, 0x4a4f55, 0x9a9890, 0x6a5a2a];
+  for (const part of parts) {
+    const im = new THREE.InstancedMesh(part.geo, part.mat, cars.length);
+    cars.forEach((c, k) => {
+      carM.compose(new THREE.Vector3(c.x, c.burnt ? -0.08 : 0, c.z), q.setFromEuler(new THREE.Euler(0, c.rot, c.burnt ? 0.05 : 0)), new THREE.Vector3(1, 1, 1));
+      partM.compose(new THREE.Vector3(...part.local), new THREE.Quaternion(), new THREE.Vector3(...part.size));
+      im.setMatrixAt(k, carM.clone().multiply(partM));
+      if (part.color) im.setColorAt(k, col.set(c.burnt ? 0x2a2521 : c.paint));
+    });
+    im.castShadow = im.receiveShadow = true; g.add(im); worldMeshes.push(im);
+  }
+  const imW = new THREE.InstancedMesh(G.wheel, M.tire, cars.length * 4);
+  cars.forEach((c, k) => {
+    carM.compose(new THREE.Vector3(c.x, 0, c.z), q.setFromAxisAngle(UP, c.rot), new THREE.Vector3(1, 1, 1));
+    wheels.forEach((w, j) => { partM.makeTranslation(...w); imW.setMatrixAt(k * 4 + j, carM.clone().multiply(partM)); });
+  });
+  imW.castShadow = true; g.add(imW);
+  cars.forEach((c) => { c.paint ??= 0; rotCollider(c.x, c.z, 1.9, 4.5, c.rot); });
+  return paints;
+}
+const FIRE_SPOTS = [];
+function buildGasStation(g, cx, cz) {
+  const lot = mesh(new THREE.PlaneGeometry(38, 38), M.asphalt, g, cx, 0.17, cz, false); lot.rotation.x = -Math.PI / 2;
+  const kx = cx - 5;
+  boxMesh(g, kx, 5.3, cz, 11, 0.7, 18, M.concrete);                         // canopy
+  const glow = mesh(new THREE.PlaneGeometry(10, 17), M.stationLight, g, kx, 4.93, cz, false); glow.rotation.x = Math.PI / 2;
+  boxMesh(g, kx - 5.52, 5.3, cz, 0.06, 0.5, 18, M.redStripe, false);
+  for (const sx of [-3.5, 3.5]) for (const sz of [-6, 6]) { boxMesh(g, kx + sx, 2.5, cz + sz, 0.45, 5, 0.45, M.concrete); addCollider(kx + sx, cz + sz, 0.45, 0.45); }
+  for (const sz of [-4.5, -1.5, 1.5, 4.5]) { boxMesh(g, kx, 0.95, cz + sz, 0.7, 1.6, 0.9, M.pump); boxMesh(g, kx, 1.5, cz + sz, 0.72, 0.3, 0.92, M.redStripe, false); addCollider(kx, cz + sz, 0.8, 1); }
+  lampPositions.push(new THREE.Vector3(kx, 4.6, cz - 5), new THREE.Vector3(kx, 4.6, cz + 5));
+  addBuilding(g, cx + 11, cz + 2, 12, 16, 4.2, M.brick[0], M.roof, true, false);
+  const sign = mesh(new THREE.PlaneGeometry(9, 1.4), M.storeSign, g, cx + 4.94, 3.3, cz + 2, false); sign.rotation.y = -Math.PI / 2;
+  boxMesh(g, cx + 4.96, 1.3, cz + 2, 0.1, 2.4, 5, M.glass);
+  addTanker(g, cx - 14, cz - 11, 0.1); addTanker(g, cx + 9, cz - 14, Math.PI / 2 + 0.05);
+  for (const [bx, bz] of [[-10, 8], [-9.4, 8.7], [-10.6, 8.9], [3, -8], [3.6, -8.5], [-15, 2]]) addBarrel(g, cx + bx, cz + bz, 0.16);
+}
+
 function addCart(g, x, z, rot) {
   const c = new THREE.Group();
   boxMesh(c, 0, 0.75, 0, 0.55, 0.42, 0.85, M.cartMetal);
@@ -1425,7 +1559,7 @@ function buildLevel() {
     levelGroup.traverse((o) => { if (o.geometry && !Object.values(G).includes(o.geometry)) o.geometry.dispose(); });
   }
   levelGroup = new THREE.Group(); scene.add(levelGroup);
-  colliders = []; worldMeshes = []; lampPositions = []; POLICE_CARS.length = 0;
+  colliders = []; worldMeshes = []; lampPositions = []; POLICE_CARS.length = 0; BARRELS.length = 0; FIRE_SPOTS.length = 0; barrelQueue = [];
   makeMaterials();
   const g = levelGroup, theme = LV.theme;
 
@@ -1441,7 +1575,7 @@ function buildLevel() {
     const cx = blockCenter(bi), cz = blockCenter(bj);
     const bs = P - ROAD; // 44
     // block slab / sidewalk
-    const slabMat = theme === 'industrial' || theme === 'military' ? M.slab : M.pave;
+    const slabMat = theme === 'industrial' || theme === 'military' || theme === 'highway' ? M.slab : M.pave;
     const sgeo = new THREE.BoxGeometry(bs, 0.16, bs); scaleBoxUV(sgeo, bs, 0.16, bs, 3, 3);
     const slab = mesh(sgeo, slabMat, g, cx, 0.08, cz, false); worldMeshes.push(slab);
     if (inside) for (const [ex, ez, rot] of [[1, 0, Math.PI / 2], [-1, 0, -Math.PI / 2], [0, 1, 0], [0, -1, Math.PI]]) {
@@ -1452,6 +1586,18 @@ function buildLevel() {
     const r = Math.random();
     if (theme === 'police' && bi === 2 && bj === 2) {
       buildPoliceStation(g, cx, cz);
+    } else if (theme === 'highway' && bi === 2 && bj === 2) {
+      buildGasStation(g, cx, cz);
+    } else if (theme === 'highway') { // roadside fields, motels and billboards along the evacuation route
+      const f = mesh(new THREE.PlaneGeometry(38, 38), M.field, g, cx, 0.17, cz, false); f.rotation.x = -Math.PI / 2;
+      M.field.map.repeat.set(10, 10);
+      if (inside && r < 0.3) {
+        for (const [ox, oz] of [[-9, -9], [9, -9], [-9, 9]]) if (Math.random() < 0.8) addBuilding(g, cx + ox, cz + oz, pick([12, 16]), 12, randi(1, 2) * 3.5, pick(M.brick), M.roof, inside, false);
+      } else if (inside && r < 0.55) {
+        addBillboard(g, cx + rand(-8, 8), cz + rand(-8, 8), pick([0, Math.PI / 2, Math.PI, -Math.PI / 2]));
+      }
+      for (let k = 0; k < randi(3, 7); k++) trees.push([cx + rand(-17, 17), cz + rand(-17, 17), rand(0.8, 1.3)]);
+      if (inside && Math.random() < 0.5) for (let k = 0; k < randi(1, 3); k++) addBarrel(g, cx + rand(-15, 15), cz + rand(-15, 15), 0.16);
     } else if (theme === 'mall' && bi === 2 && bj === 2) {
       buildMall(g, cx, cz);
     } else if (theme === 'military' && bi === 2 && bj === 2) {
@@ -1545,6 +1691,7 @@ function buildLevel() {
       imT.setMatrixAt(k, mtx); imL.setMatrixAt(k, mtx);
       const dusk = TM === TIMES.dusk;
       if (TM.snow) col.setHSL(0.58, 0.1, rand(0.62, 0.78));
+      else if (LV.theme === 'highway') col.setHSL(rand(0.05, 0.09), 0.3, rand(0.07, 0.12)); // dead, withered canopies
       else col.setHSL(rand(0.2, 0.3) - (dusk ? 0.05 : 0), rand(0.3, 0.5), rand(0.16, 0.26));
       imL.setColorAt(k, col);
       if (Math.abs(x) < BOUND && Math.abs(z) < BOUND) addCollider(x, z, 0.5 * s, 0.5 * s);
@@ -1581,8 +1728,28 @@ function buildLevel() {
     im.receiveShadow = true; g.add(im);
   }
 
+  if (theme === 'highway') { // bumper-to-bumper evacuation traffic, some of it burning
+    const jam = [];
+    const paints = [0x7a1c1c, 0x1c2f4f, 0xb8b6b0, 0x222222, 0x3d4a3a, 0x8a7a5a, 0x4a4f55, 0x9a9890, 0x6a5a2a];
+    for (const rc of ROAD_CENTERS) for (const alongZ of [true, false]) {
+      if (Math.abs(rc) > HALF - 1) continue;
+      for (let t = -HALF + 12; t < HALF - 12; t += rand(5.8, 7.6)) {
+        if (ROAD_CENTERS.some((o) => Math.abs(o - t) < 8.5)) continue; // keep intersections open
+        for (const lane of [-4.4, -1.5, 1.5, 4.4]) {
+          if (Math.random() < 0.5) continue;
+          const off = lane + rand(-0.3, 0.3), tt = t + rand(-0.6, 0.6);
+          const x = alongZ ? rc + off : tt, z = alongZ ? tt : rc + off;
+          const rot = (alongZ ? 0 : Math.PI / 2) + (lane < 0 ? Math.PI : 0) + rand(-0.22, 0.22);
+          const burnt = Math.random() < 0.1;
+          jam.push({ x, z, rot, burnt, paint: pick(paints) });
+          if (burnt) { const f = new THREE.Vector3(x, 1.3, z); FIRE_SPOTS.push(f); const lp = f.clone(); lp.fire = true; lampPositions.push(lp); }
+        }
+      }
+    }
+    buildJam(g, jam);
+  }
   // cars in the streets
-  for (const rc of ROAD_CENTERS) for (let seg = 0; seg < N; seg++) {
+  if (theme !== 'highway') for (const rc of ROAD_CENTERS) for (let seg = 0; seg < N; seg++) {
     if (Math.abs(rc) > HALF - 1) continue;
     const t0 = blockCenter(seg);
     const cnt = randi(0, 2);
@@ -1752,7 +1919,7 @@ function applyTime() {
     else { scene.add(sky); scene.background = null; }
   } else {
     scene.remove(sky);
-    sunDir.set(-0.4, 0.8, 0.3).normalize();
+    if (t.moon) sunDir.set(-0.55, 0.42, 0.72).normalize(); else sunDir.set(-0.4, 0.8, 0.3).normalize();
     scene.background = new THREE.Color(t.bg);
     scene.environment = null; gunScene.environment = null;
   }
@@ -1760,6 +1927,12 @@ function applyTime() {
   gunHemi.color.set(t.hemiSky);
   flashlight.intensity = t.night ? (t.snow ? 40 : 160) : (TM === TIMES.fog ? 40 : 0);
   bloom.strength = t.night ? 0.55 : 0.3;
+  if (t.moon && !moonMesh) {
+    moonMesh = new THREE.Mesh(new THREE.SphereGeometry(55, 32, 20), new THREE.MeshBasicMaterial({ color: 0xff5a3a, fog: false }));
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.fire, color: 0xff3020, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, opacity: 0.55, transparent: true }));
+    halo.scale.setScalar(420); moonMesh.add(halo); scene.add(moonMesh);
+  }
+  if (moonMesh) { moonMesh.visible = !!t.moon; moonMesh.position.copy(sunDir).multiplyScalar(1600); }
 }
 
 // ============================================================
@@ -1777,6 +1950,11 @@ function resolve(p, r) {
       if (m === pl) p.x = b.x0 - r; else if (m === pr) p.x = b.x1 + r; else if (m === pb) p.z = b.z0 - r; else p.z = b.z1 + r;
     }
   }
+}
+// line-of-sight only cares about tall things: cars, barrels and props are lower than a head
+function blocksSight(x, z) {
+  for (const b of colliders) if ((b.x1 - b.x0) * (b.z1 - b.z0) >= 30 && x > b.x0 && x < b.x1 && z > b.z0 && z < b.z1) return true;
+  return false;
 }
 function blocked(x, z, r) {
   for (const b of colliders) if (x > b.x0 - r && x < b.x1 + r && z > b.z0 - r && z < b.z1 + r) return true;
@@ -1830,6 +2008,9 @@ function sfx(name, vol = 1) {
     case 'copshot': sNoise(t, 0.2, 4200, 500, 0.7 * vol); sTone(t, 0.1, 150, 50, 0.5 * vol); break;
     case 'whiz': sNoise(t, 0.12, 6000, 2500, 0.25, 'bandpass'); break;
     case 'flame': sNoise(t, 0.3, 1400, 500, 0.35 * vol, 'bandpass'); sNoise(t, 0.3, 300, 120, 0.25 * vol); break;
+    case 'charge': sTone(t, 1.0, 180, 1400, 0.18 * vol, 'sawtooth'); sNoise(t, 1.0, 5000, 7000, 0.12 * vol, 'highpass'); break;
+    case 'zap': sNoise(t, 0.35, 9000, 1500, 0.8 * vol, 'highpass'); sTone(t, 0.25, 900, 120, 0.4 * vol, 'square'); break;
+    case 'bossroar': sTone(t, 1.8, 60, 30, 0.9, 'sawtooth'); sTone(t, 1.8, 92, 45, 0.6, 'sawtooth'); sNoise(t, 1.6, 700, 150, 0.6, 'bandpass'); break;
     case 'splat': sNoise(t, 0.5, 900, 120, 0.8); sTone(t, 0.3, 160, 60, 0.4, 'sawtooth'); break;
     case 'heal': sTone(t, 0.5, 520, 880, 0.18 * vol, 'sine'); sTone(t + 0.1, 0.5, 780, 1320, 0.12 * vol, 'sine'); break;
     case 'growl': sTone(t, 0.7, 70, 55, 0.5 * vol, 'sawtooth'); sNoise(t, 0.7, 600, 200, 0.3 * vol, 'bandpass'); break;
@@ -1851,9 +2032,9 @@ function sfx(name, vol = 1) {
 function groan(z) {
   if (!actx) return;
   const d = z.pos.distanceTo(player.pos); if (d > 40) return;
-  const t = actx.currentTime, vol = 0.35 * (1 - d / 40) * (z.type === 'brute' ? 1.6 : z.type === 'stalker' ? 0.35 : 1);
+  const t = actx.currentTime, vol = 0.35 * (1 - d / 40) * (z.type === 'behemoth' ? 3 : z.type === 'brute' ? 1.6 : z.type === 'stalker' ? 0.35 : 1);
   const o = actx.createOscillator(); o.type = 'sawtooth';
-  const base = { brute: 55, runner: 140, crawler: 120, spitter: 165, bloater: 62, screamer: 210, armored: 88, riot: 95, gunner: 105, medic: 120, mutant: 48, dog: 260, flamer: 92, stalker: 320, splitter: 58, spawn: 300 }[z.type] || rand(80, 110);
+  const base = { behemoth: 32, shocker: 110, brute: 55, runner: 140, crawler: 120, spitter: 165, bloater: 62, screamer: 210, armored: 88, riot: 95, gunner: 105, medic: 120, mutant: 48, dog: 260, flamer: 92, stalker: 320, splitter: 58, spawn: 300 }[z.type] || rand(80, 110);
   o.frequency.setValueAtTime(base, t); o.frequency.linearRampToValueAtTime(base * rand(0.7, 1.2), t + 0.5); o.frequency.linearRampToValueAtTime(base * 0.6, t + 1.1);
   const lfo = actx.createOscillator(); lfo.frequency.value = rand(5, 9); const lg = actx.createGain(); lg.gain.value = base * 0.08;
   lfo.connect(lg).connect(o.frequency);
@@ -2066,6 +2247,12 @@ function zombieMats() {
     stalkerSkin: std({ map: TEX.skins[1], bumpMap: TEX.skins[1], bumpScale: 2, color: 0xdce8ff, roughness: 0.5, transparent: true }),
     splitSkin: tint(0xc49ab8, 0x200818, 0.3),
     splitBoil: std({ color: 0x9a4a80, emissive: 0x401030, emissiveIntensity: 0.6, roughness: 0.25 }),
+    hiVis: std({ map: TEX.hiVis, bumpMap: TEX.hiVis, bumpScale: 1.5, roughness: 0.9 }),
+    hardhat: std({ color: 0xe8c020, roughness: 0.45 }),
+    reflect: std({ color: 0xd8d8d0, emissive: 0x606060, emissiveIntensity: 0.6, roughness: 0.3 }),
+    coil: std({ color: 0x0a1830, emissive: 0x4aa0ff, emissiveIntensity: 3 }),
+    bossSkin: tint(0x9a7a70, 0x200000, 0.25),
+    bossEye: std({ color: 0x220000, emissive: 0xff2a10, emissiveIntensity: 5 }),
     paleEye: std({ color: 0x111122, emissive: 0x9ad0ff, emissiveIntensity: 3 }),
     boil: std({ color: 0xc8d060, emissive: 0x8a9a10, emissiveIntensity: 0.9, roughness: 0.25 }),
     acid: std({ color: 0x80ff40, emissive: 0x60ff20, emissiveIntensity: 2.5, roughness: 0.2 }),
@@ -2136,20 +2323,23 @@ class Zombie {
     this.rage = 0; this.spitT = rand(1.5, 3); this.screamCd = rand(0, 2); this.screams = 0; this.screaming = 0; this.fuse = 0; this.losT = 0; this.los = false;
     this.helmetHp = type === 'armored' ? 70 : 0; this.maxHp = this.hp;
     const g = this.g = new THREE.Group();
-    const sw = c.scale * rand(0.93, 1.07); g.scale.set(sw, sw * rand(0.95, 1.07), sw); // varied height and build
-    const skin = type === 'stalker' ? zm.stalkerSkin : pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' ? zm.paleSkin : type === 'mutant' ? zm.fleshSkin : type === 'splitter' ? zm.splitSkin : zm.skins);
+    const sw = c.scale * (c.boss ? 1 : rand(0.93, 1.07)); g.scale.set(sw, sw * (c.boss ? 1 : rand(0.95, 1.07)), sw); // varied height and build
+    const skin = type === 'stalker' ? zm.stalkerSkin : type === 'behemoth' ? zm.bossSkin[0] : pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' ? zm.paleSkin : type === 'mutant' ? zm.fleshSkin : type === 'splitter' ? zm.splitSkin : zm.skins);
     const cop = type === 'riot' || type === 'gunner';
     let cloth = cop ? pick(zm.police) : pick(zm.cloth), pants = cop ? zm.policePants : pick(zm.pants);
     if (type === 'medic') { cloth = pick(zm.scrubs); pants = cloth; }
     if (type === 'stalker') { cloth = skin; pants = skin; } // naked, gaunt hunter
     if (type === 'splitter') cloth = skin;
+    if (type === 'shocker') cloth = zm.hiVis;
+    if (type === 'behemoth') { cloth = skin; pants = zm.gown; }
+    this.boltCd = rand(1.5, 3); this.charge = 0; this.throwCd = rand(2, 4); this.windup = 0; this.enraged = false;
     this.revealT = 0;
     if (type === 'mutant') { cloth = skin; pants = zm.gown; } // bare, swollen torso
     if (type === 'flamer') { cloth = zm.camo; pants = zm.camo; }
     this.tankHp = type === 'flamer' ? 50 : 0; this.flameTick = 0; this.flaming = false;
     this.healCd = rand(2, 4); this.leapCd = rand(1.5, 3); this.crouch = 0; this.leapT = 0; this.airY = 0;
     this.shieldHp = c.shield ? c.shield * LV.hpMul : 0; this.shieldMax = this.shieldHp; this.gunT = rand(1.5, 3); this.aimT = 0;
-    const eyeMat = type === 'stalker' ? zm.paleEye : type === 'spitter' ? zm.acid : type === 'screamer' ? zm.whiteEye : type === 'mutant' ? zm.yellowEye : zm.eye;
+    const eyeMat = type === 'behemoth' ? zm.bossEye : type === 'shocker' ? zm.coil : type === 'stalker' ? zm.paleEye : type === 'spitter' ? zm.acid : type === 'screamer' ? zm.whiteEye : type === 'mutant' ? zm.yellowEye : zm.eye;
     const body = this.body = new THREE.Group(); g.add(body);
     const add = (geo, mat, parent, px, py, pz, part = 'body') => {
       const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.castShadow = true;
@@ -2162,14 +2352,14 @@ class Zombie {
       return;
     }
     // ---- torso: one group so each type can reshape it around the waist ----
-    const torsoScale = { splitter: [1.5, 1.1, 1.35], stalker: [0.8, 1.12, 0.72], bloater: [1.6, 1.05, 1.5], screamer: [0.85, 1.05, 0.8], mutant: [1.35, 1.05, 1.1], brute: [1.1, 1, 1.05] }[type] || [1, 1, 1];
+    const torsoScale = { behemoth: [1.45, 1.1, 1.25], splitter: [1.5, 1.1, 1.35], stalker: [0.8, 1.12, 0.72], bloater: [1.6, 1.05, 1.5], screamer: [0.85, 1.05, 0.8], mutant: [1.35, 1.05, 1.1], brute: [1.1, 1, 1.05] }[type] || [1, 1, 1];
     const tg = this.torsoG = new THREE.Group(); tg.position.y = 1.2; tg.scale.set(...torsoScale); body.add(tg);
     const belly = type === 'walker' ? rand(0.92, 1.15) : 1;
     add(HB.chest, cloth, tg, 0, 0.23, 0).scale.set(1.22, 0.95, 0.74);
     add(HB.abdomen, cloth, tg, 0, -0.03, 0.01).scale.set(1.12 * belly, 1, 0.9 * belly);
     add(HB.pelvis, pants, tg, 0, -0.24, 0).scale.set(1.05, 0.62, 0.78);
     for (const sx of [-1, 1]) add(HB.shoulder, cloth, tg, 0.235 * sx, 0.35, 0);
-    const gory = !['armored', 'riot', 'gunner', 'flamer', 'medic', 'stalker'].includes(type);
+    const gory = !['armored', 'riot', 'gunner', 'flamer', 'medic', 'stalker', 'shocker'].includes(type);
     if (gory) for (let k = 0; k < randi(1, 3); k++) { // bite wounds and torn flesh
       const front = Math.random() < 0.7 ? 1 : -1;
       add(HB.wound, zm.wound, tg, rand(-0.16, 0.16), rand(-0.08, 0.3), 0.135 * front).scale.set(rand(0.8, 1.3), rand(0.8, 1.5), 0.35);
@@ -2199,7 +2389,10 @@ class Zombie {
     else if (cop) { // police cap and badge
       add(CAP_G, zm.cap, hp, 0, 0.25, 0, 'head'); add(G.box, zm.cap, hp, 0, 0.2, 0.15, 'head').scale.set(0.22, 0.02, 0.1);
       add(G.box, zm.badge, body, -0.12, 1.5, 0.155).scale.set(0.06, 0.07, 0.02);
-    } else if (!['armored', 'bloater', 'flamer', 'medic', 'stalker', 'splitter'].includes(type) && Math.random() < 0.65) {
+    } else if (type === 'shocker') { // hard hat
+      add(G.head, zm.hardhat, hp, 0, 0.2, 0, 'head').scale.set(1.2, 0.72, 1.24);
+      add(G.box, zm.hardhat, hp, 0, 0.17, 0.12, 'head').scale.set(0.3, 0.02, 0.12);
+    } else if (!['armored', 'bloater', 'flamer', 'medic', 'stalker', 'splitter', 'behemoth'].includes(type) && Math.random() < 0.65) {
       const long = Math.random() < 0.35; // scalp hair, sometimes long and matted
       add(G.head, zm.hair, hp, 0, long ? 0.12 : 0.19, long ? -0.03 : -0.015, 'head').scale.set(1.05, long ? 1.3 : 0.8, 1.07);
     }
@@ -2270,6 +2463,21 @@ class Zombie {
       add(G.box, zm.healCross, body, 0, 1.42, 0.16).scale.set(0.07, 0.2, 0.02);
       add(G.box, zm.healCross, body, 0, 1.44, 0.16).scale.set(0.2, 0.07, 0.02);
     }
+    if (type === 'shocker') {
+      for (const y of [1.28, 1.08]) add(G.box, zm.reflect, body, 0, y, 0.15).scale.set(0.46, 0.04, 0.02);
+      for (const a of this.arms) add(G.box, zm.coil, a, 0, -0.22, 0.06).scale.set(0.13, 0.1, 0.02);
+      this.arcs = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(36 * 3), 3)),
+        new THREE.LineBasicMaterial({ color: 0x8ac8ff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending }));
+      this.arcs.frustumCulled = false; scene.add(this.arcs);
+    }
+    if (type === 'behemoth') { // bone spurs along the back and shoulders
+      for (let i = 0; i < 7; i++) add(CLAW_G, zm.bone, body, rand(-0.18, 0.18), 1.15 + i * 0.09, -0.18).scale.set(2.4, 2.4, 2.4);
+      for (const sx of [-1, 1]) add(G.box, zm.bone, body, 0.3 * sx, 1.6, 0).scale.set(0.2, 0.1, 0.24);
+      for (const h of this.hands) for (const cxw of [-0.03, 0, 0.03]) add(CLAW_G, zm.claw, h, cxw, -0.17, 0.02).rotation.x = Math.PI;
+      this.rock = add(G.box, zm.bone, this.hands[1], 0, -0.16, 0.08); this.rock.scale.setScalar(0.35); this.rock.visible = false;
+      this.rock.material = rockMat;
+      this.radius = 0.95;
+    }
     if (type === 'stalker') for (const h of this.hands) for (const cxw of [-0.03, 0, 0.03]) add(CLAW_G, skin, h, cxw, -0.16, 0.02).rotation.x = Math.PI;
     if (type === 'splitter') { // writhing growths over the shoulders and back
       for (let i = 0; i < 12; i++) {
@@ -2294,7 +2502,7 @@ class Zombie {
       this.laser.visible = false; this.laser.frustumCulled = false; scene.add(this.laser);
     }
     if (type === 'crawler') { body.position.set(0, 0, -0.95); add(G.hand, pants, body, 0.1, 0.93, 0).scale.set(1.3, 1, 1.3); }
-    this.lean = { runner: 0.32, brute: 0.18, crawler: 1.36, bloater: -0.08, screamer: 0.12, armored: 0.1, riot: 0.06, gunner: 0.05, medic: 0.1, mutant: 0.42 }[type] ?? rand(0.08, 0.2);
+    this.lean = { behemoth: 0.22, shocker: 0.08, runner: 0.32, brute: 0.18, crawler: 1.36, bloater: -0.08, screamer: 0.12, armored: 0.1, riot: 0.06, gunner: 0.05, medic: 0.1, mutant: 0.42 }[type] ?? rand(0.08, 0.2);
     this.limp = type === 'walker' && Math.random() < 0.4 ? rand(0.2, 0.5) : 0;
     this.meshes.forEach((m) => { if (NO_SHADOW.has(m.geometry)) m.castShadow = false; });
     if (type === 'stalker') { // its own see-through material so each one fades independently
@@ -2385,6 +2593,30 @@ class Zombie {
     if (hit) hurtPlayer(this.c.dmg);
     else if (dist < 30) sfx('whiz');
   }
+  updateArcs() {
+    const on = this.charge > 0 || Math.random() < 0.25;
+    this.arcs.visible = on;
+    if (!on) return;
+    const a = this.arcs.geometry.attributes.position.array, c = this.pos, sc = this.g.scale.y;
+    const spread = this.charge > 0 ? 0.8 : 0.45;
+    for (let k = 0; k < 12; k++) { // short jagged sparks crawling over the body
+      let x = c.x + rand(-0.3, 0.3), y = rand(0.6, 1.8) * sc, z = c.z + rand(-0.3, 0.3);
+      for (let j = 0; j < 3; j++) {
+        const nx = x + rand(-spread, spread) * 0.35, ny = y + rand(-spread, spread) * 0.35, nz = z + rand(-spread, spread) * 0.35;
+        const i = (k * 3 + j) * 3; a[i] = x; a[i + 1] = y; a[i + 2] = z;
+        x = nx; y = ny; z = nz;
+      }
+    }
+    this.arcs.geometry.attributes.position.needsUpdate = true;
+  }
+  fireBolt(dist) {
+    const from = this.hands[1].getWorldPosition(new THREE.Vector3());
+    const hit = this.canSee() && dist < 16;
+    const to = hit ? camera.position.clone().add(new THREE.Vector3(0, -0.35, 0)) : from.clone().add(new THREE.Vector3(Math.sin(this.g.rotation.y), 0.1, Math.cos(this.g.rotation.y)).multiplyScalar(dist));
+    addBolt(from, to);
+    sfx('zap', clamp(1.3 - dist / 30, 0.3, 1.2));
+    if (hit) { hurtPlayer(this.c.dmg); shockFlash = 1; player.slowT = 1.3; }
+  }
   dropHelmet() {
     const ids = new Set(this.helmet);
     this.helmet.forEach((m) => m.parent && m.parent.remove(m));
@@ -2402,6 +2634,12 @@ class Zombie {
     kills++; score += this.c.score; addCash(this.c.cash);
     if (this.c.explode || this.tankBlown) { this.explode(); return; }
     if (this.c.split) this.splitApart();
+    if (this.c.shock) { // discharge stuns anything nearby
+      if (this.arcs) this.arcs.visible = false;
+      for (const o of zombies) if (!o.dead && o !== this && o.pos.distanceTo(this.pos) < 4.5) { o.hitT = 1.4; burst(o.pos.clone().setY(1.2), UP, sparkMat, 6, 3); }
+      addBolt(this.pos.clone().setY(1.2), this.pos.clone().setY(3)); sfx('zap', 0.8);
+    }
+    if (this.c.boss) { showMsg('屍王倒下了！', `獎勵 ${money(this.c.cash)}`, 3); shake = 1; sfx('slam', 1.5); spawnPickup('med', this.pos); }
     this.pool = makePool(this.pos.x + dir.x * 0.8, this.pos.z + dir.z * 0.8, TEX.blood, this.c.scale * rand(0.8, 1.2));
     const r = Math.random();
     if (this.type === 'brute' || this.type === 'armored' || this.type === 'gunner' || r < 0.22) spawnPickup('ammo', this.pos);
@@ -2445,7 +2683,7 @@ class Zombie {
     const n = 10;
     for (let i = 1; i < n; i++) {
       const t = i / n;
-      if (blocked(this.pos.x + (player.pos.x - this.pos.x) * t, this.pos.z + (player.pos.z - this.pos.z) * t, 0)) return false;
+      if (blocksSight(this.pos.x + (player.pos.x - this.pos.x) * t, this.pos.z + (player.pos.z - this.pos.z) * t)) return false;
     }
     return true;
   }
@@ -2567,6 +2805,31 @@ class Zombie {
         sfx('growl', clamp(1.3 - dist / 30, 0.3, 1));
       }
     }
+    if (this.c.shock) {
+      this.boltCd -= dt;
+      if (this.charge > 0) {
+        this.charge -= dt; hold = true;
+        if (this.charge <= 0) this.fireBolt(dist);
+      } else if (this.boltCd <= 0 && dist > 3.5 && dist < 15 && this.los) {
+        this.charge = 1; this.boltCd = rand(3.2, 4.2);
+        sfx('charge', clamp(1.3 - dist / 30, 0.3, 1));
+      }
+      this.updateArcs();
+    }
+    if (this.c.boss) {
+      this.throwCd -= dt;
+      if (!this.enraged && this.hp < this.maxHp * 0.4) {
+        this.enraged = true; this.speed *= 1.4; this.c = { ...this.c, rate: this.c.rate * 0.7 };
+        showMsg('屍王狂暴了！', '速度和攻擊頻率都提高了', 2.5); sfx('bossroar');
+      }
+      if (this.windup > 0) {
+        this.windup -= dt; hold = true; this.rock.visible = true;
+        if (this.windup <= 0) { this.rock.visible = false; throwRock(this); }
+      } else if (this.throwCd <= 0 && dist > 9 && dist < 42 && this.los) {
+        this.windup = 1.1; this.throwCd = rand(4.5, 6);
+        sfx('growl', 1);
+      }
+    }
     if (this.c.gun) {
       this.gunT -= dt;
       if (this.flashT > 0) { this.flashT -= dt; if (this.flashT <= 0) this.flash.visible = false; }
@@ -2598,11 +2861,12 @@ class Zombie {
       const sp = this.speed * slow * (this.flaming ? 0.4 : 1) * (this.rage > 0 ? 1.6 : 1) * (1 - this.limp * (0.5 + 0.5 * Math.sin(this.phase)));
       const px = this.pos.x, pz = this.pos.z;
       this.pos.x += mx * sp * dt; this.pos.z += mz * sp * dt;
-      resolve(this.pos, this.radius);
+      const res = this.c.boss ? resolveLarge : resolve;
+      res(this.pos, this.radius);
       if (Math.hypot(this.pos.x - px, this.pos.z - pz) < sp * dt * 0.3) {
         this.side = this.side || (Math.random() < 0.5 ? 1 : -1);
         this.pos.x += -mz * this.side * sp * dt; this.pos.z += mx * this.side * sp * dt;
-        resolve(this.pos, this.radius);
+        res(this.pos, this.radius);
       }
       moving = true;
     }
@@ -2612,7 +2876,13 @@ class Zombie {
     }
     if (this.atkAnim > 0) {
       this.atkAnim += dt * 3;
-      if (this.atkAnim > 0.5 && !this.atkHit) { this.atkHit = true; if (dist <= reach + 0.5) hurtPlayer(this.c.dmg); }
+      if (this.atkAnim > 0.5 && !this.atkHit) {
+        this.atkHit = true;
+        if (this.c.boss) { // ground-shaking stomp
+          const p = this.pos.clone(); burst(p.clone().setY(0.2), UP, dustMat, 30, 6); stompRing(p); sfx('slam', 1.4);
+          shake = 1; if (dist <= reach + 1.8 && player.pos.y < 1) { hurtPlayer(this.c.dmg); player.slowT = 0.8; }
+        } else if (dist <= reach + 0.5) hurtPlayer(this.c.dmg);
+      }
       if (this.atkAnim >= 1) { this.atkAnim = 0; this.atkHit = false; }
     }
 
@@ -2659,6 +2929,9 @@ class Zombie {
       else if (this.atkAnim > 0) this.arms[1].rotation.x = -2.8 + Math.sin(this.atkAnim * Math.PI) * 2.4;
       else { this.arms[1].rotation.x = -0.2 + s * 0.25; this.arms[1].rotation.z = 0.25; }
     }
+    if (t === 'shocker' && this.charge > 0) { this.arms[0].rotation.x = this.arms[1].rotation.x = -1.5; this.arms[0].rotation.z = -0.4; this.arms[1].rotation.z = 0.4; }
+    if (t === 'behemoth' && this.windup > 0) { this.arms[1].rotation.x = -2.9; this.arms[1].rotation.z = 0.2; }
+    if (t === 'behemoth' && this.atkAnim > 0) { const k = Math.sin(this.atkAnim * Math.PI); this.arms[0].rotation.x = this.arms[1].rotation.x = -2.6 + k * 2.2; }
     if (t === 'flamer') { this.arms[1].rotation.x = -1.25; this.arms[0].rotation.x = -1.2; this.arms[0].rotation.z = -0.5; }
     if (t === 'medic' && hold) { this.arms[0].rotation.x = -0.4; this.arms[1].rotation.x = -0.4; }
     if (t === 'gunner') {
@@ -2704,7 +2977,7 @@ class Zombie {
     g.rotation.y += da * Math.min(1, dt * 6);
     return true;
   }
-  remove() { if (this.ghost) this.ghost.dispose(); scene.remove(this.g); if (this.laser) { scene.remove(this.laser); this.laser.geometry.dispose(); } }
+  remove() { if (this.arcs) { scene.remove(this.arcs); this.arcs.geometry.dispose(); } if (this.ghost) this.ghost.dispose(); scene.remove(this.g); if (this.laser) { scene.remove(this.laser); this.laser.geometry.dispose(); } }
 }
 
 // ---- pools, acid spit, explosion light ----
@@ -2724,12 +2997,61 @@ function healRing(p) {
   m.position.set(p.x, 0.1, p.z); scene.add(m); rings.push({ m, t: 0 });
 }
 const splitMat = new THREE.MeshBasicMaterial({ color: 0x8a3a70 });
+const rockMat = new THREE.MeshStandardMaterial({ color: 0x8a857c, roughness: 0.95 });
+let rocks = [], bolts = [], shockFlash = 0;
+function resolveLarge(p, r) { // only buildings and other big footprints stop the boss
+  for (const b of colliders) {
+    if ((b.x1 - b.x0) * (b.z1 - b.z0) < 40) continue;
+    const cx = clamp(p.x, b.x0, b.x1), cz = clamp(p.z, b.z0, b.z1), dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz;
+    if (d2 >= r * r) continue;
+    if (d2 > 1e-8) { const d = Math.sqrt(d2); p.x = cx + dx / d * r; p.z = cz + dz / d * r; }
+  }
+}
+function addBolt(a, b) {
+  const pts = [a.clone()];
+  for (let k = 1; k < 8; k++) pts.push(a.clone().lerp(b, k / 8).add(new THREE.Vector3(rand(-0.3, 0.3), rand(-0.3, 0.3), rand(-0.3, 0.3))));
+  pts.push(b.clone());
+  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xbfe0ff, transparent: true, blending: THREE.AdditiveBlending }));
+  l.frustumCulled = false; scene.add(l); bolts.push({ l, life: 0.14 });
+  boomLight.position.copy(a); boomLight.color.set(0x6ab0ff); boomT = 0.12;
+}
+function stompRing(p) {
+  const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xff6a40, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }));
+  m.position.set(p.x, 0.1, p.z); scene.add(m); rings.push({ m, t: 0 });
+}
+function throwRock(z) {
+  const from = z.hands[1].getWorldPosition(new THREE.Vector3());
+  const target = player.pos.clone().addScaledVector(player.vel, 0.6); target.y = 0;
+  const d = Math.hypot(target.x - from.x, target.z - from.z), T = clamp(d / 17, 0.8, 2.2);
+  const v = new THREE.Vector3((target.x - from.x) / T, (target.y - from.y + 0.5 * 9.8 * T * T) / T, (target.z - from.z) / T);
+  const m = new THREE.Mesh(G.box, rockMat); m.scale.set(0.9, 0.7, 0.8); m.position.copy(from); m.castShadow = true; scene.add(m);
+  const marker = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
+  marker.position.set(target.x, 0.08, target.z); marker.scale.setScalar(3.2); scene.add(marker);
+  rocks.push({ m, v, marker, spin: new THREE.Vector3(rand(-4, 4), rand(-4, 4), rand(-4, 4)), t: 0 });
+  sfx('roar', 0.8);
+}
+function updateBoss(dt) {
+  rocks = rocks.filter((r) => {
+    r.t += dt; r.v.y -= 9.8 * dt; r.m.position.addScaledVector(r.v, dt);
+    r.m.rotation.x += r.spin.x * dt; r.m.rotation.y += r.spin.y * dt;
+    r.marker.material.opacity = 0.5 + Math.sin(r.t * 18) * 0.35;
+    if (r.m.position.y > 0.35) return true;
+    const p = r.m.position.clone().setY(0.3);
+    scene.remove(r.m); scene.remove(r.marker); r.marker.material.dispose();
+    burst(p, UP, dustMat, 26, 6); burst(p, UP, sparkMat, 6, 5); sfx('slam', 1);
+    const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
+    shake = Math.min(1, shake + clamp(1 - dP / 20, 0, 0.8));
+    if (dP < 3.2 && player.pos.y < 1.2) hurtPlayer(30);
+    for (const o of zombies) if (!o.dead && !o.c.boss && Math.hypot(o.pos.x - p.x, o.pos.z - p.z) < 2.5) o.damage(80, { part: 'body' }, null);
+    return false;
+  });
+}
 const shardMat = new THREE.MeshBasicMaterial({ color: 0xcfe4ff, transparent: true, opacity: 0.8 });
 let tracers = [], grenades = [];
 const grenadeGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.07, 10); grenadeGeo.rotateX(Math.PI / 2);
 const grenadeMat = new THREE.MeshStandardMaterial({ color: 0x4a5030, roughness: 0.6, metalness: 0.4 });
 function blastAt(p, radius, dmg, playerDmg, src = null) {
-  boomLight.position.copy(p); boomT = 0.3;
+  boomLight.position.copy(p); boomLight.color.set(0xffb060); boomT = 0.3;
   burst(p, UP, sparkMat, 16, 8); burst(p, UP, dustMat, 24, 6);
   const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
   sfx('boom', clamp(1.2 - dP / 50, 0.25, 1.2));
@@ -2740,6 +3062,7 @@ function blastAt(p, radius, dmg, playerDmg, src = null) {
     const d = Math.hypot(o.pos.x - p.x, o.pos.z - p.z);
     if (d < radius) o.damage(dmg * (1 - d / radius) + 25, { part: o.shieldHp > 0 ? 'blast' : 'body' }, o.pos.clone().sub(p).setY(0).normalize());
   }
+  for (const b of BARRELS) if (!b.gone && !b.queued && Math.hypot(b.x - p.x, b.z - p.z) < radius * 0.85) { b.queued = true; barrelQueue.push({ b, t: rand(0.1, 0.25) }); }
 }
 function launchGrenade(from, dir, c) {
   const m = new THREE.Mesh(grenadeGeo, grenadeMat); m.position.copy(from); m.castShadow = true; scene.add(m);
@@ -2791,6 +3114,8 @@ function spawnSpit(z) {
   sfx('spit', clamp(1.2 - d / 30, 0.3, 1));
 }
 function updateHazards(dt) {
+  barrelQueue = barrelQueue.filter((q) => { q.t -= dt; if (q.t <= 0) { explodeBarrel(q.b); return false; } return true; });
+  updateBoss(dt);
   const eye = camera.position;
   spits = spits.filter((p) => {
     p.life -= dt; p.v.y -= 9.8 * dt; p.m.position.addScaledVector(p.v, dt);
@@ -2813,6 +3138,9 @@ function updateHazards(dt) {
   });
   if (inAcid && acidTick <= 0) { acidTick = 0.5; hurtPlayer(4); acidFlash = Math.min(1, acidFlash + 0.6); }
   acidFlash = Math.max(0, acidFlash - dt * 1.5);
+  shockFlash = Math.max(0, shockFlash - dt * 2.5);
+  $('shockfx').style.opacity = shockFlash;
+  bolts = bolts.filter((b) => { b.life -= dt; b.l.material.opacity = Math.max(0, b.life / 0.14); if (b.life <= 0) { scene.remove(b.l); b.l.geometry.dispose(); return false; } return true; });
   $('acidfx').style.opacity = acidFlash * 0.8;
   fires = fires.filter((f) => {
     f.life -= dt; f.v.multiplyScalar(1 - dt * 1.8); f.v.y += dt * 2.5;
@@ -2905,6 +3233,9 @@ function hurtPlayer(dmg) {
   if (player.hp <= 0) gameOver();
 }
 function updateHUD() {
+  const boss = zombies.find((z) => !z.dead && z.c.boss);
+  $('bossbar').style.display = boss ? 'block' : 'none';
+  if (boss) $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%';
   const w = weapons[wi];
   $('hpnum').textContent = Math.ceil(player.hp);
   $('hpfill').style.width = player.hp + '%';
@@ -2935,6 +3266,8 @@ function clearDynamic() {
   decals.forEach((d) => scene.remove(d)); decals = [];
   pickups.forEach((p) => scene.remove(p.m)); pickups = [];
   spits.forEach((p) => scene.remove(p.m)); spits = [];
+  rocks.forEach((r) => { scene.remove(r.m); scene.remove(r.marker); }); rocks = [];
+  bolts.forEach((b) => scene.remove(b.l)); bolts = []; shockFlash = 0;
   tracers.forEach((t) => scene.remove(t.l)); tracers = [];
   grenades.forEach((g) => scene.remove(g.m)); grenades = [];
   rings.forEach((r) => scene.remove(r.m)); rings = [];
@@ -2975,6 +3308,7 @@ function startWave() {
   let seen = [];
   try { seen = JSON.parse(localStorage.getItem('deadcity_seen') || '[]'); } catch {}
   const fresh = Object.keys(w).filter((t) => t !== 'walker' && !seen.includes(t));
+  if (w.behemoth) { setTimeout(() => { if (state === 'playing') { showMsg('屍王出現了！', '看到地上的紅圈就快閃開', 4); sfx('bossroar'); } }, 5200); }
   if (fresh.length) {
     showMsg(`新感染者：${fresh.map((t) => ZTYPES[t].name).join('、')}`, ZTYPES[fresh[0]].desc, 5);
     try { localStorage.setItem('deadcity_seen', JSON.stringify([...seen, ...fresh])); } catch {}
@@ -3405,6 +3739,7 @@ function tryFire(click) {
       if (z.lastFx === 'shield' || struck.size >= (w.c.pierce || 1)) break;
       dmg *= 0.8; // each zombie the round passes through slows it down
     }
+    if (!struck.size && wh && wh.object.userData.barrel) { explodeBarrel(wh.object.userData.barrel); continue; }
     if (!struck.size && wh) {
       const n = wh.face.normal.clone();
       if (wh.instanceId !== undefined) { wh.object.getMatrixAt(wh.instanceId, tmpM); n.transformDirection(tmpM); }
@@ -3422,7 +3757,8 @@ function tryFire(click) {
 const _v = new THREE.Vector3();
 function updatePlayer(dt) {
   const sprint = (keys.ShiftLeft && keys.KeyW || joyWantsSprint) && !aiming;
-  const speed = (aiming ? 2.8 : sprint ? 8.2 : 5.2) * (weapons[wi]?.c.move || 1);
+  player.slowT = Math.max(0, (player.slowT || 0) - dt);
+  const speed = (aiming ? 2.8 : sprint ? 8.2 : 5.2) * (weapons[wi]?.c.move || 1) * (player.slowT > 0 ? 0.5 : 1);
   const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);
   let wx = 0, wz = 0;
   if (keys.KeyW) { wx += fx; wz += fz; } if (keys.KeyS) { wx -= fx; wz -= fz; }
@@ -3530,8 +3866,23 @@ function updateLighting(dt) {
   if (lampT <= 0 && TM.night) {
     lampT = 0.5;
     const sorted = lampPositions.slice().sort((a, b) => a.distanceToSquared(camera.position) - b.distanceToSquared(camera.position));
-    LAMP_LIGHTS.forEach((l, i) => { if (sorted[i]) { l.position.copy(sorted[i]); l.intensity = sorted[i].y < 4 ? 14 : 70; } });
+    LAMP_LIGHTS.forEach((l, i) => {
+      if (!sorted[i]) return;
+      l.position.copy(sorted[i]); l.userData.fire = !!sorted[i].fire;
+      l.color.set(l.userData.fire ? 0xff7a30 : 0xffc98a);
+      l.intensity = l.userData.fire ? 35 : sorted[i].y < 4 ? 14 : 70;
+    });
   } else if (!TM.night) LAMP_LIGHTS.forEach((l) => (l.intensity = 0));
+  if (TM.night) LAMP_LIGHTS.forEach((l) => { if (l.userData.fire) l.intensity = 26 + Math.random() * 22; }); // flickering flames
+  // burning wrecks near the player keep throwing up flames
+  if (FIRE_SPOTS.length && (state === 'playing' || state === 'paused')) {
+    fireEmitT -= dt;
+    if (fireEmitT <= 0) {
+      fireEmitT = 0.06;
+      for (const f of FIRE_SPOTS) if (f.distanceToSquared(camera.position) < 1600 && Math.random() < 0.6)
+        emitFire(f.clone().add(new THREE.Vector3(rand(-0.6, 0.6), 0, rand(-1.4, 1.4))), new THREE.Vector3(rand(-0.15, 0.15), 1, rand(-0.15, 0.15)), rand(1.5, 3));
+    }
+  }
   // flashing police light bars
   if (POLICE_CARS.length && M.lightRed) {
     copFlash += dt;
@@ -3592,7 +3943,8 @@ $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 window.__game = { get state() { return state; }, player, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
-  give(n) { addCash(n); }, loadout: () => loadout,
+  give(n) { addCash(n); }, loadout: () => loadout, barrels: () => BARRELS, explodeBarrel,
+  probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
   spawnNear(type, d = 8) { const z = new Zombie(type, player.pos.x + rand(-2, 2), player.pos.z - d); zombies.push(z); return z; } };
 </script>
 </body>
