@@ -2118,7 +2118,11 @@ function texturiseGuns() {
   set(gunMats.silver, brushed, 0.6, { roughness: 0.25, metalness: 0.95 });
   set(gunMats.olive, odg, 1, { roughness: 0.7 });
   set(gunMats.glove, leather, 2.5, { roughness: 0.85 });
-  set(gunMats.sleeve, TEX.camo, 1.5, { roughness: 0.95 });
+  const fabric = surf('#1c1e22', (x) => {
+    for (let y = 0; y < 256; y += 2) { x.fillStyle = `rgba(255,255,255,${rand(0.01, 0.04)})`; x.fillRect(0, y, 256, 1); }
+    for (let xx = 0; xx < 256; xx += 2) { x.fillStyle = `rgba(0,0,0,${rand(0.02, 0.06)})`; x.fillRect(xx, 0, 1, 256); }
+  }, 3);
+  set(gunMats.sleeve, fabric, 1.2, { roughness: 0.95 });
 }
 // every block on the view models gets softly bevelled edges; geometry is cached per size
 const RB_CACHE = new Map();
@@ -2133,24 +2137,27 @@ function gb(parent, w, h, d, mat, x, y, z, rx = 0) {
 function gc(parent, r, len, mat, x, y, z) {
   const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 18), mat); m.rotation.x = Math.PI / 2; m.position.set(x, y, z); parent.add(m); return m;
 }
-const FINGER_G = new THREE.CapsuleGeometry(0.0105, 0.03, 4, 8);
+// each arm is a slot at the hand, with +Z aimed back at the elbow; the Blender forearm/glove fills it
+// (the left, supporting hand is the same model mirrored)
 function arm(parent, hx, hy, hz, ex, ey, ez) {
-  const a = new THREE.Vector3(hx, hy, hz), b = new THREE.Vector3(ex, ey, ez);
-  const dir = a.clone().sub(b).normalize(), len = a.distanceTo(b);
-  // sleeve: tapered camo forearm with a rolled cuff at the wrist
-  const sl = new THREE.Mesh(new THREE.CylinderGeometry(0.043, 0.056, len, 14), gunMats.sleeve);
-  sl.position.copy(a).add(b).multiplyScalar(0.5); sl.quaternion.setFromUnitVectors(UP, dir); parent.add(sl);
-  const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.047, 0.047, 0.03, 14), gunMats.sleeve);
-  cuff.position.copy(a).addScaledVector(dir, -0.055); cuff.quaternion.copy(sl.quaternion); parent.add(cuff);
-  // gloved hand wrapped around the grip: palm, four curled fingers and a thumb
-  const hand = new THREE.Group(); hand.position.copy(a); hand.quaternion.setFromUnitVectors(UP, dir); parent.add(hand);
-  const palm = new THREE.Mesh(roundedBox(0.058, 0.07, 0.032), gunMats.glove); palm.position.set(0, -0.01, 0.012); hand.add(palm);
-  for (let k = 0; k < 4; k++) {
-    const f = new THREE.Mesh(FINGER_G, gunMats.glove);
-    f.position.set(-0.021 + k * 0.014, 0.03 - Math.abs(k - 1.5) * 0.004, -0.012); f.rotation.x = 1.25; hand.add(f);
-  }
-  const th = new THREE.Mesh(FINGER_G, gunMats.glove); th.position.set(0.03, 0.012, 0.004); th.rotation.set(0.6, 0, -0.9); hand.add(th);
-  const strap = new THREE.Mesh(roundedBox(0.062, 0.012, 0.036), gunMats.poly); strap.position.set(0, -0.042, 0.012); hand.add(strap);
+  const slot = new THREE.Group();
+  slot.position.set(hx, hy, hz);
+  slot.lookAt(ex, ey, ez);
+  const left = ex < hx - 0.02;
+  slot.rotateZ(left ? 0.55 : -0.9);
+  if (left) slot.scale.x = -1;
+  slot.userData.armSlot = true;
+  parent.add(slot);
+  fillArm(slot);
+}
+function fillArm(slot) {
+  while (slot.children.length) slot.remove(slot.children[0]);
+  if (ARM_GLB) { slot.add(ARM_GLB.clone()); return; }
+  // stand-in until the model has loaded: dark sleeve and a simple glove
+  const sl = new THREE.Mesh(new THREE.CylinderGeometry(0.047, 0.055, 0.44, 14), gunMats.sleeve);
+  sl.rotation.x = Math.PI / 2; sl.position.set(0, 0.03, 0.3); slot.add(sl);
+  const palm = new THREE.Mesh(roundedBox(0.075, 0.03, 0.08), gunMats.glove); palm.position.set(0, 0.03, 0); slot.add(palm);
+  const fingers = new THREE.Mesh(roundedBox(0.072, 0.045, 0.03), gunMats.glove); fingers.position.set(0, 0.0, -0.035); slot.add(fingers);
 }
 // small details shared by the firearms
 function rail(g, x, y, z, len) {
@@ -2223,20 +2230,27 @@ function katanaMats() {
 }
 // the katana model is made in Blender (tools/blender/katana.py → assets/models/katana.glb);
 // until it has loaded, or if it cannot load, the procedural sword below stands in
-let KATANA_GLB = null;
+// models built in Blender (tools/blender/*.py → assets/models/*.glb)
+function loadModel(name, onLoad) {
+  const inline = window.__GLB_B64 && window.__GLB_B64[name];
+  const done = (gltf) => {
+    gltf.scene.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; o.material.metalness = Math.min(o.material.metalness, 0.82); } });
+    onLoad(gltf.scene);
+  };
+  if (inline) new GLTFLoader().parse(Uint8Array.from(atob(inline), (ch) => ch.charCodeAt(0)).buffer, '', done, () => {});
+  else new GLTFLoader().load(`./assets/models/${name}.glb`, done, undefined, () => { /* keep the procedural stand-in */ });
+}
+let KATANA_GLB = null, ARM_GLB = null;
+const forEachView = (fn) => weapons.forEach((w) => fn(w.view));
+loadModel('arm', (scene) => {
+  ARM_GLB = scene;
+  forEachView((v) => v.group.traverse((o) => { if (o.userData.armSlot) fillArm(o); }));
+});
 const onKatanaModel = (gltf) => {
   KATANA_GLB = gltf.scene;
-  KATANA_GLB.traverse((o) => {
-    if (!o.isMesh) return;
-    o.frustumCulled = false;
-    o.material.metalness = Math.min(o.material.metalness, 0.82); // keeps the steel readable at night without an environment map
-  });
   weapons.forEach((w) => { if (w.view.katana) useModelKatana(w.view.katana); });
 };
-if (window.__KATANA_GLB_B64) { // single-file builds carry the model inline
-  const bin = Uint8Array.from(atob(window.__KATANA_GLB_B64), (ch) => ch.charCodeAt(0));
-  new GLTFLoader().parse(bin.buffer, '', onKatanaModel, () => {});
-} else new GLTFLoader().load('./assets/models/katana.glb', onKatanaModel, undefined, () => { /* keep the procedural katana */ });
+loadModel('katana', (scene) => onKatanaModel({ scene }));
 function useModelKatana(k) {
   while (k.children.length) k.remove(k.children[0]);
   k.add(KATANA_GLB.clone());

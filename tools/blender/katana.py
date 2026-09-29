@@ -241,7 +241,7 @@ if PREVIEW:
     cam.data.type = "ORTHO"; cam.data.ortho_scale = 1.1
     cam.location = (0.9, 0.235, 0.02); cam.rotation_euler = (math.pi / 2, 0, math.pi / 2)
     scene.camera = cam
-    for loc, energy, size in (((0.6, 0.0, 0.6), 60, 0.8), ((0.5, 0.6, -0.4), 25, 1.0), ((-0.6, 0.2, 0.5), 30, 0.6)):
+    for loc, energy, size in (((0.6, 0.0, 0.6), 14, 0.8), ((0.5, 0.6, -0.4), 6, 1.0), ((-0.6, 0.2, 0.5), 7, 0.6)):
         l = bpy.data.objects.new("l", bpy.data.lights.new("l", "AREA")); scene.collection.objects.link(l)
         l.data.energy = energy; l.data.size = size; l.location = loc
         l.rotation_euler = (Vector((0, 0.235, 0)) - Vector(loc)).to_track_quat("-Z", "Y").to_euler()
