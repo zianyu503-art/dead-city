@@ -2224,7 +2224,7 @@ function katanaMats() {
 // the katana model is made in Blender (tools/blender/katana.py → assets/models/katana.glb);
 // until it has loaded, or if it cannot load, the procedural sword below stands in
 let KATANA_GLB = null;
-new GLTFLoader().load('./assets/models/katana.glb', (gltf) => {
+const onKatanaModel = (gltf) => {
   KATANA_GLB = gltf.scene;
   KATANA_GLB.traverse((o) => {
     if (!o.isMesh) return;
@@ -2232,7 +2232,11 @@ new GLTFLoader().load('./assets/models/katana.glb', (gltf) => {
     o.material.metalness = Math.min(o.material.metalness, 0.82); // keeps the steel readable at night without an environment map
   });
   weapons.forEach((w) => { if (w.view.katana) useModelKatana(w.view.katana); });
-}, undefined, () => { /* keep the procedural katana */ });
+};
+if (window.__KATANA_GLB_B64) { // single-file builds carry the model inline
+  const bin = Uint8Array.from(atob(window.__KATANA_GLB_B64), (ch) => ch.charCodeAt(0));
+  new GLTFLoader().parse(bin.buffer, '', onKatanaModel, () => {});
+} else new GLTFLoader().load('./assets/models/katana.glb', onKatanaModel, undefined, () => { /* keep the procedural katana */ });
 function useModelKatana(k) {
   while (k.children.length) k.remove(k.children[0]);
   k.add(KATANA_GLB.clone());
