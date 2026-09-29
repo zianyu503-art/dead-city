@@ -428,6 +428,8 @@ const WEAPONS = [
     desc: '可靠的制式手槍，換彈快。' },
   { id: 'deagle', name: '沙漠之鷹', cat: '手槍', price: 800, sound: 'magnum', dmg: 90, rate: 0.38, auto: false, mag: 7, reserve: 42, reload: 1.6, spread: 0.01, pellets: 1, recoil: 0.065, pierce: 2,
     desc: '大口徑手槍，一發子彈能貫穿兩隻殭屍。' },
+  { id: 'katana', name: '武士刀', cat: '近戰', price: 600, sound: 'slash', dmg: 95, rate: 0.42, auto: true, mag: Infinity, reserve: Infinity, reload: 0, spread: 0, pellets: 1, recoil: 0,
+    melee: true, range: 2.7, arc: 0.95, move: 1.1, noFlash: true, desc: '不需要彈藥。一刀能砍中面前扇形範圍內的多隻殭屍，拿著跑得更快。會被盾牌擋下。' },
   { id: 'mp5', name: 'MP5 衝鋒槍', cat: '衝鋒槍', price: 1200, sound: 'smg', dmg: 21, rate: 0.068, auto: true, mag: 30, reserve: 210, reload: 1.8, spread: 0.03, pellets: 1, recoil: 0.007, move: 1.06,
     desc: '射速極快、後座力小，拿著跑得比較快。' },
   { id: 'rifle', name: 'M4 步槍', cat: '突擊步槍', price: 0, sound: 'rifle', dmg: 30, rate: 0.095, auto: true, mag: 30, reserve: 180, reload: 2.0, spread: 0.028, pellets: 1, recoil: 0.011, zoom: 25,
@@ -436,14 +438,26 @@ const WEAPONS = [
     desc: '傷害高、後座力大。穿甲子彈打防彈背心和頭盔特別有效。' },
   { id: 'shotgun', name: 'M870 霰彈槍', cat: '霰彈槍', price: 0, sound: 'shotgun', dmg: 17, rate: 0.85, auto: false, mag: 6, reserve: 36, reload: 2.6, spread: 0.075, pellets: 9, recoil: 0.05, falloff: true,
     desc: '泵動式霰彈槍，近距離一槍就能打倒行屍。' },
+  { id: 'dbarrel', name: '雙管霰彈槍', cat: '霰彈槍', price: 1500, sound: 'shotgun', dmg: 19, rate: 0.22, auto: false, mag: 2, reserve: 40, reload: 2.0, spread: 0.1, pellets: 12, recoil: 0.07, falloff: true,
+    desc: '兩發連射、每發 12 顆彈丸，近距離幾乎能把任何殭屍轟退。每兩發就要換彈。' },
   { id: 'aa12', name: 'AA-12 自動霰彈槍', cat: '霰彈槍', price: 3500, sound: 'shotgun', dmg: 15, rate: 0.2, auto: true, mag: 20, reserve: 80, reload: 3.2, spread: 0.085, pellets: 8, recoil: 0.035, falloff: true,
     desc: '全自動霰彈槍，配 20 發彈鼓，近距離清場利器。' },
   { id: 'awm', name: 'AWM 狙擊槍', cat: '狙擊槍', price: 3000, sound: 'sniper', dmg: 240, rate: 1.25, auto: false, mag: 5, reserve: 30, reload: 3.0, spread: 0.001, hipSpread: 0.06, pellets: 1, recoil: 0.07,
     pierce: 5, ap: true, scope: true, zoom: 57, move: 0.9, desc: '一槍貫穿一整排殭屍。按右鍵開鏡，不開鏡時非常不準。' },
+  { id: 'crossbow', name: '連發十字弩', cat: '弓弩', price: 2500, sound: 'bow', dmg: 160, rate: 0.75, auto: false, mag: 5, reserve: 40, reload: 2.4, spread: 0.004, pellets: 1, recoil: 0.02,
+    pierce: 3, noFlash: true, zoom: 30, desc: '安靜的重型弩箭，貫穿 3 隻殭屍。射擊時不會引來額外注意。' },
   { id: 'm249', name: 'M249 輕機槍', cat: '機槍', price: 5000, sound: 'heavy', dmg: 32, rate: 0.075, auto: true, mag: 100, reserve: 300, reload: 4.5, spread: 0.04, pellets: 1, recoil: 0.012, zoom: 18, move: 0.82,
     desc: '100 發彈鏈，能持續壓制屍潮。移動比較慢，換彈要很久。' },
+  { id: 'minigun', name: 'M134 加特林', cat: '機槍', price: 7000, sound: 'heavy', dmg: 24, rate: 0.042, auto: true, mag: 200, reserve: 400, reload: 5.0, spread: 0.05, pellets: 1, recoil: 0.006,
+    spin: 0.6, move: 0.7, desc: '每分鐘上千發的轉管機槍。按住射擊鍵要先預熱 0.6 秒才會開火，拿著移動很慢。' },
+  { id: 'flamer', name: '火焰噴射器', cat: '特殊', price: 4500, sound: 'flamethrower', dmg: 7, rate: 0.05, auto: true, mag: 150, reserve: 450, reload: 3.0, spread: 0, pellets: 1, recoil: 0.001,
+    flame: true, range: 9, noFlash: true, desc: '噴出 9 公尺的火焰，點燃的殭屍會持續燃燒 3 秒。火焰會繞過盾牌。' },
+  { id: 'tesla', name: '特斯拉電擊槍', cat: '特殊', price: 5500, sound: 'zap', dmg: 75, rate: 0.5, auto: true, mag: 20, reserve: 80, reload: 2.6, spread: 0, pellets: 1, recoil: 0.015,
+    chain: 5, desc: '射出會連鎖跳躍的閃電，最多擊中 5 隻相鄰的殭屍並讓牠們僵直。準星附近有殭屍就會自動導向。' },
   { id: 'm79', name: 'M79 榴彈發射器', cat: '爆裂物', price: 4000, sound: 'launcher', dmg: 260, rate: 0.9, auto: false, mag: 1, reserve: 16, reload: 1.9, spread: 0.004, pellets: 1, recoil: 0.05,
     explosive: true, radius: 5.5, move: 0.95, desc: '發射會爆炸的榴彈，範圍傷害能炸碎盾牌。太近開火會炸到自己。' },
+  { id: 'rpg', name: 'RPG-7 火箭筒', cat: '爆裂物', price: 6000, sound: 'rpg', dmg: 720, rate: 1.4, auto: false, mag: 1, reserve: 8, reload: 2.8, spread: 0.002, pellets: 1, recoil: 0.08,
+    explosive: true, rocket: true, radius: 7.5, move: 0.9, desc: '直線飛行的火箭，爆炸範圍和威力都是榴彈的兩倍。能一發炸死巨型感染者。' },
 ];
 const WEAPON = Object.fromEntries(WEAPONS.map((w) => [w.id, w]));
 const DEFAULT_KIT = ['pistol', 'rifle', 'shotgun'];
@@ -2008,6 +2022,9 @@ function sfx(name, vol = 1) {
     case 'copshot': sNoise(t, 0.2, 4200, 500, 0.7 * vol); sTone(t, 0.1, 150, 50, 0.5 * vol); break;
     case 'whiz': sNoise(t, 0.12, 6000, 2500, 0.25, 'bandpass'); break;
     case 'flame': sNoise(t, 0.3, 1400, 500, 0.35 * vol, 'bandpass'); sNoise(t, 0.3, 300, 120, 0.25 * vol); break;
+    case 'slash': sNoise(t, 0.18, 3000, 9000, 0.35, 'bandpass'); break;
+    case 'bow': sTone(t, 0.25, 320, 110, 0.35, 'triangle'); sNoise(t, 0.08, 2500, 900, 0.3, 'bandpass'); break;
+    case 'rpg': sNoise(t, 0.9, 2500, 300, 0.9); sTone(t, 0.5, 200, 60, 0.5); break;
     case 'charge': sTone(t, 1.0, 180, 1400, 0.18 * vol, 'sawtooth'); sNoise(t, 1.0, 5000, 7000, 0.12 * vol, 'highpass'); break;
     case 'zap': sNoise(t, 0.35, 9000, 1500, 0.8 * vol, 'highpass'); sTone(t, 0.25, 900, 120, 0.4 * vol, 'square'); break;
     case 'bossroar': sTone(t, 1.8, 60, 30, 0.9, 'sawtooth'); sTone(t, 1.8, 92, 45, 0.6, 'sawtooth'); sNoise(t, 1.6, 700, 150, 0.6, 'bandpass'); break;
@@ -2058,6 +2075,9 @@ const gunRoot = new THREE.Group(); gunCam.add(gunRoot);
 const gunMats = {
   silver: std({ color: 0x9a9ca0, roughness: 0.3, metalness: 0.9 }),
   olive: std({ color: 0x3d4430, roughness: 0.75, metalness: 0.1 }),
+  fuel: std({ color: 0x8a2a1a, roughness: 0.45, metalness: 0.5 }),
+  pilot: new THREE.MeshBasicMaterial({ color: 0x60a0ff }),
+  coil: std({ color: 0x0a1830, emissive: 0x4aa0ff, emissiveIntensity: 3 }),
   lens: std({ color: 0x0a1a30, roughness: 0.05, metalness: 0.9, emissive: 0x081830, emissiveIntensity: 0.5 }),
   metal: std({ color: 0x131416, roughness: 0.42, metalness: 0.8 }),
   poly: std({ color: 0x111111, roughness: 0.8, metalness: 0.1 }),
@@ -2082,7 +2102,7 @@ function arm(parent, hx, hy, hz, ex, ey, ez) {
   parent.add(m);
 }
 function buildGun(id) {
-  const g = new THREE.Group(); let muzzle, hip, aim;
+  const g = new THREE.Group(); let muzzle, hip, aim; const extra = {};
   if (id === 'pistol') {
     gb(g, 0.032, 0.036, 0.19, gunMats.metal, 0, 0.02, -0.02);
     gb(g, 0.03, 0.026, 0.15, gunMats.poly, 0, -0.008, -0.01);
@@ -2172,6 +2192,66 @@ function buildGun(id) {
     gb(g, 0.03, 0.04, 0.004, gunMats.metal, 0, 0.065, -0.1);
     arm(g, 0, -0.07, 0.08, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.2, -0.14, -0.22, 0.0);
     muzzle = new THREE.Vector3(0, 0.02, -0.47); hip = new THREE.Vector3(0.17, -0.18, -0.45); aim = new THREE.Vector3(0, -0.075, -0.34);
+  } else if (id === 'katana') {
+    gc(g, 0.018, 0.26, gunMats.poly, 0, -0.02, 0.02);
+    const guard = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.01, 16), gunMats.metal); guard.rotation.x = Math.PI / 2; guard.position.set(0, -0.02, -0.12); g.add(guard);
+    const blade = gb(g, 0.006, 0.034, 0.78, gunMats.silver, 0, 0.0, -0.52);
+    gb(g, 0.004, 0.012, 0.78, gunMats.metal, 0, 0.018, -0.52);
+    blade.rotation.x = 0; g.rotation.order = 'YXZ';
+    arm(g, 0, -0.03, 0.06, 0.06, -0.22, 0.4);
+    muzzle = new THREE.Vector3(0, 0, -0.9); hip = new THREE.Vector3(0.24, -0.2, -0.42); aim = hip.clone();
+  } else if (id === 'dbarrel') {
+    for (const sx of [-0.017, 0.017]) gc(g, 0.016, 0.62, gunMats.metal, sx, 0.018, -0.36);
+    gb(g, 0.05, 0.05, 0.14, gunMats.metal, 0, 0.005, 0);
+    gb(g, 0.05, 0.04, 0.22, gunMats.wood, 0, -0.02, -0.25);
+    gb(g, 0.045, 0.1, 0.32, gunMats.wood, 0, -0.04, 0.23, 0.12);
+    arm(g, 0, -0.07, 0.1, 0.05, -0.22, 0.42); arm(g, 0, -0.05, -0.28, -0.14, -0.22, -0.05);
+    muzzle = new THREE.Vector3(0, 0.018, -0.68); hip = new THREE.Vector3(0.18, -0.19, -0.44); aim = new THREE.Vector3(0, -0.045, -0.3);
+  } else if (id === 'crossbow') {
+    gb(g, 0.04, 0.05, 0.62, gunMats.olive, 0, 0, -0.1);
+    gb(g, 0.62, 0.02, 0.04, gunMats.poly, 0, 0.01, -0.38);
+    for (const sx of [-1, 1]) { const st = gb(g, 0.004, 0.004, 0.36, gunMats.lens, sx * 0.15, 0.02, -0.25); st.rotation.y = sx * 1.1; }
+    gc(g, 0.006, 0.5, gunMats.silver, 0, 0.04, -0.3);
+    gb(g, 0.03, 0.1, 0.04, gunMats.poly, 0, -0.07, 0.08, 0.3);
+    gc(g, 0.018, 0.14, gunMats.metal, 0, 0.075, -0.05);
+    arm(g, 0, -0.07, 0.09, 0.05, -0.22, 0.42); arm(g, 0, -0.03, -0.3, -0.14, -0.22, -0.04);
+    muzzle = new THREE.Vector3(0, 0.04, -0.56); hip = new THREE.Vector3(0.18, -0.18, -0.46); aim = new THREE.Vector3(0, -0.075, -0.28);
+  } else if (id === 'minigun') {
+    gb(g, 0.1, 0.12, 0.34, gunMats.metal, 0, -0.02, 0.05);
+    const sp = new THREE.Group(); sp.position.set(0, 0, -0.1); g.add(sp);
+    for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; gc(sp, 0.011, 0.62, gunMats.metal, Math.cos(a) * 0.035, Math.sin(a) * 0.035, -0.3); }
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 16), gunMats.metal); ring.rotation.x = Math.PI / 2; ring.position.z = -0.45; sp.add(ring);
+    gb(g, 0.02, 0.1, 0.18, gunMats.metal, 0, 0.1, 0.02);
+    gb(g, 0.12, 0.14, 0.16, gunMats.olive, -0.1, -0.08, 0.1);
+    arm(g, 0, -0.09, 0.15, 0.05, -0.22, 0.42); arm(g, 0.0, 0.14, 0.0, -0.14, -0.18, 0.05);
+    muzzle = new THREE.Vector3(0, 0, -0.72); hip = new THREE.Vector3(0.2, -0.22, -0.5); aim = new THREE.Vector3(0.05, -0.12, -0.4);
+    extra.spinner = sp;
+  } else if (id === 'flamer') {
+    gb(g, 0.06, 0.08, 0.34, gunMats.metal, 0, 0, 0);
+    gc(g, 0.018, 0.4, gunMats.metal, 0, 0.01, -0.36);
+    for (const sx of [-0.035, 0.035]) gc(g, 0.032, 0.3, gunMats.fuel, sx, -0.07, -0.08);
+    gb(g, 0.03, 0.1, 0.04, gunMats.poly, 0, -0.08, 0.12, 0.3);
+    gb(g, 0.04, 0.08, 0.2, gunMats.poly, 0, -0.01, 0.26);
+    const pilot = new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 6), gunMats.pilot); pilot.position.set(0, -0.005, -0.57); g.add(pilot);
+    arm(g, 0, -0.08, 0.13, 0.05, -0.22, 0.42); arm(g, 0, -0.03, -0.25, -0.14, -0.22, -0.02);
+    muzzle = new THREE.Vector3(0, 0.01, -0.58); hip = new THREE.Vector3(0.19, -0.2, -0.46); aim = new THREE.Vector3(0.1, -0.15, -0.42);
+  } else if (id === 'tesla') {
+    gb(g, 0.06, 0.09, 0.36, gunMats.poly, 0, 0, 0);
+    gc(g, 0.012, 0.36, gunMats.silver, 0, 0.005, -0.36);
+    for (const z of [-0.26, -0.36, -0.46]) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.008, 8, 20), gunMats.coil); t.position.set(0, 0.005, z); g.add(t); }
+    const core = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 8), gunMats.coil); core.position.set(0, 0.005, -0.56); g.add(core);
+    gb(g, 0.03, 0.1, 0.04, gunMats.poly, 0, -0.08, 0.1, 0.3);
+    gb(g, 0.034, 0.02, 0.12, gunMats.coil, 0, 0.055, -0.02);
+    arm(g, 0, -0.08, 0.11, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.2, -0.14, -0.22, -0.02);
+    muzzle = new THREE.Vector3(0, 0.005, -0.58); hip = new THREE.Vector3(0.18, -0.18, -0.46); aim = new THREE.Vector3(0, -0.06, -0.3);
+  } else if (id === 'rpg') {
+    gc(g, 0.042, 0.95, gunMats.olive, 0, 0.02, -0.12);
+    const war = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.22, 12), gunMats.olive); war.rotation.x = -Math.PI / 2; war.position.set(0, 0.02, -0.7); g.add(war);
+    gc(g, 0.052, 0.1, gunMats.olive, 0, 0.02, -0.55);
+    gb(g, 0.03, 0.1, 0.04, gunMats.wood, 0, -0.06, 0.02, 0.3); gb(g, 0.03, 0.1, 0.04, gunMats.wood, 0, -0.06, -0.2, 0.3);
+    gb(g, 0.02, 0.05, 0.06, gunMats.metal, -0.05, 0.07, -0.12);
+    arm(g, 0, -0.1, 0.03, 0.05, -0.22, 0.42); arm(g, 0, -0.1, -0.2, -0.14, -0.22, -0.02);
+    muzzle = new THREE.Vector3(0, 0.02, -0.82); hip = new THREE.Vector3(0.2, -0.13, -0.36); aim = new THREE.Vector3(0.06, -0.08, -0.3);
   } else {
     gb(g, 0.05, 0.075, 0.26, gunMats.metal, 0, 0, 0);
     gc(g, 0.014, 0.58, gunMats.metal, 0, 0.018, -0.41);
@@ -2187,7 +2267,7 @@ function buildGun(id) {
   g.scale.setScalar(0.8); muzzle.multiplyScalar(0.8);
   const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.flash, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
   flash.position.copy(muzzle).divideScalar(0.8); flash.scale.setScalar(0.22); flash.visible = false; g.add(flash);
-  return { group: g, muzzle, hip, aim, flash };
+  return { group: g, muzzle, hip, aim, flash, ...extra };
 }
 
 // ============================================================
@@ -2196,6 +2276,7 @@ function buildGun(id) {
 const player = { pos: new THREE.Vector3(), vy: 0, vel: new THREE.Vector3(), yaw: 0, pitch: 0, hp: 100, onGround: true, bob: 0 };
 const keys = {};
 let state = 'menu', usingLock = true;
+let spinT = 0, swingT = 0, flameSfxT = 0;
 let weapons = [], wi = 0, fireCd = 0, reloading = 0, switching = 0, mouseDown = false, aiming = false, aimT = 0;
 let kick = 0, shake = 0, spreadK = 0, flashT = 0;
 let zombies = [], zMeshes = [], particles = [], decals = [], pickups = [];
@@ -2703,6 +2784,11 @@ class Zombie {
       if (this.deadT > 8) g.position.y -= dt * 0.3;
       return this.deadT < 11;
     }
+    if (this.burnT > 0) { // set alight by the flamethrower
+      this.burnT -= dt; this.burnTick = (this.burnTick || 0) - dt;
+      if (Math.random() < dt * 16) emitFire(this.pos.clone().setY(rand(0.4, 1.6) * this.g.scale.y).add(new THREE.Vector3(rand(-0.2, 0.2), 0, rand(-0.2, 0.2))), UP, rand(1, 2));
+      if (this.burnTick <= 0) { this.burnTick = 0.25; if (this.damage(5, { part: 'body' }, null)) return true; }
+    }
     const dx = player.pos.x - this.pos.x, dz = player.pos.z - this.pos.z, dist = Math.hypot(dx, dz);
     let mx = dx / (dist || 1), mz = dz / (dist || 1);
     for (const o of zombies) {
@@ -3066,11 +3152,14 @@ function blastAt(p, radius, dmg, playerDmg, src = null) {
 }
 function launchGrenade(from, dir, c) {
   const m = new THREE.Mesh(grenadeGeo, grenadeMat); m.position.copy(from); m.castShadow = true; scene.add(m);
-  grenades.push({ m, v: dir.clone().multiplyScalar(36).add(new THREE.Vector3(0, 1.5, 0)), life: 4, c });
+  if (c.rocket) m.scale.set(1.6, 1.6, 5);
+  const v = c.rocket ? dir.clone().multiplyScalar(48) : dir.clone().multiplyScalar(36).add(new THREE.Vector3(0, 1.5, 0));
+  grenades.push({ m, v, life: 4, c });
 }
 function updateGrenades(dt) {
   grenades = grenades.filter((gr) => {
-    gr.life -= dt; gr.v.y -= 9.8 * dt;
+    gr.life -= dt; if (!gr.c.rocket) gr.v.y -= 9.8 * dt;
+    if (gr.c.rocket) { burst(gr.m.position, UP, dustMat, 1, 0.4); if (Math.random() < 0.6) emitFire(gr.m.position, gr.v.clone().normalize().negate(), 2); }
     gr.m.position.addScaledVector(gr.v, dt); gr.m.lookAt(gr.m.position.clone().add(gr.v));
     const p = gr.m.position;
     let hit = p.y <= 0.05 || gr.life <= 0 || (p.y < 14 && blocked(p.x, p.z, 0));
@@ -3240,7 +3329,7 @@ function updateHUD() {
   $('hpnum').textContent = Math.ceil(player.hp);
   $('hpfill').style.width = player.hp + '%';
   $('wname').textContent = w.c.name;
-  $('ammonum').innerHTML = `${w.ammo} <small>/ ${w.reserve}</small>`;
+  $('ammonum').innerHTML = w.c.melee ? '∞' : `${w.ammo} <small>/ ${w.reserve}</small>`;
   $('reloadtip').textContent = reloading > 0 ? '換彈中…' : (w.ammo === 0 ? (w.reserve ? '按 R 換彈' : '沒有彈藥') : '');
   [...$('slots').children].forEach((s, i) => s.classList.toggle('on', i === wi));
   $('lvname').textContent = `第 ${LV.num} 關 · ${LV.name}`;
@@ -3626,14 +3715,14 @@ function renderShop() {
     } else {
       act = `裝備到欄位 ${[0, 1, 2].map((k) => `<button class="slotbtn${slot === k ? ' on' : ''}" data-eq="${w.id}" data-slot="${k}" aria-label="裝備到欄位 ${k + 1}">${k + 1}</button>`).join('')}`;
     }
-    const tags = [w.pierce > 1 ? `貫穿 ${w.pierce}` : '', w.ap ? '穿甲' : '', w.explosive ? '範圍爆炸' : '', w.scope ? '瞄準鏡' : '', w.move && w.move < 1 ? '移動較慢' : ''].filter(Boolean).join(' · ');
+    const tags = [w.melee ? '免彈藥' : '', w.flame ? '持續燃燒' : '', w.chain ? `連鎖 ${w.chain}` : '', w.spin ? '需預熱' : '', w.pierce > 1 ? `貫穿 ${w.pierce}` : '', w.ap ? '穿甲' : '', w.explosive ? '範圍爆炸' : '', w.scope ? '瞄準鏡' : '', w.move && w.move < 1 ? '移動較慢' : ''].filter(Boolean).join(' · ');
     return `<div class="wc${slot >= 0 ? ' eq' : ''}">
       <div class="top"><div><div class="nm">${w.name}</div><div class="ct">${w.cat}${tags ? ' · ' + tags : ''}</div></div>
         <div class="pr num">${have ? (slot >= 0 ? `欄位 ${slot + 1}` : '已擁有') : money(w.price)}</div></div>
       <div class="ds">${w.desc}</div>
       <div class="bars"><span>傷害</span>${bar(perShot / 260)}<span class="num">${perShot}</span>
         <span>射速</span>${bar(rpm / 900)}<span class="num">${rpm}</span>
-        <span>彈匣</span>${bar(w.mag / 100)}<span class="num">${w.mag}</span>
+        <span>彈匣</span>${bar(isFinite(w.mag) ? w.mag / 100 : 1)}<span class="num">${isFinite(w.mag) ? w.mag : '∞'}</span>
         <span>精準</span>${bar(acc)}<span class="num">${Math.round(acc * 100)}</span></div>
       <div class="act">${act}</div></div>`;
   }).join('');
@@ -3689,8 +3778,69 @@ function switchWeapon(i) {
   weapons[wi].view.group.visible = false; wi = i; weapons[wi].view.group.visible = true;
   switching = 0.35; reloading = 0;
 }
+function camRight() { return new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion); }
+function meleeSwing(w) {
+  swingT = 0.32;
+  const f = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+  let hits = 0, kill = false;
+  for (const z of zombies) {
+    if (z.dead || hits >= 4) continue;
+    const to = new THREE.Vector3(z.pos.x - player.pos.x, 0, z.pos.z - player.pos.z), d = to.length();
+    if (d > w.c.range + z.radius) continue;
+    if (d > 0.01 && to.normalize().dot(f) < Math.cos(w.c.arc)) continue;
+    const killed = z.damage(w.c.dmg, { part: z.shieldHp > 0 ? 'shield' : 'body' }, f);
+    if (z.lastFx === 'shield') { burst(z.pos.clone().setY(1.2), f.clone().negate(), shardMat, 4, 3); sfx('thud'); }
+    else burst(z.pos.clone().setY(1.2 * z.g.scale.y), f.clone().negate(), bloodMat, 12, 3.5);
+    hits++; kill = kill || killed;
+  }
+  if (hits) { hitMarker(kill); sfx('hit', 1.4); }
+}
+function sprayFlame(w, origin, fwd) {
+  const from = origin.clone().addScaledVector(fwd, 0.9).addScaledVector(camRight(), 0.14).add(new THREE.Vector3(0, -0.22, 0));
+  for (let k = 0; k < 2; k++) emitFire(from, fwd.clone().add(new THREE.Vector3(rand(-0.07, 0.07), rand(-0.04, 0.07), rand(-0.07, 0.07))).normalize(), rand(11, 15));
+  const f = new THREE.Vector3(fwd.x, 0, fwd.z).normalize();
+  let any = false;
+  for (const z of zombies) {
+    if (z.dead) continue;
+    const to = new THREE.Vector3(z.pos.x - origin.x, 0, z.pos.z - origin.z), d = to.length();
+    if (d > w.c.range + z.radius || (d > 0.8 && to.normalize().dot(f) < 0.93)) continue;
+    z.damage(w.c.dmg, { part: 'body' }, null); // flames wrap around riot shields
+    z.burnT = 3; any = true;
+  }
+  if (any && Math.random() < 0.25) hitMarker(false);
+}
+function teslaShot(w, origin, fwd) {
+  const from = origin.clone().addScaledVector(fwd, 0.8).addScaledVector(camRight(), 0.12).add(new THREE.Vector3(0, -0.15, 0));
+  ray.set(origin, fwd);
+  const zh = ray.intersectObjects(zMeshes, false)[0], wh = ray.intersectObjects(worldMeshes, false)[0];
+  let cur = zh && (!wh || zh.distance < wh.distance) ? zh.object.userData.z : null;
+  if (!cur) { // gentle aim assist toward the zombie closest to the crosshair
+    let best = 0.975;
+    for (const z of zombies) {
+      if (z.dead) continue;
+      const to = z.pos.clone().setY(1.2).sub(origin), d = to.length();
+      if (d > 22) continue;
+      const dot = to.normalize().dot(fwd);
+      if (dot > best) { best = dot; cur = z; }
+    }
+  }
+  if (!cur) { addBolt(from, origin.clone().addScaledVector(fwd, 16)); return; }
+  const hit = new Set(); let prev = from, dmg = w.c.dmg, kill = false;
+  for (let i = 0; i < w.c.chain && cur; i++) {
+    const at = cur.pos.clone().setY(1.2 * cur.g.scale.y);
+    addBolt(prev, at); burst(at, UP, sparkMat, 6, 3);
+    kill = cur.damage(dmg, { part: cur.shieldHp > 0 ? 'blast' : 'body' }, null) || kill;
+    cur.hitT = Math.max(cur.hitT, 0.6); hit.add(cur);
+    prev = at; dmg *= 0.85;
+    let next = null, nd = 7;
+    for (const z of zombies) { if (z.dead || hit.has(z)) continue; const d = z.pos.distanceTo(cur.pos); if (d < nd) { nd = d; next = z; } }
+    cur = next;
+  }
+  hitMarker(kill); sfx('hit', 1.2);
+}
 function startReload() {
   const w = weapons[wi];
+  if (w.c.melee) return;
   if (reloading > 0 || w.ammo === w.c.mag || w.reserve <= 0) return;
   reloading = w.c.reload; sfx('reload');
 }
@@ -3700,10 +3850,13 @@ function tryFire(click) {
   const w = weapons[wi];
   if (fireCd > 0 || reloading > 0 || switching > 0) return;
   if (!w.c.auto && !click) return;
-  if (w.ammo <= 0) { sfx('empty'); fireCd = 0.25; if (w.reserve > 0) startReload(); return; }
-  w.ammo--; fireCd = w.c.rate;
-  sfx(w.c.sound);
-  kick = 1; flashT = 0.05; shake = Math.min(1, shake + w.c.recoil * 6);
+  if (w.c.spin && spinT < w.c.spin) return; // minigun still spinning up
+  if (!w.c.melee && w.ammo <= 0) { sfx('empty'); fireCd = 0.25; if (w.reserve > 0) startReload(); return; }
+  if (!w.c.melee) w.ammo--;
+  fireCd = w.c.rate;
+  if (w.c.flame) { flameSfxT -= w.c.rate; if (flameSfxT <= 0) { flameSfxT = 0.18; sfx('flame', 1); } } else sfx(w.c.sound);
+  kick = w.c.melee || w.c.flame ? 0.3 : 1; flashT = w.c.noFlash ? 0 : 0.05; shake = Math.min(1, shake + w.c.recoil * 6);
+  if (w.c.melee) { meleeSwing(w); return; }
   player.pitch += w.c.recoil * (aiming ? 0.6 : 1); player.yaw += rand(-1, 1) * w.c.recoil * 0.3;
   spreadK = Math.min(1, spreadK + 0.25);
   const origin = camera.getWorldPosition(new THREE.Vector3());
@@ -3711,6 +3864,8 @@ function tryFire(click) {
   const moveSpread = Math.hypot(player.vel.x, player.vel.z) / 8;
   const baseSpread = !aiming && w.c.hipSpread ? w.c.hipSpread : w.c.spread;
   const spread = baseSpread * (aiming ? (w.c.scope ? 0.2 : 0.35) : 1) * (1 + spreadK + moveSpread);
+  if (w.c.flame) { sprayFlame(w, origin, fwd); return; }
+  if (w.c.chain) { teslaShot(w, origin, fwd); return; }
   if (w.c.explosive) {
     const dir = fwd.clone().add(new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(spread)).normalize();
     launchGrenade(origin.clone().addScaledVector(dir, 0.6).add(new THREE.Vector3(0, -0.1, 0)), dir, w.c);
@@ -3805,8 +3960,14 @@ function updateWeapon(dt) {
     reloading -= dt;
     if (reloading <= 0) { const need = w.c.mag - w.ammo, take = Math.min(need, w.reserve); w.ammo += take; w.reserve -= take; }
   }
-  if ((mouseDown || pad.fire) && w.c.auto) tryFire(false);
+  const trigger = mouseDown || pad.fire;
+  if (w.c.spin) {
+    spinT = trigger && reloading <= 0 && w.ammo > 0 ? Math.min(w.c.spin + 0.3, spinT + dt) : Math.max(0, spinT - dt * 1.2);
+    if (v.spinner) v.spinner.rotation.z += spinT * dt * 45;
+  } else spinT = 0;
+  if (trigger && w.c.auto) tryFire(false);
   kick = Math.max(0, kick - dt * 10);
+  swingT = Math.max(0, swingT - dt);
   const hs = Math.hypot(player.vel.x, player.vel.z) / 5;
   const hip = v.hip.clone(); if (gunCam.aspect < 1) { hip.x *= 0.45; hip.z -= 0.08; }
   const pos = hip.lerp(v.aim, aimT);
@@ -3819,6 +3980,11 @@ function updateWeapon(dt) {
   pos.y -= rl * 0.12 + sw * 0.3;
   v.group.position.copy(pos);
   v.group.rotation.set(kick * 0.12 - rl * 0.5, 0, rl * 0.4);
+  if (w.c.melee) { // diagonal slash from upper right to lower left
+    const k = swingT > 0 ? 1 - swingT / 0.32 : 0, arc = Math.sin(k * Math.PI);
+    v.group.rotation.set(0.35 - k * 1.3 * (swingT > 0 ? 1 : 0), 0.3 + arc * 0.9, -0.5 + arc * 1.2);
+    v.group.position.x -= arc * 0.18;
+  }
   v.flash.visible = flashT > 0;
   if (flashT > 0) { v.flash.material.rotation = rand(0, 6); v.flash.scale.setScalar(rand(0.16, 0.28) * (w.c.pellets > 1 || w.c.id === 'm249' || w.c.id === 'awm' ? 1.4 : 1)); }
   flashT -= dt;
