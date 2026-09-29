@@ -333,6 +333,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // ============================================================
 //  Levels — add more entries here to add more levels
@@ -2220,6 +2221,32 @@ function katanaMats() {
   };
   return _katanaMats;
 }
+// the katana model is made in Blender (tools/blender/katana.py → assets/models/katana.glb);
+// until it has loaded, or if it cannot load, the procedural sword below stands in
+let KATANA_GLB = null;
+new GLTFLoader().load('./assets/models/katana.glb', (gltf) => {
+  KATANA_GLB = gltf.scene;
+  KATANA_GLB.traverse((o) => {
+    if (!o.isMesh) return;
+    o.frustumCulled = false;
+    o.material.metalness = Math.min(o.material.metalness, 0.82); // keeps the steel readable at night without an environment map
+  });
+  weapons.forEach((w) => { if (w.view.katana) useModelKatana(w.view.katana); });
+}, undefined, () => { /* keep the procedural katana */ });
+function useModelKatana(k) {
+  while (k.children.length) k.remove(k.children[0]);
+  k.add(KATANA_GLB.clone());
+}
+function buildProceduralKatana(k) {
+    const blade = new THREE.Mesh(KATANA.blade, katanaMats().blade); k.add(blade);
+    const habaki = new THREE.Mesh(roundedBox(0.011, 0.038, 0.03), gunMats.brass); habaki.position.set(0, 0.001, -0.02); k.add(habaki);
+    for (const z of [-0.004, 0.006]) { const s = new THREE.Mesh(KATANA.seppa, gunMats.brass); s.position.z = z; s.rotation.x = Math.PI / 2; s.scale.set(0.8, 1, 1); k.add(s); }
+    const tsuba = new THREE.Mesh(KATANA.tsuba, gunMats.metal); tsuba.rotation.x = Math.PI / 2; tsuba.scale.set(0.82, 1, 1); tsuba.position.z = 0.001; k.add(tsuba);
+    const rim = new THREE.Mesh(KATANA.rim, gunMats.brass); rim.scale.set(0.82, 1, 1); rim.position.z = 0.001; k.add(rim);
+    const tsuka = new THREE.Mesh(KATANA.tsuka, katanaMats().tsuka); tsuka.rotation.x = Math.PI / 2; tsuka.scale.set(0.82, 1, 1); tsuka.position.z = 0.14; k.add(tsuka);
+    const kashira = new THREE.Mesh(KATANA.kashira, gunMats.metal); kashira.rotation.x = Math.PI / 2; kashira.scale.set(0.82, 1, 1); kashira.position.z = 0.28; k.add(kashira);
+    for (const sx of [-1, 1]) { const mk = new THREE.Mesh(roundedBox(0.004, 0.012, 0.03), gunMats.brass); mk.position.set(sx * 0.0135, 0, 0.11); k.add(mk); }
+}
 function buildGun(id) {
   const g = new THREE.Group(); let muzzle, hip, aim; const extra = {};
   if (id === 'pistol') {
@@ -2350,15 +2377,8 @@ function buildGun(id) {
     muzzle = new THREE.Vector3(0, 0.02, -0.47); hip = new THREE.Vector3(0.17, -0.18, -0.45); aim = new THREE.Vector3(0, -0.075, -0.34);
   } else if (id === 'katana') {
     // the sword is built along its own axis (blade toward -z, handle toward +z) and then posed in a two-handed guard
-    const k = new THREE.Group(); g.add(k);
-    const blade = new THREE.Mesh(KATANA.blade, katanaMats().blade); k.add(blade);
-    const habaki = new THREE.Mesh(roundedBox(0.011, 0.038, 0.03), gunMats.brass); habaki.position.set(0, 0.001, -0.02); k.add(habaki);
-    for (const z of [-0.004, 0.006]) { const s = new THREE.Mesh(KATANA.seppa, gunMats.brass); s.position.z = z; s.rotation.x = Math.PI / 2; s.scale.set(0.8, 1, 1); k.add(s); }
-    const tsuba = new THREE.Mesh(KATANA.tsuba, gunMats.metal); tsuba.rotation.x = Math.PI / 2; tsuba.scale.set(0.82, 1, 1); tsuba.position.z = 0.001; k.add(tsuba);
-    const rim = new THREE.Mesh(KATANA.rim, gunMats.brass); rim.scale.set(0.82, 1, 1); rim.position.z = 0.001; k.add(rim);
-    const tsuka = new THREE.Mesh(KATANA.tsuka, katanaMats().tsuka); tsuka.rotation.x = Math.PI / 2; tsuka.scale.set(0.82, 1, 1); tsuka.position.z = 0.14; k.add(tsuka);
-    const kashira = new THREE.Mesh(KATANA.kashira, gunMats.metal); kashira.rotation.x = Math.PI / 2; kashira.scale.set(0.82, 1, 1); kashira.position.z = 0.28; k.add(kashira);
-    for (const sx of [-1, 1]) { const mk = new THREE.Mesh(roundedBox(0.004, 0.012, 0.03), gunMats.brass); mk.position.set(sx * 0.0135, 0, 0.11); k.add(mk); }
+    const k = new THREE.Group(); g.add(k); extra.katana = k;
+    if (KATANA_GLB) useModelKatana(k); else buildProceduralKatana(k);
     k.rotation.order = 'YXZ'; k.rotation.set(0.5, 0.42, -1.05);
     k.updateMatrix();
     const at = (x, y, z) => new THREE.Vector3(x, y, z).applyMatrix4(k.matrix);
