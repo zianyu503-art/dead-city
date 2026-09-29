@@ -222,7 +222,7 @@
   @media (max-height: 520px) {
     #menu { justify-content: flex-start; padding-top: 14px; padding-bottom: 14px; overflow-y: auto; }
     .title { font-size: 40px; } .subtitle { margin: 4px 0 12px; }
-    #menu #levels { grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 6px; }
+    #menu #levels { grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 6px; }
     .card { min-height: 0; padding: 10px; } .card .n { font-size: 22px; } .card .ds { display: none; }
     .controls { margin-top: 10px; }
     .panel { padding: 20px 26px; } .panel h2 { font-size: 28px; }
@@ -2168,6 +2168,58 @@ function muzzleBrake(g, r, y, z) {
   gc(g, r, 0.05, gunMats.metal, 0, y, z);
   for (const s of [-1, 1]) for (let k = 0; k < 3; k++) gb(g, 0.004, r * 1.2, 0.006, gunMats.poly, s * r * 0.95, y, z - 0.015 + k * 0.015);
 }
+// katana parts: a curved, tapering blade with a proper kissaki, plus the fittings of the hilt
+const KATANA = (() => {
+  const L = 0.74, w = 0.032, sori = 0.028;
+  const curve = (x) => sori * (x / L) ** 2;               // gentle upward curve toward the tip
+  const half = (x) => (w / 2) * (1 - 0.28 * x / L);        // tapers toward the point
+  const sh = new THREE.Shape();
+  sh.moveTo(0, half(0) + curve(0));
+  for (let i = 1; i <= 24; i++) { const x = i / 24 * (L - 0.012); sh.lineTo(x, half(x) + curve(x)); }
+  sh.lineTo(L, curve(L) + half(L) * 0.35);                  // point
+  for (let i = 24; i >= 0; i--) { const x = i / 24 * (L - 0.07); sh.lineTo(x, -half(x) + curve(x)); }
+  sh.closePath();
+  const blade = new THREE.ExtrudeGeometry(sh, { depth: 0.004, bevelEnabled: true, bevelThickness: 0.0016, bevelSize: 0.0012, bevelSegments: 1, curveSegments: 4 });
+  blade.translate(0.022, 0, -0.002); blade.rotateY(Math.PI / 2); // length along -z, flat of the blade facing sideways
+  return {
+    L, w, blade,
+    tsuba: new THREE.CylinderGeometry(0.043, 0.043, 0.007, 28),
+    rim: new THREE.TorusGeometry(0.043, 0.0022, 6, 28),
+    seppa: new THREE.CylinderGeometry(0.02, 0.02, 0.003, 18),
+    tsuka: new THREE.CylinderGeometry(0.0155, 0.0165, 0.26, 18),
+    kashira: new THREE.CylinderGeometry(0.0168, 0.0155, 0.022, 18),
+  };
+})();
+let _katanaMats = null;
+function katanaMats() {
+  if (_katanaMats) return _katanaMats;
+  // blade: polished steel with a frosted, wavy hamon along the edge and a darker ridge line
+  const [c, x] = makeCanvas(512, 64);
+  const gr = x.createLinearGradient(0, 0, 0, 64);
+  gr.addColorStop(0, '#6e747c'); gr.addColorStop(0.28, '#8a9098'); gr.addColorStop(0.3, '#5e646c'); gr.addColorStop(0.32, '#a4aab2'); gr.addColorStop(1, '#b8bec6');
+  x.fillStyle = gr; x.fillRect(0, 0, 512, 64);
+  x.fillStyle = 'rgba(238,242,246,0.9)'; x.beginPath(); x.moveTo(0, 64);
+  for (let u = 0; u <= 512; u += 4) x.lineTo(u, 44 + Math.sin(u * 0.09) * 4 + Math.sin(u * 0.023) * 3);
+  x.lineTo(512, 64); x.closePath(); x.fill();
+  for (let i = 0; i < 300; i++) { x.fillStyle = `rgba(255,255,255,${rand(0.05, 0.2)})`; x.fillRect(rand(0, 512), rand(40, 64), rand(1, 4), 1); }
+  x.fillStyle = 'rgba(255,255,255,0.35)'; x.fillRect(0, 62, 512, 2);
+  const bt = new THREE.CanvasTexture(c); bt.colorSpace = THREE.SRGBColorSpace; bt.wrapS = bt.wrapT = THREE.ClampToEdgeWrapping;
+  // the flipped canvas puts row 0 at the spine; shape coordinates run 0..L along the blade and ±w/2 across it
+  bt.repeat.set(1 / KATANA.L, 1 / (KATANA.w * 1.9)); bt.offset.set(0, 0.5);
+  // hilt: black silk wrapped in crossing bands over white ray skin
+  const [c2, x2] = makeCanvas(128, 256);
+  x2.fillStyle = '#e6e0cc'; x2.fillRect(0, 0, 128, 256); speckle(x2, 128, 256, 3000, 0.25);
+  x2.strokeStyle = '#141414'; x2.lineWidth = 26;
+  for (let y = -128; y < 384; y += 64) { x2.beginPath(); x2.moveTo(0, y); x2.lineTo(128, y + 64); x2.stroke(); x2.beginPath(); x2.moveTo(128, y); x2.lineTo(0, y + 64); x2.stroke(); }
+  x2.strokeStyle = 'rgba(255,255,255,0.08)'; x2.lineWidth = 1;
+  for (let y = -128; y < 384; y += 6) { x2.beginPath(); x2.moveTo(0, y); x2.lineTo(128, y + 64); x2.stroke(); }
+  const tt = new THREE.CanvasTexture(c2); tt.colorSpace = THREE.SRGBColorSpace; tt.wrapS = tt.wrapT = THREE.RepeatWrapping; tt.repeat.set(2, 3);
+  _katanaMats = {
+    blade: std({ map: bt, metalness: 0.85, roughness: 0.16, envMapIntensity: 1.2 }),
+    tsuka: std({ map: tt, bumpMap: tt, bumpScale: 2, roughness: 0.75 }),
+  };
+  return _katanaMats;
+}
 function buildGun(id) {
   const g = new THREE.Group(); let muzzle, hip, aim; const extra = {};
   if (id === 'pistol') {
@@ -2297,13 +2349,27 @@ function buildGun(id) {
     arm(g, 0, -0.07, 0.08, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.2, -0.14, -0.22, 0.0);
     muzzle = new THREE.Vector3(0, 0.02, -0.47); hip = new THREE.Vector3(0.17, -0.18, -0.45); aim = new THREE.Vector3(0, -0.075, -0.34);
   } else if (id === 'katana') {
-    gc(g, 0.018, 0.26, gunMats.poly, 0, -0.02, 0.02);
-    const guard = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.01, 16), gunMats.metal); guard.rotation.x = Math.PI / 2; guard.position.set(0, -0.02, -0.12); g.add(guard);
-    const blade = gb(g, 0.006, 0.034, 0.78, gunMats.silver, 0, 0.0, -0.52);
-    gb(g, 0.004, 0.012, 0.78, gunMats.metal, 0, 0.018, -0.52);
-    blade.rotation.x = 0; g.rotation.order = 'YXZ';
-    arm(g, 0, -0.03, 0.06, 0.06, -0.22, 0.4);
-    muzzle = new THREE.Vector3(0, 0, -0.9); hip = new THREE.Vector3(0.24, -0.2, -0.42); aim = hip.clone();
+    // the sword is built along its own axis (blade toward -z, handle toward +z) and then posed in a two-handed guard
+    const k = new THREE.Group(); g.add(k);
+    const blade = new THREE.Mesh(KATANA.blade, katanaMats().blade); k.add(blade);
+    const habaki = new THREE.Mesh(roundedBox(0.011, 0.038, 0.03), gunMats.brass); habaki.position.set(0, 0.001, -0.02); k.add(habaki);
+    for (const z of [-0.004, 0.006]) { const s = new THREE.Mesh(KATANA.seppa, gunMats.brass); s.position.z = z; s.rotation.x = Math.PI / 2; s.scale.set(0.8, 1, 1); k.add(s); }
+    const tsuba = new THREE.Mesh(KATANA.tsuba, gunMats.metal); tsuba.rotation.x = Math.PI / 2; tsuba.scale.set(0.82, 1, 1); tsuba.position.z = 0.001; k.add(tsuba);
+    const rim = new THREE.Mesh(KATANA.rim, gunMats.brass); rim.scale.set(0.82, 1, 1); rim.position.z = 0.001; k.add(rim);
+    const tsuka = new THREE.Mesh(KATANA.tsuka, katanaMats().tsuka); tsuka.rotation.x = Math.PI / 2; tsuka.scale.set(0.82, 1, 1); tsuka.position.z = 0.14; k.add(tsuka);
+    const kashira = new THREE.Mesh(KATANA.kashira, gunMats.metal); kashira.rotation.x = Math.PI / 2; kashira.scale.set(0.82, 1, 1); kashira.position.z = 0.28; k.add(kashira);
+    for (const sx of [-1, 1]) { const mk = new THREE.Mesh(roundedBox(0.004, 0.012, 0.03), gunMats.brass); mk.position.set(sx * 0.0135, 0, 0.11); k.add(mk); }
+    k.rotation.order = 'YXZ'; k.rotation.set(0.5, 0.42, -1.05);
+    k.updateMatrix();
+    const at = (x, y, z) => new THREE.Vector3(x, y, z).applyMatrix4(k.matrix);
+    const rh = at(0, 0, 0.05), lh = at(0, 0, 0.2);
+    extra.pivot = rh.clone().add(lh).multiplyScalar(0.5 * 0.8); // swing turns around the hands (group is scaled by 0.8 below)
+    arm(g, rh.x, rh.y, rh.z, 0.09, -0.28, 0.38);
+    arm(g, lh.x, lh.y, lh.z, -0.1, -0.3, 0.46);
+    // a faint arc of light follows each cut
+    extra.trail = new THREE.Mesh(new THREE.RingGeometry(0.38, 0.62, 32, 1, 0.2, 2.2), new THREE.MeshBasicMaterial({ color: 0xdfeaff, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+    extra.trail.rotation.set(-1.1, 0.2, 0.5); extra.trail.position.set(-0.05, 0.05, -0.55);
+    muzzle = new THREE.Vector3(0, 0, -0.9); hip = new THREE.Vector3(0.15, -0.085, -0.36); aim = hip.clone();
   } else if (id === 'dbarrel') {
     for (const sx of [-0.017, 0.017]) gc(g, 0.016, 0.62, gunMats.metal, sx, 0.018, -0.36);
     gb(g, 0.05, 0.05, 0.14, gunMats.metal, 0, 0.005, 0);
@@ -4124,11 +4190,24 @@ function updateWeapon(dt) {
     if (b.t > 0.8) { gunScene.remove(b.m); return false; }
     return true;
   });
-  if (w.c.melee) { // diagonal slash from upper right to lower left
+  if (w.c.melee) { // diagonal cut from the upper right down to the lower left
     const k = swingT > 0 ? 1 - swingT / 0.32 : 0, arc = Math.sin(k * Math.PI);
-    v.group.rotation.set(0.35 - k * 1.3 * (swingT > 0 ? 1 : 0), 0.3 + arc * 0.9, -0.5 + arc * 1.2);
-    v.group.position.x -= arc * 0.18;
+    const cut = swingT > 0 ? Math.min(1, k * 1.6) : 0;
+    const idle = Math.sin(performance.now() / 700) * 0.015;  // slight breathing in the guard stance
+    v.group.rotation.set(-cut * 0.85 + idle - sway.y * 2, cut * 1.05 + sway.x * 3, cut * 0.9);
+    if (v.pivot) { // keep the hands in place so the blade, not the forearms, sweeps across the view
+      const moved = v.pivot.clone().applyEuler(v.group.rotation).sub(v.pivot);
+      v.group.position.sub(moved);
+    }
+    v.group.position.x -= arc * 0.08; v.group.position.z -= arc * 0.06;
+    if (v.trail) {
+      if (!v.trail.parent) gunRoot.add(v.trail);
+      v.trail.visible = v.group.visible;
+      v.trail.material.opacity = swingT > 0 ? Math.max(0, Math.sin(k * Math.PI)) * 0.35 : 0;
+      v.trail.rotation.z = 0.5 - k * 0.9;
+    }
   }
+  weapons.forEach((o) => { if (o !== w && o.view.trail) o.view.trail.material.opacity = 0; });
   v.flash.visible = flashT > 0;
   if (flashT > 0) { v.flash.material.rotation = rand(0, 6); v.flash.scale.setScalar(rand(0.16, 0.28) * (w.c.pellets > 1 || w.c.id === 'm249' || w.c.id === 'awm' ? 1.4 : 1)); }
   flashT -= dt;
