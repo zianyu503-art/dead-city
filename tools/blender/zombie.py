@@ -359,6 +359,40 @@ skin("dog_leg_back", [(0, 0.04, 0, 0.075, 0.085), (0, -0.18, -0.06, 0.05, 0.055)
      [(0, 1), (1, 2), (2, 3), (3, 4)], subdiv=1)
 skin("dog_tail", [(0, 0.72, -0.44, 0.022, 0.022), (0, 0.66, -0.6, 0.014, 0.014), (0, 0.6, -0.72, 0.006, 0.006)], [(0, 1), (1, 2)], subdiv=1)
 
+# =====================================================================
+# BROODMOTHER (level 10 boss) — body frame: origin on the ground, facing +Z
+# =====================================================================
+bm_body = skin("brood_body", [
+    (0, 1.15, -1.35, 0.95, 0.85),   # swollen egg-laden abdomen
+    (0, 1.2, -0.45, 0.82, 0.76),
+    (0, 1.25, 0.35, 0.66, 0.6),     # thorax
+    (0, 1.36, 0.9, 0.36, 0.36),     # neck
+    (0, 1.46, 1.25, 0.31, 0.33),    # skull
+    (0, 1.32, 1.5, 0.21, 0.19),     # jaw
+], [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)], subdiv=3)
+
+
+def lumpy(x, y, z):
+    k = 0.05 * math.sin(x * 9 + z * 4) * math.sin(y * 7 - z * 3) + 0.03 * math.sin(z * 17)
+    if z < 0:                                     # veins and egg bulges over the abdomen
+        k += 0.06 * max(0, math.sin(x * 6) * math.sin(z * 5))
+    r = max(0.05, math.hypot(x, y - 1.2))
+    return x * (1 + k / r), 1.2 + (y - 1.2) * (1 + k / r), z
+
+
+displace(bm_body, lumpy)
+rot_noise(bm_body, 0.01, 0.05)
+fangs = [cylinder((math.sin(a) * 0.17, 1.33, 1.5 + math.cos(a) * 0.1), (math.sin(a) * 0.13, 1.2, 1.62 + math.cos(a) * 0.12), 0.025, 0.002, 8, "fang")
+         for a in [(i / 9 - 0.5) * 2.6 for i in range(10)]]
+finish(join(fangs, "brood_fangs"), "brood_fangs", 0)
+# one leg, reaching out along +X from the hip; the game mirrors it for the left side
+skin("brood_leg", [(0, 0, 0, 0.17, 0.16), (0.5, 0.38, 0.0, 0.14, 0.13), (1.0, 0.12, 0.06, 0.11, 0.1),
+                   (1.32, -0.75, 0.1, 0.075, 0.07), (1.38, -1.18, 0.14, 0.03, 0.03)],
+     [(0, 1), (1, 2), (2, 3), (3, 4)], subdiv=1)
+sac = ellipsoid((0, 0, 0), (0.28, 0.24, 0.3), 20, 12, "sac")
+rot_noise(sac, 0.02, 0.06)
+finish(sac, "brood_sac", 0)
+
 # ---------------------------------------------------------------- export
 for ob in scene.objects:
     ob.select_set(ob in PARTS)

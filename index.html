@@ -93,7 +93,7 @@
     text-shadow: 0 4px 24px rgba(0,0,0,0.8); }
   .title span { color: var(--accent); }
   .subtitle { font-family: "Oswald"; letter-spacing: 0.6em; color: var(--dim); margin: 10px 0 34px; font-size: 14px; }
-  #levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); justify-content: center; gap: 10px; width: min(1280px, 100%); }
+  #levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr)); justify-content: center; gap: 8px; width: min(1280px, 100%); }
   .card { pointer-events: auto; cursor: pointer; border: 1px solid var(--line); padding: 14px 14px 16px; min-height: 150px;
     position: relative; overflow: hidden; transition: transform 0.15s, border-color 0.15s; text-align: left; color: var(--fg);
     font: inherit; }
@@ -107,6 +107,7 @@
   .t-day { background: linear-gradient(160deg, rgba(90,120,150,0.55), rgba(20,20,20,0.85)); }
   .t-dusk { background: linear-gradient(160deg, rgba(190,100,50,0.55), rgba(20,15,15,0.85)); }
   .t-night { background: linear-gradient(160deg, rgba(30,40,80,0.7), rgba(5,5,10,0.9)); }
+  .t-dawn { background: linear-gradient(160deg, rgba(230,150,120,0.55), rgba(30,20,30,0.9)); }
   .t-bloodmoon { background: linear-gradient(160deg, rgba(170,40,30,0.6), rgba(20,4,4,0.92)); }
   .t-snow { background: linear-gradient(160deg, rgba(150,175,210,0.55), rgba(10,14,24,0.9)); }
   .t-dust { background: linear-gradient(160deg, rgba(170,130,80,0.6), rgba(25,18,10,0.9)); }
@@ -357,9 +358,9 @@ const LEVELS = [
     hpMul: 1.58, speedMul: 1.22, waves: [{ walker: 16, runner: 8, stalker: 2 }, { walker: 14, runner: 10, splitter: 2, crawler: 4, stalker: 2 }, { walker: 16, runner: 10, stalker: 4, splitter: 3, spitter: 3, medic: 2 }, { runner: 16, stalker: 5, splitter: 4, mutant: 2, dog: 6 }, { walker: 14, runner: 18, stalker: 6, splitter: 4, armored: 4, brute: 2 }] },
   { num: 9, name: '撤離公路', theme: 'highway', time: 'bloodmoon', desc: '通往城外的撤離公路塞滿棄置車輛。血月下，電擊殭屍在車陣間放電，屍王正朝這裡走來。',
     hpMul: 1.65, speedMul: 1.25, waves: [{ walker: 18, runner: 10, shocker: 2 }, { walker: 16, runner: 12, shocker: 3, spitter: 3, dog: 6 }, { walker: 18, runner: 12, shocker: 4, flamer: 3, stalker: 3, bloater: 3 }, { runner: 18, shocker: 4, splitter: 3, gunner: 4, armored: 4, brute: 2 }, { walker: 16, runner: 14, shocker: 3, mutant: 2, behemoth: 1 }] },
-  // the finale stays numbered 10 and is hidden from the menu until it is released
-  { num: 10, hidden: true, name: '最後防線', theme: 'downtown', time: 'night', desc: '撤離直升機抵達前，守住市中心。所有種類的感染者都會出現。',
-    hpMul: 1.6, speedMul: 1.25, waves: [{ walker: 18, runner: 10, crawler: 5 }, { walker: 18, runner: 12, spitter: 4, bloater: 4, riot: 4, brute: 2 }, { walker: 20, runner: 14, armored: 5, gunner: 4, screamer: 2, brute: 3 }, { walker: 16, runner: 18, spitter: 5, bloater: 5, riot: 6, crawler: 5, brute: 4 }, { runner: 26, armored: 6, gunner: 6, screamer: 3, spitter: 5, bloater: 4, medic: 4, mutant: 3, dog: 8, flamer: 4, stalker: 5, splitter: 4, shocker: 4, brute: 6, behemoth: 2 }] },
+  // level 10 is the finale: the helicopter extraction
+  { num: 10, name: '最後防線', theme: 'evac', time: 'dawn', evac: true, desc: '撤離直升機即將抵達。守住市中心廣場的撤離點，擊敗巢母，然後衝上直升機。',
+    hpMul: 1.75, speedMul: 1.28, waves: [{ walker: 20, runner: 12, crawler: 6, dog: 6 }, { walker: 18, runner: 14, spitter: 4, bloater: 4, riot: 4, gunner: 3 }, { runner: 18, armored: 5, shocker: 4, stalker: 5, flamer: 3, brute: 2 }, { walker: 16, runner: 18, splitter: 4, medic: 4, mutant: 3, screamer: 2, behemoth: 1 }, { runner: 20, walker: 14, crawler: 8, broodmother: 1 }] },
 ];
 LEVELS.forEach((l, i) => { l.num ??= i + 1; });
 const nextVisible = (i) => { for (let k = i + 1; k < LEVELS.length; k++) if (!LEVELS[k].hidden) return k; return -1; };
@@ -372,6 +373,8 @@ const TIMES = {
            sun: 0xffa060, sunI: 2.6, hemiSky: 0x8a90b8, hemiGround: 0x3a2a22, hemiI: 0.55, exp: 0.62, envI: 0.55, night: false },
   night: { label: '夜晚', sky: false, bg: 0x05070c, fog: 0x06090e, fogD: 0.026,
            sun: 0x7f93c8, sunI: 0.3, hemiSky: 0x2a3550, hemiGround: 0x0a0a0a, hemiI: 0.35, exp: 1.0, envI: 0, night: true },
+  dawn:  { label: '黎明', sky: true, elev: 5, azi: 95, turb: 8, ray: 2.2, mie: 0.006, mieG: 0.82, fog: 0xc9a896, fogD: 0.0075,
+           sun: 0xffc4a0, sunI: 2.5, hemiSky: 0xa8b0d0, hemiGround: 0x3a302c, hemiI: 0.6, exp: 0.62, envI: 0.5, night: false },
   bloodmoon: { label: '血月', sky: false, bg: 0x160607, moon: true, fog: 0x2a0c0c, fogD: 0.02,
            sun: 0xff6a50, sunI: 0.75, hemiSky: 0x7a3030, hemiGround: 0x1a0a0a, hemiI: 0.55, exp: 1.0, envI: 0, night: true },
   snow:  { label: '雪夜', sky: false, bg: 0x141a24, snow: true, fog: 0x1e2734, fogD: 0.022,
@@ -407,6 +410,8 @@ const ZTYPES = {
               desc: '基地的軍犬也被感染了。速度比你跑得還快，而且成群出現。個子矮，要往下瞄。' },
   flamer:   { name: '火焰兵殭屍', color: '#e0702a', hp: 160, speed: 1.5, dmg: 5, scale: 1.05, rate: 1.2, cash: 45, score: 400, flame: true,
               desc: '背著燃料罐的士兵，靠近到 8 公尺內會持續噴火。從側面或背後打爆燃料罐，它會當場爆炸。' },
+  broodmother: { name: '巢母', color: '#a0c040', hp: 4800, speed: 1.0, dmg: 28, scale: 1, rate: 1.8, cash: 800, score: 5000, boss: true, brood: true, reach: 2.8,
+              desc: '所有感染者的母體。背上三個發光卵囊會不斷孵出幼體，還會遠距離拋射酸液。先打爆卵囊，它就無法再孵化，打中卵囊也會讓本體受到更多傷害。' },
   shocker:  { name: '電擊殭屍', color: '#5ab0ff', hp: 170, speed: 1.7, dmg: 16, scale: 1.05, rate: 1.2, cash: 55, score: 500, shock: true,
               desc: '被高壓電擊中的電力工人。全身冒出藍色電弧，蓄電一秒後放出閃電，被打中會減速。蓄電時躲到建築物後面，或拉開到 16 公尺外就能閃過。' },
   behemoth: { name: '屍王', color: '#c83a2a', hp: 3600, speed: 1.5, dmg: 35, scale: 2.6, rate: 2.2, cash: 500, score: 3000, boss: true,
@@ -1497,6 +1502,69 @@ function addXmasTree(g, x, z) {
   addCollider(x, z, 4, 4);
   lampPositions.push(new THREE.Vector3(x, 3.2, z));
 }
+// ---- level 10: fortified evacuation zone (props from tools/blender/evac.py) ----
+let HELI = null, evac = null;
+function evacProp(name, mat, parent, x, y, z, rotY = 0, fallback = null) {
+  const geo = EVAC && EVAC[name];
+  if (!geo) return fallback ? fallback() : null;
+  const m = mesh(geo, mat, parent, x, y, z); m.rotation.y = rotY; worldMeshes.push(m);
+  return m;
+}
+function buildEvac(g, cx, cz) {
+  const pad = mesh(new THREE.PlaneGeometry(38, 38), M.slab, g, cx, 0.17, cz, false); pad.rotation.x = -Math.PI / 2;
+  const hx = cx + 4, hz = cz;
+  const h = mesh(new THREE.PlaneGeometry(15, 15), M.helipad, g, hx, 0.19, hz, false); h.rotation.x = -Math.PI / 2;
+  // perimeter of concrete barriers with gaps to run through
+  for (let k = -5; k <= 5; k++) {
+    if (Math.abs(k) === 1) continue;
+    for (const [x, z, r] of [[cx - 17.5, cz + k * 3.2, Math.PI / 2], [cx + 17.5, cz + k * 3.2, Math.PI / 2], [cx + k * 3.2, cz - 17.5, 0], [cx + k * 3.2, cz + 17.5, 0]]) {
+      evacProp('jersey', M.concrete, g, x, 0.16, z, r, () => boxMesh(g, x, 0.55, z, r ? 0.6 : 3, 0.8, r ? 3 : 0.6, M.concrete));
+      rotCollider(x, z, 0.6, 3, r);
+    }
+  }
+  for (const [x, z] of [[cx - 15, cz - 15], [cx + 15, cz - 15], [cx - 15, cz + 15], [cx + 15, cz + 15]]) { // light towers
+    evacProp('flood_tower', M.metal, g, x, 0.16, z, Math.atan2(hx - x, hz - z));
+    evacProp('flood_lamps', M.stationLight, g, x, 0.16, z, Math.atan2(hx - x, hz - z));
+    addCollider(x, z, 1.6, 1.6);
+  }
+  for (const [x, z] of [[cx - 11, cz - 11], [cx - 11, cz - 4], [cx - 11, cz + 11]]) { // field tents
+    evacProp('tent', M.canvas, g, x, 0.16, z, Math.PI / 2, () => addTent(g, x, z, Math.PI / 2));
+    addCollider(x, z, 5.2, 4.2);
+  }
+  addHumvee(g, cx + 12, cz - 12, 0.3); addTruck(g, cx + 12, cz + 12, Math.PI - 0.2);
+  // the rescue helicopter waits out of sight until the last wave falls
+  HELI = new THREE.Group(); HELI.visible = false; g.add(HELI);
+  HELI.userData.pad = new THREE.Vector3(hx, 0.16, hz);
+  fillHeli();
+}
+function fillHeli() {
+  while (HELI.children.length) HELI.remove(HELI.children[0]);
+  if (!EVAC) { boxMesh(HELI, 0, 1.6, 0, 2.4, 2.2, 7, M.camo, false); return; }
+  const add = (n, m) => { const o = new THREE.Mesh(EVAC[n], m); o.castShadow = true; HELI.add(o); return o; };
+  add('heli_body', M.camo); add('heli_glass', M.glass);
+  HELI.userData.rotor = add('heli_rotor', M.metal); HELI.userData.rotor.position.set(0, 3.25, 0.2);
+  HELI.userData.tail = add('heli_tail_rotor', M.metal); HELI.userData.tail.position.set(0.3, 3.0, -6.75);
+}
+function startEvac() {
+  evac = { t: 0, landed: false, spawnT: 2, thumpT: 0 };
+  HELI.visible = true;
+  showMsg('撤離直升機即將抵達！', '守住停機坪，直升機降落後衝上去', 5);
+}
+function updateEvac(dt) {
+  evac.t += dt;
+  const pad = HELI.userData.pad, T = 14, k = Math.min(1, evac.t / T), e = 1 - (1 - k) ** 3;
+  // swoop in from the east, flare and settle onto the pad
+  HELI.position.set(pad.x + (1 - e) * 120, pad.y + (1 - e) * 55 + Math.sin(evac.t * 2) * 0.15 * (1 - k), pad.z - (1 - e) * 80);
+  HELI.rotation.set(-0.25 * (1 - k) + 0.12 * Math.sin(k * Math.PI), -Math.PI / 2 - 0.6 * (1 - e), 0.08 * Math.sin(evac.t));
+  if (HELI.userData.rotor) { HELI.userData.rotor.rotation.y += dt * 28; HELI.userData.tail.rotation.x += dt * 40; }
+  evac.thumpT -= dt;
+  const dH = Math.hypot(HELI.position.x - player.pos.x, HELI.position.z - player.pos.z);
+  if (evac.thumpT <= 0 && actx) { evac.thumpT = 0.11; sTone(actx.currentTime, 0.08, 55, 40, clamp(0.5 - dH / 250, 0.05, 0.5)); }
+  if (k >= 1 && !evac.landed) { evac.landed = true; showMsg('直升機已降落！', '快衝上停機坪撤離', 6); sfx('wave'); }
+  evac.spawnT -= dt; // the horde keeps coming while you wait
+  if (evac.spawnT <= 0 && zombies.filter((z) => !z.dead).length < 14) { evac.spawnT = 2.4; spawnZombie(Math.random() < 0.7 ? 'runner' : 'walker'); }
+  if (evac.landed && Math.hypot(pad.x - player.pos.x, pad.z - player.pos.z) < 7) { evac = null; levelComplete(); }
+}
 function buildMall(g, cx, cz) {
   const plaza = mesh(new THREE.PlaneGeometry(38, 38), M.pave, g, cx, 0.17, cz, false); plaza.rotation.x = -Math.PI / 2;
   const bx = cx + 7, w = 22, d = 34, h = 4 * 3.5;
@@ -1604,6 +1672,8 @@ function buildLevel() {
     const r = Math.random();
     if (theme === 'police' && bi === 2 && bj === 2) {
       buildPoliceStation(g, cx, cz);
+    } else if (theme === 'evac' && bi === 2 && bj === 2) {
+      buildEvac(g, cx, cz);
     } else if (theme === 'highway' && bi === 2 && bj === 2) {
       buildGasStation(g, cx, cz);
     } else if (theme === 'highway') { // roadside fields, motels and billboards along the evacuation route
@@ -1622,7 +1692,7 @@ function buildLevel() {
       buildBase(g, cx, cz);
     } else if (theme === 'hospital' && bi === 2 && bj === 2) {
       buildHospital(g, cx, cz);
-    } else if (theme === 'downtown' || theme === 'police' || theme === 'hospital' || theme === 'mall') {
+    } else if (theme === 'downtown' || theme === 'police' || theme === 'hospital' || theme === 'mall' || theme === 'evac') {
       if (inside && r < 0.1) { // parking lot
         const lot = mesh(new THREE.PlaneGeometry(38, 38), M.asphalt, g, cx, 0.17, cz, false); lot.rotation.x = -Math.PI / 2;
         for (let k = 0; k < 7; k++) addCar(g, cx - 15 + k * 5, cz + rand(-1, 1) + (Math.random() < 0.5 ? -8 : 8), Math.random() < 0.15 ? rand(0, 6) : 0, Math.random() < 0.2);
@@ -1746,6 +1816,17 @@ function buildLevel() {
     im.receiveShadow = true; g.add(im);
   }
 
+  if (theme === 'evac') { // barricaded approach roads
+    for (const a of ROAD_CENTERS) for (const b of ROAD_CENTERS) {
+      if (Math.abs(a) > HALF - 1 || Math.abs(b) > HALF - 1 || Math.random() > 0.4) continue;
+      const alongX = Math.random() < 0.5, o = pick([-9, 9]);
+      for (const sd of [-3.2, 3.2]) {
+        const x = alongX ? a + o : a + sd, z = alongX ? b + sd : b + o, r = alongX ? Math.PI / 2 : 0;
+        evacProp('jersey', M.concrete, g, x, 0, z, r, () => boxMesh(g, x, 0.4, z, r ? 0.6 : 3, 0.8, r ? 3 : 0.6, M.concrete));
+        rotCollider(x, z, 0.6, 3, r);
+      }
+    }
+  }
   if (theme === 'highway') { // bumper-to-bumper evacuation traffic, some of it burning
     const jam = [];
     const paints = [0x7a1c1c, 0x1c2f4f, 0xb8b6b0, 0x222222, 0x3d4a3a, 0x8a7a5a, 0x4a4f55, 0x9a9890, 0x6a5a2a];
@@ -2056,7 +2137,7 @@ function groan(z) {
   const d = z.pos.distanceTo(player.pos); if (d > 40) return;
   const t = actx.currentTime, vol = 0.35 * (1 - d / 40) * (z.type === 'behemoth' ? 3 : z.type === 'brute' ? 1.6 : z.type === 'stalker' ? 0.35 : 1);
   const o = actx.createOscillator(); o.type = 'sawtooth';
-  const base = { behemoth: 32, shocker: 110, brute: 55, runner: 140, crawler: 120, spitter: 165, bloater: 62, screamer: 210, armored: 88, riot: 95, gunner: 105, medic: 120, mutant: 48, dog: 260, flamer: 92, stalker: 320, splitter: 58, spawn: 300 }[z.type] || rand(80, 110);
+  const base = { behemoth: 32, broodmother: 38, shocker: 110, brute: 55, runner: 140, crawler: 120, spitter: 165, bloater: 62, screamer: 210, armored: 88, riot: 95, gunner: 105, medic: 120, mutant: 48, dog: 260, flamer: 92, stalker: 320, splitter: 58, spawn: 300 }[z.type] || rand(80, 110);
   o.frequency.setValueAtTime(base, t); o.frequency.linearRampToValueAtTime(base * rand(0.7, 1.2), t + 0.5); o.frequency.linearRampToValueAtTime(base * 0.6, t + 1.1);
   const lfo = actx.createOscillator(); lfo.frequency.value = rand(5, 9); const lg = actx.createGain(); lg.gain.value = base * 0.08;
   lfo.connect(lg).connect(o.frequency);
@@ -2232,16 +2313,26 @@ function katanaMats() {
 // the katana model is made in Blender (tools/blender/katana.py → assets/models/katana.glb);
 // until it has loaded, or if it cannot load, the procedural sword below stands in
 // models built in Blender (tools/blender/*.py → assets/models/*.glb)
+// levels wait for these before building, so props never fall back to stand-ins on a slow connection
+let modelsPending = 0, modelsLoaded = false, markModelsLoaded;
+const modelsReady = new Promise((r) => { markModelsLoaded = r; });
 function loadModel(name, onLoad) {
+  modelsPending++;
+  const settle = () => { if (--modelsPending === 0) { modelsLoaded = true; markModelsLoaded(); } };
   const inline = window.__GLB_B64 && window.__GLB_B64[name];
   const done = (gltf) => {
     gltf.scene.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; o.material.metalness = Math.min(o.material.metalness, 0.82); } });
-    onLoad(gltf.scene);
+    onLoad(gltf.scene); settle();
   };
-  if (inline) new GLTFLoader().parse(Uint8Array.from(atob(inline), (ch) => ch.charCodeAt(0)).buffer, '', done, () => {});
-  else new GLTFLoader().load(`./assets/models/${name}.glb`, done, undefined, () => { /* keep the procedural stand-in */ });
+  if (inline) new GLTFLoader().parse(Uint8Array.from(atob(inline), (ch) => ch.charCodeAt(0)).buffer, '', done, settle);
+  else new GLTFLoader().load(`./assets/models/${name}.glb`, done, undefined, settle); // on failure the procedural stand-ins remain
 }
-let KATANA_GLB = null, ARM_GLB = null;
+setTimeout(() => { if (!modelsLoaded) { modelsLoaded = true; markModelsLoaded(); } }, 20000); // never block play for long
+let KATANA_GLB = null, ARM_GLB = null, EVAC = null;
+loadModel('evac', (scene) => {
+  const parts = {}; scene.traverse((o) => { if (o.isMesh) parts[o.name] = o.geometry; }); EVAC = parts;
+  if (HELI && !HELI.userData.rotor) fillHeli(); // the level was built before the model arrived
+});
 // zombie body parts and accessories (tools/blender/zombie.py), keyed by part name; each is modelled
 // in the frame of the joint it hangs from, so it is added at the joint's origin
 let ZP = null;
@@ -2561,6 +2652,8 @@ function zombieMats() {
     helmetOD: std({ color: 0x4b5236, roughness: 0.7 }),
     mask: std({ color: 0x1a1c1a, roughness: 0.6 }),
     fuel: std({ color: 0x8a2a1a, roughness: 0.45, metalness: 0.5 }),
+    broodSkin: std({ map: TEX.skins[2], bumpMap: TEX.skins[2], bumpScale: 4, color: 0xb4a894, roughness: 0.55, emissive: 0x201008, emissiveIntensity: 0.3 }),
+    sacGlow: std({ color: 0xc8e070, emissive: 0x88c020, emissiveIntensity: 1.6, roughness: 0.25, transparent: true, opacity: 0.92 }),
     stalkerSkin: std({ map: TEX.skins[1], bumpMap: TEX.skins[1], bumpScale: 2, color: 0xdce8ff, roughness: 0.5, transparent: true }),
     splitSkin: tint(0xc49ab8, 0x200818, 0.3),
     splitBoil: std({ color: 0x9a4a80, emissive: 0x401030, emissiveIntensity: 0.6, roughness: 0.25 }),
@@ -2660,9 +2753,14 @@ class Zombie {
     const body = this.body = new THREE.Group(); g.add(body);
     const add = (geo, mat, parent, px, py, pz, part = 'body') => {
       const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.castShadow = true;
-      m.userData.z = this; m.userData.part = part; m.userData.head = part === 'head';
+      m.userData.z = this; m.userData.part = part; m.userData.head = part === 'head'; m.userData.mesh = m;
       parent.add(m); this.meshes.push(m); return m;
     };
+    if (type === 'broodmother') {
+      this.buildBrood(add, zm);
+      g.position.copy(this.pos); scene.add(g); zMeshes.push(...this.meshes);
+      return;
+    }
     if (type === 'dog') {
       this.buildDog(add, zm);
       g.position.copy(this.pos); scene.add(g); zMeshes.push(...this.meshes);
@@ -2890,6 +2988,45 @@ class Zombie {
     zMeshes.push(...this.meshes);
   }
   // ud = userData of the mesh that was hit
+  buildBrood(add, zm) {
+    const body = this.body;
+    this.headPivot = new THREE.Group(); body.add(this.headPivot);
+    this.broodLegs = []; this.sacs = [];
+    this.lean = 0; this.limp = 0; this.radius = 1.7; this.spawnT = 4; this.mortarT = 3;
+    if (ZP) {
+      add(ZP.brood_body, zm.broodSkin, body, 0, 0, 0);
+      add(ZP.brood_fangs, zm.teeth, body, 0, 0, 0);
+      for (const [x, y, z] of [[0.1, 1.55, 1.52], [-0.1, 1.55, 1.52], [0.19, 1.5, 1.44], [-0.19, 1.5, 1.44], [0.07, 1.64, 1.46], [-0.07, 1.64, 1.46]])
+        add(G.eye, zm.eye, body, x, y, z).scale.setScalar(1.6);
+    } else {
+      add(G.head, zm.broodSkin, body, 0, 1.2, -0.6).scale.set(6, 5.5, 9);
+      add(G.head, zm.broodSkin, body, 0, 1.4, 1.1).scale.set(2.2, 2.2, 2.4);
+    }
+    for (const side of [-1, 1]) for (const z of [0.55, -0.1, -0.75]) { // six legs
+      const l = new THREE.Group(); l.position.set(0.55 * side, 1.15, z); l.rotation.y = side < 0 ? Math.PI : 0; body.add(l);
+      l.userData.base = l.rotation.y; l.userData.phase = z * 3 + (side < 0 ? Math.PI : 0);
+      if (ZP) add(ZP.brood_leg, zm.broodSkin, l, 0, 0, 0); else add(G.leg, zm.broodSkin, l, 0.6, -0.5, 0).scale.set(1.8, 1.6, 1.8);
+      this.broodLegs.push(l);
+    }
+    for (const [x, y, z] of [[0, 1.95, -1.05], [-0.48, 1.72, -0.45], [0.5, 1.78, -0.3]]) { // glowing egg sacs, the weak points
+      const m = add(ZP ? ZP.brood_sac : G.head, zm.sacGlow, body, x, y, z, 'sac');
+      if (!ZP) m.scale.setScalar(2);
+      this.sacs.push({ m, hp: 500 * LV.hpMul });
+    }
+  }
+  animateBrood(dt, moving, dx, dz) {
+    this.phase += dt * (moving ? 3.2 : 1.2);
+    this.broodLegs.forEach((l) => {
+      const s = Math.sin(this.phase + l.userData.phase);
+      l.rotation.y = l.userData.base + s * 0.28; l.rotation.z = (l.userData.base ? -1 : 1) * Math.max(0, s) * 0.18;
+    });
+    this.sacs.forEach((sc, i) => { if (sc.m.parent) sc.m.scale.setScalar(1 + Math.sin(this.phase * 2 + i) * 0.06); });
+    const lunge = this.atkAnim > 0 ? Math.sin(this.atkAnim * Math.PI) : 0;
+    this.body.rotation.x = -lunge * 0.25; this.body.position.z = lunge * 0.5;
+    this.g.position.set(this.pos.x, Math.abs(Math.sin(this.phase)) * 0.06, this.pos.z);
+    let da = Math.atan2(dx, dz) - this.g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
+    this.g.rotation.y += da * Math.min(1, dt * 2);
+  }
   buildDog(add, zm) {
     const fur = pick(zm.fur), body = this.body;
     const hp = this.headPivot = new THREE.Group(); hp.position.set(0, 0.74, 0.44); body.add(hp);
@@ -2937,6 +3074,19 @@ class Zombie {
   damage(dmg, ud, dir, ap = false) {
     if (this.dead) return false;
     let mul = 1; this.lastFx = 'blood';
+    if (ud.part === 'sac' && this.sacs) {
+      const sc = this.sacs.find((q) => q.m === ud.mesh);
+      if (sc && sc.hp > 0) {
+        sc.hp -= dmg; mul = 1.5;
+        if (sc.hp <= 0) {
+          const at = sc.m.getWorldPosition(new THREE.Vector3());
+          sc.m.parent.remove(sc.m); zMeshes = zMeshes.filter((m) => m !== sc.m);
+          burst(at, UP, acidPartMat, 30, 5); sfx('splat'); makePool(at.x, at.z, TEX.acid, 2.4, true);
+          const left = this.sacs.filter((q) => q.hp > 0).length;
+          showMsg('卵囊被打爆了！', left ? `還剩 ${left} 個卵囊` : '巢母無法再孵化了', 2.2);
+        }
+      }
+    }
     if (ud.part === 'tank' && this.tankHp > 0) {
       this.tankHp -= dmg; this.lastFx = 'spark';
       if (this.tankHp <= 0) { this.tankBlown = true; this.hp = 0; this.die(dir || new THREE.Vector3(0, 0, 1)); return true; }
@@ -3029,7 +3179,7 @@ class Zombie {
       for (const o of zombies) if (!o.dead && o !== this && o.pos.distanceTo(this.pos) < 4.5) { o.hitT = 1.4; burst(o.pos.clone().setY(1.2), UP, sparkMat, 6, 3); }
       addBolt(this.pos.clone().setY(1.2), this.pos.clone().setY(3)); sfx('zap', 0.8);
     }
-    if (this.c.boss) { showMsg('屍王倒下了！', `獎勵 ${money(this.c.cash)}`, 3); shake = 1; sfx('slam', 1.5); spawnPickup('med', this.pos); }
+    if (this.c.boss) { showMsg(`${this.c.name}倒下了！`, `獎勵 ${money(this.c.cash)}`, 3); shake = 1; sfx('slam', 1.5); spawnPickup('med', this.pos); }
     this.pool = makePool(this.pos.x + dir.x * 0.8, this.pos.z + dir.z * 0.8, TEX.blood, this.c.scale * rand(0.8, 1.2));
     const r = Math.random();
     if (this.type === 'brute' || this.type === 'armored' || this.type === 'gunner' || r < 0.22) spawnPickup('ammo', this.pos);
@@ -3043,7 +3193,7 @@ class Zombie {
       const a = k / this.c.split * Math.PI * 2 + rand(0, 1);
       let x = this.pos.x + Math.cos(a) * 0.9, z = this.pos.z + Math.sin(a) * 0.9;
       if (blocked(x, z, 0.3)) { x = this.pos.x; z = this.pos.z; }
-      const child = new Zombie('spawn', x, z); child.rage = 1.5; zombies.push(child);
+      const child = new Zombie('spawn', x, z); child.rage = 1.5; addZombie(child);
     }
     let seen = [];
     try { seen = JSON.parse(localStorage.getItem('deadcity_seen') || '[]'); } catch {}
@@ -3083,6 +3233,7 @@ class Zombie {
       this.deadT += dt;
       const k = Math.min(1, this.deadT / 0.55);
       if (this.type === 'dog') { g.rotation.z = this.fallDir * (Math.PI / 2) * (k * k); g.position.y = 0; }
+      else if (this.type === 'broodmother') { g.rotation.z = this.fallDir * 0.35 * k; g.position.y = -0.5 * k; }
       else if (this.type === 'crawler') this.body.rotation.x += (1.55 - this.body.rotation.x) * Math.min(1, dt * 5);
       else { g.rotation.x = this.fallDir * (Math.PI / 2) * (k * k); g.position.y = Math.sin(k * Math.PI) * 0.15; }
       this.arms.forEach((a) => a.rotation.x += (-2.6 - a.rotation.x) * dt * 3);
@@ -3110,7 +3261,7 @@ class Zombie {
       mx = ox - oz * zig; mz = oz + ox * zig;
     }
     const ml = Math.hypot(mx, mz) || 1; mx /= ml; mz /= ml;
-    const reach = 1.25 * this.c.scale;
+    const reach = this.c.reach || 1.25 * this.c.scale;
     this.hitT = Math.max(0, this.hitT - dt);
     this.rage = Math.max(0, this.rage - dt);
     this.losT -= dt;
@@ -3211,7 +3362,25 @@ class Zombie {
       }
       this.updateArcs();
     }
-    if (this.c.boss) {
+    if (this.c.brood) {
+      this.spawnT -= dt; this.mortarT -= dt;
+      const sacsLeft = this.sacs.filter((q) => q.hp > 0);
+      if (this.spawnT <= 0 && sacsLeft.length) { // hatch spawnlings from the surviving sacs
+        this.spawnT = 7;
+        if (zombies.filter((q) => !q.dead).length < QUALITY[qLevel].maxZ + 4) sacsLeft.forEach((q) => {
+          const at = q.m.getWorldPosition(new THREE.Vector3());
+          burst(at, UP, acidPartMat, 10, 3);
+          const child = new Zombie('spawn', at.x + rand(-0.8, 0.8), at.z + rand(-0.8, 0.8)); child.rage = 2; addZombie(child);
+        });
+        sfx('splat');
+      }
+      if (this.mortarT <= 0 && dist > 6 && dist < 45 && this.los) { // arcing acid barrage around the player
+        this.mortarT = rand(4, 5.5);
+        const from = this.pos.clone().setY(2.1);
+        for (let k = 0; k < 3; k++) lobAcid(from, player.pos.clone().add(new THREE.Vector3(rand(-3, 3), 0, rand(-3, 3))).setY(k ? 0 : 1.4));
+      }
+    }
+    if (this.type === 'behemoth') {
       this.throwCd -= dt;
       if (!this.enraged && this.hp < this.maxHp * 0.4) {
         this.enraged = true; this.speed *= 1.4; this.c = { ...this.c, rate: this.c.rate * 0.7 };
@@ -3273,7 +3442,7 @@ class Zombie {
       this.atkAnim += dt * 3;
       if (this.atkAnim > 0.5 && !this.atkHit) {
         this.atkHit = true;
-        if (this.c.boss) { // ground-shaking stomp
+        if (this.type === 'behemoth') { // ground-shaking stomp
           const p = this.pos.clone(); burst(p.clone().setY(0.2), UP, dustMat, 30, 6); stompRing(p); sfx('slam', 1.4);
           shake = 1; if (dist <= reach + 1.8 && player.pos.y < 1) { hurtPlayer(this.c.dmg); player.slowT = 0.8; }
         } else if (dist <= reach + 0.5) hurtPlayer(this.c.dmg);
@@ -3288,6 +3457,7 @@ class Zombie {
       this.ghost.depthWrite = this.ghost.opacity > 0.9;
     }
     if (this.type === 'dog') { this.animateDog(dt, moving, dx, dz); return true; }
+    if (this.type === 'broodmother') { this.animateBrood(dt, moving, dx, dz); return true; }
     // ---- animation ----
     const t = this.type;
     const rate = t === 'runner' ? 2.2 : t === 'crawler' ? 2.4 : 2.6;
@@ -3502,6 +3672,13 @@ function makePool(x, z, tex, grow, acid = false) {
   if (acid) acidPools.push({ m: pool, x, z, r: 0.9 * grow, life: 7 });
   return pool;
 }
+function lobAcid(from, target) {
+  const d = Math.hypot(target.x - from.x, target.z - from.z), T = clamp(d / 14, 0.8, 2.2);
+  const v = new THREE.Vector3((target.x - from.x) / T, (target.y - from.y + 0.5 * 9.8 * T * T) / T, (target.z - from.z) / T);
+  const m = new THREE.Mesh(spitGeo, zombieMats().acid); m.position.copy(from); m.scale.setScalar(1.8); scene.add(m);
+  spits.push({ m, v, life: 4 });
+  sfx('spit', 0.9);
+}
 function spawnSpit(z) {
   const from = z.headPivot.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.1, 0));
   const target = camera.position.clone().addScaledVector(player.vel, 0.5); target.y -= 0.3;
@@ -3633,6 +3810,7 @@ function hurtPlayer(dmg) {
 function updateHUD() {
   const boss = zombies.find((z) => !z.dead && z.c.boss);
   $('bossbar').style.display = boss ? 'block' : 'none';
+  if (boss) $('bossbar').querySelector('.bn').textContent = boss.c.name;
   if (boss) $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%';
   const w = weapons[wi];
   $('hpnum').textContent = Math.ceil(player.hp);
@@ -3659,6 +3837,7 @@ function loadUnlocked() { try { return +localStorage.getItem('deadcity_unlocked'
 function saveUnlocked(n) { try { localStorage.setItem('deadcity_unlocked', String(n)); } catch {} }
 
 function clearDynamic() {
+  evac = null;
   zombies.forEach((z) => z.remove()); zombies = []; zMeshes = [];
   particles.forEach((p) => scene.remove(p.m)); particles = [];
   decals.forEach((d) => scene.remove(d)); decals = [];
@@ -3681,6 +3860,11 @@ function loadLevel(i) {
 
 function startLevel(i) {
   audio();
+  if (!modelsLoaded) { // finish downloading the Blender models first
+    $('loading').textContent = '載入模型中…'; $('loading').style.display = 'flex';
+    modelsReady.then(() => { $('loading').style.display = 'none'; startLevel(i); });
+    return;
+  }
   loadLevel(i);
   player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
   player.yaw = 0; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0);
@@ -3715,6 +3899,7 @@ function startWave() {
 }
 
 function updateWaves(dt) {
+  if (evac) { updateEvac(dt); return; }
   if (!waveActive) {
     interT -= dt;
     if (interT <= 0) startWave();
@@ -3727,7 +3912,7 @@ function updateWaves(dt) {
   }
   if (!queue.length && alive === 0) {
     waveActive = false;
-    if (waveIdx >= LV.waves.length - 1) { levelComplete(); return; }
+    if (waveIdx >= LV.waves.length - 1) { if (LV.evac && HELI) startEvac(); else levelComplete(); return; }
     waveIdx++; interT = 7;
     showMsg('本波已清除', '補給時間 — 撿起彈藥和醫療包', 3);
     const w = weapons[wi]; w.reserve += w.c.mag;
@@ -4160,7 +4345,7 @@ function meleeSwing(w) {
     else {
       burst(at, sweep, bloodMat, 22, 5.5); burst(at, f.clone().negate(), bloodMat, 8, 2.5);
       slashMark(at.clone().addScaledVector(f, -0.25));
-      if (killed && z.headPivot && z.type !== 'dog' && Math.random() < 0.5) decapitate(z);
+      if (killed && z.headPivot && z.type !== 'dog' && !z.c.boss && Math.random() < 0.5) decapitate(z);
     }
     hits++; kill = kill || killed;
   }
@@ -4398,8 +4583,14 @@ function updateWeapon(dt) {
   gunMuzzle.position.copy(pos).add(v.muzzle);
 }
 
+// zombies born while the list is being updated (hatchlings, split-offs from a blast) wait until the pass ends
+let updatingZombies = false, newborn = [];
+function addZombie(z) { (updatingZombies ? newborn : zombies).push(z); }
 function updateZombies(dt) {
+  updatingZombies = true;
   zombies = zombies.filter((z) => { const keep = z.update(dt); if (!keep) z.remove(); return keep; });
+  updatingZombies = false;
+  if (newborn.length) { zombies.push(...newborn); newborn = []; }
   groanT -= dt;
   if (groanT <= 0) {
     groanT = rand(1.2, 3);
@@ -4518,7 +4709,7 @@ $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 window.__game = { get state() { return state; }, player, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
-  give(n) { addCash(n); }, loadout: () => loadout, weapons: () => weapons, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
+  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
   spawnNear(type, d = 8) { const z = new Zombie(type, player.pos.x + rand(-2, 2), player.pos.z - d); zombies.push(z); return z; } };
 </script>
