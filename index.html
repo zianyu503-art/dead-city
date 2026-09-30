@@ -430,8 +430,8 @@ const WEAPONS = [
     desc: '可靠的制式手槍，換彈快。' },
   { id: 'deagle', name: '沙漠之鷹', cat: '手槍', price: 800, sound: 'magnum', dmg: 90, rate: 0.38, auto: false, mag: 7, reserve: 42, reload: 1.6, spread: 0.01, pellets: 1, recoil: 0.065, pierce: 2,
     desc: '大口徑手槍，一發子彈能貫穿兩隻殭屍。' },
-  { id: 'katana', name: '武士刀', cat: '近戰', price: 600, sound: 'slash', dmg: 95, rate: 0.42, auto: true, mag: Infinity, reserve: Infinity, reload: 0, spread: 0, pellets: 1, recoil: 0,
-    melee: true, range: 2.7, arc: 0.95, move: 1.1, noFlash: true, desc: '不需要彈藥。一刀能砍中面前扇形範圍內的多隻殭屍，拿著跑得更快。會被盾牌擋下。' },
+  { id: 'katana', name: '武士刀', cat: '近戰', price: 1800, sound: 'slash', dmg: 60, rate: 0.7, auto: false, mag: Infinity, reserve: Infinity, reload: 0, spread: 0, pellets: 1, recoil: 0,
+    melee: true, range: 2.7, arc: 0.95, move: 1.1, noFlash: true, desc: '不需要彈藥。每次點擊揮一刀，不能按住連砍；一刀能砍中面前扇形範圍內的多隻殭屍，有機會斬首。拿著跑得更快，會被盾牌擋下。' },
   { id: 'mp5', name: 'MP5 衝鋒槍', cat: '衝鋒槍', price: 1200, sound: 'smg', dmg: 21, rate: 0.068, auto: true, mag: 30, reserve: 210, reload: 1.8, spread: 0.03, pellets: 1, recoil: 0.007, move: 1.06,
     desc: '射速極快、後座力小，拿著跑得比較快。' },
   { id: 'rifle', name: 'M4 步槍', cat: '突擊步槍', price: 0, sound: 'rifle', dmg: 30, rate: 0.095, auto: true, mag: 30, reserve: 180, reload: 2.0, spread: 0.028, pellets: 1, recoil: 0.011, zoom: 25,
@@ -2026,7 +2026,8 @@ function sfx(name, vol = 1) {
     case 'copshot': sNoise(t, 0.2, 4200, 500, 0.7 * vol); sTone(t, 0.1, 150, 50, 0.5 * vol); break;
     case 'whiz': sNoise(t, 0.12, 6000, 2500, 0.25, 'bandpass'); break;
     case 'flame': sNoise(t, 0.3, 1400, 500, 0.35 * vol, 'bandpass'); sNoise(t, 0.3, 300, 120, 0.25 * vol); break;
-    case 'slash': sNoise(t, 0.18, 3000, 9000, 0.35, 'bandpass'); break;
+    case 'slash': sNoise(t, 0.22, 1800, 7000, 0.5, 'bandpass'); sNoise(t + 0.03, 0.14, 5000, 11000, 0.25, 'highpass'); break;
+    case 'cut': sNoise(t, 0.14, 1600, 350, 0.8, 'bandpass'); sTone(t, 0.12, 140, 55, 0.55); break;
     case 'bow': sTone(t, 0.25, 320, 110, 0.35, 'triangle'); sNoise(t, 0.08, 2500, 900, 0.3, 'bandpass'); break;
     case 'rpg': sNoise(t, 0.9, 2500, 300, 0.9); sTone(t, 0.5, 200, 60, 0.5); break;
     case 'charge': sTone(t, 1.0, 180, 1400, 0.18 * vol, 'sawtooth'); sNoise(t, 1.0, 5000, 7000, 0.12 * vol, 'highpass'); break;
@@ -2414,8 +2415,7 @@ function buildGun(id) {
     arm(g, rh.x, rh.y, rh.z, 0.09, -0.28, 0.38);
     arm(g, lh.x, lh.y, lh.z, -0.1, -0.3, 0.46);
     // a faint arc of light follows each cut
-    extra.trail = new THREE.Mesh(new THREE.RingGeometry(0.38, 0.62, 32, 1, 0.2, 2.2), new THREE.MeshBasicMaterial({ color: 0xdfeaff, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
-    extra.trail.rotation.set(-1.1, 0.2, 0.5); extra.trail.position.set(-0.05, 0.05, -0.55);
+    extra.ribbon = makeSwordTrail();
     muzzle = new THREE.Vector3(0, 0, -0.9); hip = new THREE.Vector3(0.15, -0.085, -0.36); aim = hip.clone();
   } else if (id === 'dbarrel') {
     for (const sx of [-0.017, 0.017]) gc(g, 0.016, 0.62, gunMats.metal, sx, 0.018, -0.36);
@@ -4088,9 +4088,66 @@ function switchWeapon(i) {
   switching = 0.35; reloading = 0;
 }
 function camRight() { return new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion); }
+// ---- katana effects: a glowing ribbon traced by the blade tip, slash marks, blood arcs, hit-stop ----
+const TRAIL_N = 18;
+function makeSwordTrail() {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TRAIL_N * 2 * 3), 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(TRAIL_N * 2 * 3), 3));
+  const idx = [];
+  for (let i = 0; i < TRAIL_N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  geo.setIndex(idx);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  mesh.frustumCulled = false; mesh.visible = false; mesh.renderOrder = 5;
+  return { mesh, pts: [] };
+}
+const _tip = new THREE.Vector3(), _base = new THREE.Vector3();
+function updateSwordTrail(v, cutting) {
+  const r = v.ribbon;
+  if (!r.mesh.parent) gunScene.add(r.mesh);
+  v.group.updateMatrixWorld(true);
+  if (cutting) {
+    _tip.set(0, 0, -0.78); v.katana.localToWorld(_tip);
+    _base.set(0, 0, -0.2); v.katana.localToWorld(_base);
+    r.pts.unshift([_tip.clone(), _base.clone()]);
+  } else if (r.pts.length) r.pts.pop(); // let the tail fade out after the cut
+  r.pts.length = Math.min(r.pts.length, TRAIL_N);
+  r.mesh.visible = r.pts.length > 1 && v.group.visible;
+  if (!r.mesh.visible) return;
+  const pos = r.mesh.geometry.attributes.position.array, col = r.mesh.geometry.attributes.color.array;
+  for (let i = 0; i < TRAIL_N; i++) {
+    const p = r.pts[Math.min(i, r.pts.length - 1)], fade = Math.max(0, 1 - i / (r.pts.length - 1 || 1)) ** 1.4;
+    pos.set([p[0].x, p[0].y, p[0].z, p[1].x, p[1].y, p[1].z], i * 6);
+    col.set([0.75 * fade, 0.88 * fade, 1.0 * fade, 0.1 * fade, 0.14 * fade, 0.22 * fade], i * 6); // bright edge, dim inner side
+  }
+  r.mesh.geometry.attributes.position.needsUpdate = true; r.mesh.geometry.attributes.color.needsUpdate = true;
+  r.mesh.geometry.setDrawRange(0, (r.pts.length - 1) * 6);
+}
+let slashMarks = [], hitStop = 0, slashTex = null;
+function slashMark(at) {
+  if (!slashTex) { // a thin, bright crescent
+    const [c, x] = makeCanvas(256, 128);
+    const g2 = x.createLinearGradient(0, 0, 256, 0);
+    g2.addColorStop(0, 'rgba(255,255,255,0)'); g2.addColorStop(0.5, 'rgba(235,245,255,1)'); g2.addColorStop(1, 'rgba(255,255,255,0)');
+    x.strokeStyle = g2; x.lineCap = 'round';
+    for (const [wd, a] of [[18, 0.25], [8, 0.6], [3, 1]]) { x.globalAlpha = a; x.lineWidth = wd; x.beginPath(); x.arc(128, 300, 250, Math.PI * 1.28, Math.PI * 1.72); x.stroke(); }
+    slashTex = new THREE.CanvasTexture(c);
+  }
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: slashTex, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, transparent: true }));
+  sp.position.copy(at); sp.scale.set(1.3, 0.65, 1); sp.material.rotation = -0.75 + rand(-0.15, 0.15);
+  scene.add(sp); slashMarks.push({ sp, t: 0 });
+}
+function updateSlashMarks(dt) {
+  slashMarks = slashMarks.filter((m) => {
+    m.t += dt; m.sp.material.opacity = Math.max(0, 1 - m.t / 0.22); m.sp.scale.x = 1.3 + m.t * 3;
+    if (m.t > 0.22) { scene.remove(m.sp); m.sp.material.dispose(); return false; }
+    return true;
+  });
+}
 function meleeSwing(w) {
   swingT = 0.32;
   const f = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+  const sweep = camRight().negate().add(new THREE.Vector3(0, -0.35, 0)).normalize(); // the cut travels right → left and down
   let hits = 0, kill = false;
   for (const z of zombies) {
     if (z.dead || hits >= 4) continue;
@@ -4098,11 +4155,22 @@ function meleeSwing(w) {
     if (d > w.c.range + z.radius) continue;
     if (d > 0.01 && to.normalize().dot(f) < Math.cos(w.c.arc)) continue;
     const killed = z.damage(w.c.dmg, { part: z.shieldHp > 0 ? 'shield' : 'body' }, f);
-    if (z.lastFx === 'shield') { burst(z.pos.clone().setY(1.2), f.clone().negate(), shardMat, 4, 3); sfx('thud'); }
-    else burst(z.pos.clone().setY(1.2 * z.g.scale.y), f.clone().negate(), bloodMat, 12, 3.5);
+    const at = z.pos.clone().setY(1.25 * z.g.scale.y);
+    if (z.lastFx === 'shield') { burst(at, f.clone().negate(), shardMat, 6, 3); burst(at, f.clone().negate(), sparkMat, 8, 5); sfx('thud'); }
+    else {
+      burst(at, sweep, bloodMat, 22, 5.5); burst(at, f.clone().negate(), bloodMat, 8, 2.5);
+      slashMark(at.clone().addScaledVector(f, -0.25));
+      if (killed && z.headPivot && z.type !== 'dog' && Math.random() < 0.5) decapitate(z);
+    }
     hits++; kill = kill || killed;
   }
-  if (hits) { hitMarker(kill); sfx('hit', 1.4); }
+  if (hits) { hitMarker(kill); sfx('cut'); hitStop = 0.07; shake = Math.min(1, shake + 0.35); }
+}
+function decapitate(z) {
+  z.headPivot.visible = false;
+  const neck = z.headPivot.getWorldPosition(new THREE.Vector3());
+  burst(neck, UP, bloodMat, 30, 4.5);
+  makePool(z.pos.x, z.pos.z, TEX.blood, 1.4);
 }
 function sprayFlame(w, origin, fwd) {
   const from = origin.clone().addScaledVector(fwd, 0.9).addScaledVector(camRight(), 0.14).add(new THREE.Vector3(0, -0.22, 0));
@@ -4320,14 +4388,9 @@ function updateWeapon(dt) {
       v.group.position.sub(moved);
     }
     v.group.position.x -= arc * 0.08; v.group.position.z -= arc * 0.06;
-    if (v.trail) {
-      if (!v.trail.parent) gunRoot.add(v.trail);
-      v.trail.visible = v.group.visible;
-      v.trail.material.opacity = swingT > 0 ? Math.max(0, Math.sin(k * Math.PI)) * 0.35 : 0;
-      v.trail.rotation.z = 0.5 - k * 0.9;
-    }
+    if (v.ribbon) updateSwordTrail(v, swingT > 0 && k > 0.08 && k < 0.9);
   }
-  weapons.forEach((o) => { if (o !== w && o.view.trail) o.view.trail.material.opacity = 0; });
+  weapons.forEach((o) => { if (o !== w && o.view.ribbon) o.view.ribbon.mesh.visible = false; });
   v.flash.visible = flashT > 0;
   if (flashT > 0) { v.flash.material.rotation = rand(0, 6); v.flash.scale.setScalar(rand(0.16, 0.28) * (w.c.pellets > 1 || w.c.id === 'm249' || w.c.id === 'awm' ? 1.4 : 1)); }
   flashT -= dt;
@@ -4416,6 +4479,8 @@ function loop(now) {
   frame(dt, now);
 }
 function frame(dt, now) {
+  if (hitStop > 0) { hitStop -= dt; dt *= 0.06; }
+  updateSlashMarks(dt);
   pollPad(dt);
   if (state === 'playing') autoQuality(dt);
   if (state === 'playing') {
