@@ -1,0 +1,481 @@
+# First-person weapon models for 死城突圍 (every gun except the katana).
+#
+#   blender -b -P tools/blender/guns.py -- assets/models/guns.glb [preview.png]
+#
+# Coordinates are in each weapon's own frame as the game uses it: +Y up, -Z toward the
+# muzzle, X to the right, metres (the game scales the whole view model by 0.8 afterwards).
+# Sight heights, grips, muzzles and magazine positions match the game's aim / hand /
+# muzzle / reload data, so only the geometry changes.
+#
+# Exported objects: "<id>" for the weapon, "<id>_mag" for a magazine that drops out while
+# reloading, and "minigun_barrels" (the rotating barrel cluster, origin on its spin axis).
+# Material names match the game's gunMats keys, which it swaps in for its textured materials.
+import bpy, math, sys
+from mathutils import Vector
+
+argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+OUT = argv[0] if argv else "guns.glb"
+PREVIEW = argv[1] if len(argv) > 1 else None
+bpy.ops.wm.read_factory_settings(use_empty=True)
+scene = bpy.context.scene
+PARTS = []
+
+PALETTE = {  # preview colours only; the game replaces these by name
+    "metal": ((0.035, 0.037, 0.04), 0.35, 0.85), "poly": ((0.03, 0.03, 0.03), 0.8, 0.0), "wood": ((0.13, 0.055, 0.02), 0.5, 0.0),
+    "silver": ((0.6, 0.62, 0.65), 0.25, 1.0), "olive": ((0.1, 0.12, 0.07), 0.7, 0.1), "brass": ((0.7, 0.5, 0.18), 0.3, 1.0),
+    "lens": ((0.02, 0.05, 0.09), 0.05, 0.8), "coil": ((0.2, 0.55, 1.0), 0.3, 0.2), "fuel": ((0.35, 0.05, 0.03), 0.45, 0.4),
+    "dot": ((1.0, 0.1, 0.05), 0.5, 0.0), "shellRed": ((0.45, 0.05, 0.03), 0.5, 0.2), "pilot": ((0.3, 0.6, 1.0), 0.5, 0.0),
+}
+MAT = {}
+for n, (c, r, m) in PALETTE.items():
+    mt = bpy.data.materials.new(n); mt.use_nodes = True
+    b = mt.node_tree.nodes["Principled BSDF"]
+    b.inputs["Base Color"].default_value = (*c, 1); b.inputs["Roughness"].default_value = r; b.inputs["Metallic"].default_value = m
+    MAT[n] = mt
+
+
+def B(x, y, z):
+    return Vector((x, -z, y))
+
+
+def activate(ob):
+    for o in bpy.context.selected_objects:
+        o.select_set(False)
+    bpy.context.view_layer.objects.active = ob
+    ob.select_set(True)
+
+
+def settle(ob, mat):
+    activate(ob)
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    ob.data.materials.clear(); ob.data.materials.append(MAT[mat])
+    return ob
+
+
+def apply_mods(ob):
+    activate(ob)
+    for m in list(ob.modifiers):
+        bpy.ops.object.modifier_apply(modifier=m.name)
+    return ob
+
+
+def bevel(ob, width, segments=2, angle=35):
+    m = ob.modifiers.new("bev", "BEVEL"); m.width = width; m.segments = segments
+    m.limit_method = "ANGLE"; m.angle_limit = math.radians(angle)
+    return apply_mods(ob)
+
+
+# ---- building blocks (all in game coordinates) ----
+def P(pts, t, mat, x=0.0, bev=0.0012):
+    """Side profile: a polygon in the (z, y) plane extruded to thickness t across X, edges bevelled."""
+    me = bpy.data.meshes.new("p")
+    me.from_pydata([B(x, y, z) for (z, y) in pts], [], [list(range(len(pts)))])
+    ob = bpy.data.objects.new("p", me); scene.collection.objects.link(ob)
+    s = ob.modifiers.new("sol", "SOLIDIFY"); s.thickness = t; s.offset = 0; s.use_even_offset = True
+    apply_mods(ob)
+    settle(ob, mat)
+    return bevel(ob, bev) if bev else ob
+
+
+def C(p0, p1, r, mat, r1=None, verts=20, bev=0.0):
+    a, b = B(*p0), B(*p1); d = b - a
+    if max(r, r1 or 0) < 0.009:
+        verts = min(verts, 12)
+    bpy.ops.mesh.primitive_cone_add(vertices=verts, radius1=r, radius2=r if r1 is None else r1, depth=d.length, location=(a + b) / 2)
+    ob = bpy.context.object; ob.rotation_mode = "QUATERNION"
+    ob.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(d.normalized())
+    settle(ob, mat)
+    return bevel(ob, bev) if bev else ob
+
+
+def Bx(c, s, mat, bev=0.2):
+    bpy.ops.mesh.primitive_cube_add(size=1, location=B(*c))
+    ob = bpy.context.object; ob.scale = (s[0], s[2], s[1])
+    settle(ob, mat)
+    return bevel(ob, min(s) * bev, 1 if min(s) < 0.02 else 2) if bev else ob
+
+
+def Sph(c, r, mat, scale=(1, 1, 1), segs=16):
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=segs, ring_count=max(6, segs // 2), radius=r, location=B(*c))
+    ob = bpy.context.object; ob.scale = (scale[0], scale[2], scale[1])
+    return settle(ob, mat)
+
+
+def Tor(c, R, r, mat, axis="z", segs=32):
+    rot = {"z": (math.pi / 2, 0, 0), "x": (0, math.pi / 2, 0), "y": (0, 0, 0)}[axis]
+    bpy.ops.mesh.primitive_torus_add(major_radius=R, minor_radius=r, major_segments=segs, minor_segments=6, location=B(*c), rotation=rot)
+    return settle(bpy.context.object, mat)
+
+
+def Tube(pts, r, mat, radii=None):
+    """Smooth round tube through the points (trigger guards, hoses, bow limbs, strings)."""
+    cu = bpy.data.curves.new("t", "CURVE"); cu.dimensions = "3D"
+    cu.bevel_depth = r; cu.bevel_resolution = 1; cu.use_fill_caps = True; cu.resolution_u = 5
+    sp = cu.splines.new("BEZIER"); sp.bezier_points.add(len(pts) - 1)
+    for i, p in enumerate(pts):
+        bp = sp.bezier_points[i]; bp.co = B(*p); bp.handle_left_type = bp.handle_right_type = "AUTO"
+        bp.radius = radii[i] if radii else 1
+    ob = bpy.data.objects.new("t", cu); scene.collection.objects.link(ob)
+    activate(ob); bpy.ops.object.convert(target="MESH")
+    return settle(bpy.context.object, mat)
+
+
+def cut(ob, cutters):
+    """Boolean-subtract a set of cutter shapes (slots, ports, serrations)."""
+    if not cutters:
+        return ob
+    k = join(cutters)
+    m = ob.modifiers.new("cut", "BOOLEAN"); m.operation = "DIFFERENCE"; m.object = k; m.solver = "EXACT"
+    apply_mods(ob)
+    bpy.data.objects.remove(k)
+    return ob
+
+
+def join(objs):
+    activate(objs[0])
+    for o in objs[1:]:
+        o.select_set(True)
+    bpy.ops.object.join()
+    return bpy.context.object
+
+
+def rail(z0, z1, y, x=0.0, mat="metal"):
+    """Picatinny rail: base plus cross teeth."""
+    n = int((z1 - z0) / 0.01)
+    base = Bx((x, y + 0.004, (z0 + z1) / 2), (0.021, 0.008, z1 - z0), mat, 0.15)
+    teeth = [Bx((x, y + 0.0095, z0 + 0.005 + k * 0.01), (0.025, 0.004, 0.0052), mat, 0) for k in range(n)]
+    return [base] + teeth
+
+
+def bore(z, y, r, x=0.0, back=0.02):
+    """Dark hole at the muzzle so barrels read as hollow."""
+    return C((x, y, z - 0.0005), (x, y, z + back), r, "poly", verts=16)
+
+
+def trigger(y, z, size=1.0):
+    s = size
+    guard = Tube([(0, y + 0.012 * s, z - 0.028 * s), (0, y - 0.006 * s, z - 0.03 * s), (0, y - 0.016 * s, z - 0.012 * s),
+                  (0, y - 0.016 * s, z + 0.014 * s), (0, y + 0.002 * s, z + 0.026 * s)], 0.0028, "metal")
+    trig = Tube([(0, y + 0.01, z - 0.006), (0, y - 0.002, z - 0.005), (0, y - 0.009, z + 0.002)], 0.0023, "metal")
+    return [guard, trig]
+
+
+def grip(z, y, mat="poly", ang=0.3, h=0.1, w=0.03, d=0.042):
+    """Angled pistol grip hanging below (y) at z, with a flared bottom."""
+    t = math.tan(ang)
+    pts = [(z - d / 2, y), (z + d / 2, y), (z + d / 2 + h * t, y - h), (z + d / 2 + h * t - 0.004, y - h - 0.006),
+           (z - d / 2 + h * t - 0.006, y - h - 0.006), (z - d / 2 + h * t, y - h + 0.01)]
+    g = P(pts, w, mat, bev=0.0035)
+    grooves = [Bx((0, y - 0.02 - k * 0.018, z - d / 2 + (0.02 + k * 0.018) * t), (w + 0.01, 0.004, 0.008), "poly", 0) for k in range(4)]
+    return cut(g, grooves)
+
+
+def done(name, objs):
+    ob = join(objs) if len(objs) > 1 else objs[0]
+    activate(ob)
+    bpy.ops.object.shade_smooth_by_angle(angle=math.radians(35))
+    bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.01)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    ob.name = name; ob.data.name = name
+    PARTS.append(ob)
+    return ob
+
+
+# =================================================================== M9 pistol
+slide = P([(-0.118, 0.008), (-0.118, 0.03), (-0.112, 0.037), (0.066, 0.037), (0.075, 0.03), (0.075, 0.008)], 0.031, "metal")
+cut(slide, [Bx((s * 0.0165, 0.022, 0.034 + k * 0.0055), (0.004, 0.024, 0.0022), "metal", 0) for s in (-1, 1) for k in range(7)]
+    + [Bx((0.016, 0.031, -0.018), (0.012, 0.012, 0.036), "metal", 0)])
+done("pistol", [slide,
+    C((0, 0.02, -0.123), (0, 0.02, -0.1), 0.0068, "metal"), bore(-0.1235, 0.02, 0.0043),
+    P([(-0.108, 0.008), (0.07, 0.008), (0.07, -0.004), (0.055, -0.011), (-0.108, -0.011)], 0.029, "metal"),
+    grip(0.045, -0.008, "poly", 0.26, 0.108, 0.031, 0.05),
+    Bx((0, -0.123, 0.074), (0.031, 0.008, 0.052), "metal"),
+    C((-0.017, -0.04, 0.052), (0.017, -0.04, 0.052), 0.0035, "silver", verts=10), C((-0.017, -0.095, 0.066), (0.017, -0.095, 0.066), 0.0035, "silver", verts=10),
+    P([(0.072, 0.018), (0.086, 0.03), (0.088, 0.039), (0.08, 0.041), (0.071, 0.032)], 0.009, "metal"),
+    Bx((0, 0.041, -0.107), (0.0045, 0.009, 0.008), "metal"),
+    cut(Bx((0, 0.041, 0.062), (0.022, 0.009, 0.008), "metal"), [Bx((0, 0.045, 0.062), (0.0042, 0.008, 0.02), "metal", 0)]),
+    C((-0.019, 0.03, 0.058), (0.019, 0.03, 0.058), 0.0032, "metal", verts=10)] + trigger(-0.011, 0.012))
+
+# =================================================================== Desert Eagle
+slide = P([(-0.166, 0.006), (-0.166, 0.038), (-0.158, 0.045), (0.078, 0.045), (0.088, 0.036), (0.088, 0.006)], 0.037, "silver")
+cut(slide, [Bx((s * 0.0195, 0.026, 0.04 + k * 0.0065), (0.004, 0.026, 0.0026), "silver", 0) for s in (-1, 1) for k in range(7)]
+    + [Bx((0.019, 0.035, -0.03), (0.012, 0.014, 0.05), "silver", 0)])
+done("deagle", [slide, bore(-0.1665, 0.024, 0.0085),
+    P([(-0.14, 0.006), (0.08, 0.006), (0.08, -0.006), (0.064, -0.014), (-0.14, -0.014)], 0.035, "silver"),
+    grip(0.056, -0.01, "poly", 0.25, 0.12, 0.034, 0.058),
+    Bx((0, -0.137, 0.09), (0.035, 0.01, 0.062), "silver"),
+    P([(0.08, 0.02), (0.096, 0.034), (0.098, 0.046), (0.088, 0.048), (0.079, 0.036)], 0.011, "metal"),
+    Bx((0, 0.05, -0.155), (0.006, 0.012, 0.01), "metal"),
+    cut(Bx((0, 0.05, 0.074), (0.026, 0.012, 0.01), "metal"), [Bx((0, 0.055, 0.074), (0.005, 0.01, 0.03), "metal", 0)]),
+    C((-0.021, 0.03, 0.066), (0.021, 0.03, 0.066), 0.0045, "metal", verts=12)] + rail(-0.13, -0.01, 0.045) + trigger(-0.014, 0.018, 1.15))
+
+# =================================================================== MP5
+recv = P([(-0.18, -0.028), (-0.18, 0.026), (-0.17, 0.034), (0.16, 0.034), (0.175, 0.024), (0.175, -0.028)], 0.042, "metal", bev=0.004)
+cut(recv, [Bx((0.021, 0.012, -0.035), (0.01, 0.018, 0.045), "metal", 0)])
+done("mp5", [recv, C((0, 0.034, -0.29), (0, 0.034, -0.05), 0.011, "metal"), C((0, 0.034, -0.3), (0, 0.034, -0.288), 0.012, "metal", bev=0.001),
+    P([(-0.315, -0.022), (-0.315, 0.018), (-0.3, 0.026), (-0.175, 0.026), (-0.175, -0.03), (-0.2, -0.04), (-0.29, -0.036)], 0.05, "poly", bev=0.005),
+    C((0, 0.004, -0.39), (0, 0.004, -0.31), 0.0098, "metal"), bore(-0.391, 0.004, 0.005),
+    *[Bx((0, 0.004, -0.36), (0.028, 0.006, 0.008), "metal", 0.1)],
+    cut(Tor((0, 0.046, -0.29), 0.014, 0.003, "metal", "z"), []), Bx((0, 0.05, -0.29), (0.004, 0.02, 0.004), "metal", 0.1),
+    C((-0.013, 0.05, 0.08), (0.013, 0.05, 0.08), 0.012, "metal", verts=16), Bx((0, 0.04, 0.08), (0.016, 0.012, 0.025), "metal"),
+    P([(0.03, -0.028), (0.1, -0.028), (0.1, -0.05), (0.02, -0.05)], 0.034, "poly"),
+    grip(0.075, -0.045, "poly", 0.3, 0.085, 0.03, 0.04),
+    C((0.018, 0.01, 0.17), (0.018, 0.01, 0.33), 0.006, "metal", verts=10), C((-0.018, 0.01, 0.17), (0.018 * -1, 0.01, 0.33), 0.006, "metal", verts=10),
+    P([(0.322, -0.045), (0.322, 0.03), (0.338, 0.034), (0.338, -0.05)], 0.046, "metal", bev=0.003)] + trigger(-0.05, 0.045))
+mag = [(-0.128 + 0.01 * math.sin(k / 8 * 1.2), -0.03 - k * 0.018) for k in range(9)]
+done("mp5_mag", [P([(-0.126, -0.028), (-0.084, -0.028)] + [(-0.086 - 0.04 * (k / 8) ** 1.6, -0.03 - k * 0.018) for k in range(1, 9)]
+                   + [(-0.128 - 0.04 * (k / 8) ** 1.6, -0.03 - k * 0.018) for k in range(8, 0, -1)], 0.024, "metal", bev=0.002)])
+
+# =================================================================== M4 carbine
+upper = P([(-0.17, -0.004), (-0.17, 0.035), (0.15, 0.035), (0.15, -0.004)], 0.048, "metal", bev=0.003)
+cut(upper, [Bx((0.024, 0.015, -0.03), (0.012, 0.018, 0.055), "metal", 0)])
+lower = P([(-0.12, -0.004), (0.13, -0.004), (0.13, -0.026), (0.06, -0.034), (-0.012, -0.034), (-0.03, -0.056), (-0.1, -0.056), (-0.12, -0.036)], 0.046, "metal", bev=0.003)
+hg = C((0, 0.006, -0.44), (0, 0.006, -0.168), 0.03, "poly", verts=8, bev=0.002)
+hg.rotation_euler = (0, 0, 0)
+cut(hg, [Bx((s * 0.029, 0.006, -0.42 + k * 0.045), (0.012, 0.014, 0.028), "poly", 0) for s in (-1, 1) for k in range(6)]
+    + [Bx((0, -0.023, -0.42 + k * 0.045), (0.014, 0.012, 0.028), "poly", 0) for k in range(6)])
+brake = C((0, 0.006, -0.705), (0, 0.006, -0.655), 0.0135, "metal", bev=0.001)
+cut(brake, [Bx((s * 0.012, 0.006, -0.69 + k * 0.012), (0.01, 0.006, 0.006), "metal", 0) for s in (-1, 1) for k in range(3)])
+dot_tube = C((0, 0.066, -0.1), (0, 0.066, -0.02), 0.0185, "metal", verts=28)
+cut(dot_tube, [C((0, 0.066, -0.11), (0, 0.066, -0.01), 0.0155, "metal", verts=28)])  # hollow tube: the dot is seen through it
+done("rifle", [upper, lower, hg, brake, bore(-0.7055, 0.006, 0.006),
+    C((0, 0.006, -0.66), (0, 0.006, -0.44), 0.0105, "metal"), Bx((0, 0.02, -0.47), (0.024, 0.03, 0.022), "metal"),
+    P([(-0.43, 0.035), (-0.41, 0.035), (-0.415, 0.066), (-0.423, 0.066)], 0.012, "metal", bev=0.0008),
+    dot_tube, Tor((0, 0.066, -0.021), 0.0175, 0.0022, "lens", "z"), Bx((0, 0.048, -0.06), (0.03, 0.012, 0.05), "metal"),
+    C((0.019, 0.066, -0.06), (0.028, 0.066, -0.06), 0.006, "metal", verts=12), C((0, 0.084, -0.06), (0, 0.092, -0.06), 0.006, "metal", verts=12),
+    P([(0.13, 0.038), (0.165, 0.038), (0.168, 0.045), (0.128, 0.045)], 0.03, "metal", bev=0.0008),
+    C((0.024, 0.02, 0.06), (0.03, 0.02, 0.06), 0.006, "metal", verts=12),
+    C((0, 0.012, 0.13), (0, 0.012, 0.3), 0.0155, "metal"),
+    P([(0.2, 0.03), (0.33, 0.03), (0.36, 0.03), (0.36, -0.06), (0.33, -0.06), (0.24, -0.02), (0.2, -0.006)], 0.042, "poly", bev=0.004),
+    grip(0.09, -0.03, "poly", 0.35, 0.095, 0.03, 0.04)] + rail(-0.165, 0.145, 0.035) + rail(-0.43, -0.2, 0.034) + trigger(-0.042, 0.045))
+done("rifle_mag", [P([(-0.098, -0.034), (-0.026, -0.034), (-0.034, -0.1), (-0.05, -0.178), (-0.118, -0.182), (-0.104, -0.1)], 0.026, "metal", bev=0.002),
+                   Bx((0, -0.182, -0.084), (0.03, 0.01, 0.07), "poly")])
+
+# =================================================================== AK-47
+recv = P([(-0.17, -0.03), (-0.17, 0.028), (0.18, 0.028), (0.18, -0.03)], 0.048, "metal", bev=0.003)
+cover = C((0, 0.028, -0.12), (0, 0.028, 0.18), 0.024, "metal", verts=28)
+cover.scale = (1, 1, 0.55); settle(cover, "metal")
+done("ak", [recv, cover] + [Bx((0, 0.041, -0.1 + k * 0.05), (0.036, 0.004, 0.006), "metal", 0.1) for k in range(5)] + [
+    P([(-0.4, -0.028), (-0.4, 0.016), (-0.18, 0.016), (-0.17, -0.032), (-0.2, -0.042), (-0.37, -0.04)], 0.052, "wood", bev=0.005),
+    C((0, 0.036, -0.39), (0, 0.036, -0.18), 0.014, "wood", verts=16), C((0, 0.036, -0.42), (0, 0.036, -0.39), 0.009, "metal"),
+    C((0, 0.002, -0.66), (0, 0.002, -0.4), 0.011, "metal"),
+    P([(-0.64, 0.0), (-0.615, 0.0), (-0.618, 0.045), (-0.628, 0.052), (-0.636, 0.045)], 0.018, "metal", bev=0.0015),
+    C((0, 0.002, -0.695), (0, 0.002, -0.66), 0.013, "metal", bev=0.001), bore(-0.6955, 0.002, 0.0055),
+    P([(-0.1, 0.028), (-0.05, 0.028), (-0.058, 0.049), (-0.09, 0.047)], 0.03, "metal", bev=0.001),
+    P([(0.0, -0.02), (0.12, -0.02), (0.12, -0.002), (0.0, -0.002)], 0.004, "metal", x=0.027, bev=0.0006),
+    C((0.024, 0.012, -0.02), (0.045, 0.012, -0.02), 0.005, "metal", verts=10),
+    grip(0.098, -0.03, "wood", 0.35, 0.1, 0.03, 0.04),
+    P([(0.18, 0.018), (0.2, 0.02), (0.44, -0.035), (0.445, -0.1), (0.43, -0.106), (0.34, -0.07), (0.2, -0.032), (0.18, -0.03)], 0.042, "wood", bev=0.005),
+    P([(0.44, -0.035), (0.452, -0.036), (0.456, -0.1), (0.445, -0.108)], 0.044, "metal", bev=0.001)] + trigger(-0.038, 0.05))
+arc = [(-0.12 - 0.09 * (k / 10) ** 1.5, -0.03 - k * 0.017) for k in range(11)]
+done("ak_mag", [P([(-0.045, -0.028)] + [(z + 0.074, y) for (z, y) in arc[1:]] + list(reversed(arc)), 0.027, "metal", bev=0.002)]
+     + [Bx((0, -0.06 - k * 0.03, -0.07 - 0.09 * ((k * 1.8 + 2) / 10) ** 1.5), (0.029, 0.004, 0.05), "metal", 0.1) for k in range(4)])
+
+# =================================================================== Remington 870
+recv = P([(-0.125, -0.034), (-0.125, 0.028), (-0.115, 0.036), (0.12, 0.036), (0.13, 0.026), (0.13, -0.034)], 0.05, "metal", bev=0.004)
+cut(recv, [Bx((0.025, 0.004, -0.02), (0.012, 0.024, 0.06), "metal", 0)])
+pump = C((0, -0.02, -0.39), (0, -0.02, -0.21), 0.026, "wood", verts=24, bev=0.002)
+cut(pump, [Tor((0, -0.02, -0.375 + k * 0.021), 0.027, 0.0028, "wood", "z", 24) for k in range(8)])
+done("shotgun", [recv, pump, Bx((0.02, 0.004, -0.02), (0.008, 0.02, 0.058), "silver", 0.1),
+    *[C((-0.026, -0.022, z), (0.026, -0.022, z), 0.0032, "silver", verts=10) for z in (0.03, 0.1)],
+    Bx((0, -0.034, 0.02), (0.03, 0.004, 0.09), "metal", 0.1), C((0, 0.018, -0.71), (0, 0.018, -0.12), 0.0135, "metal"), bore(-0.7105, 0.018, 0.009),
+    Bx((0, 0.033, -0.4), (0.008, 0.004, 0.58), "metal", 0.1), Sph((0, 0.037, -0.69), 0.0035, "silver"),
+    C((0, -0.02, -0.62), (0, -0.02, -0.12), 0.0115, "metal"), C((0, -0.02, -0.63), (0, -0.02, -0.615), 0.013, "metal", bev=0.001),
+    Bx((0, 0.0, -0.6), (0.012, 0.03, 0.012), "metal"),
+    P([(0.12, 0.008), (0.15, -0.004), (0.22, -0.03), (0.4, -0.042), (0.43, -0.043), (0.43, -0.125), (0.4, -0.123), (0.22, -0.07),
+       (0.17, -0.074), (0.13, -0.04)], 0.042, "wood", bev=0.005),
+    P([(0.43, -0.042), (0.444, -0.042), (0.444, -0.128), (0.43, -0.126)], 0.044, "poly", bev=0.002)] + trigger(-0.04, 0.05))
+
+# =================================================================== double-barrel shotgun
+done("dbarrel", [C((s, 0.018, -0.67), (s, 0.018, -0.04), 0.0158, "metal", verts=24) for s in (-0.017, 0.017)]
+     + [bore(-0.6705, 0.018, 0.011, x=s) for s in (-0.017, 0.017)] + [
+    Bx((0, 0.036, -0.35), (0.008, 0.005, 0.63), "metal", 0.1), Sph((0, 0.041, -0.66), 0.0032, "silver"),
+    P([(-0.07, -0.03), (-0.07, 0.03), (0.07, 0.03), (0.08, 0.02), (0.08, -0.032), (0.05, -0.04), (-0.05, -0.04)], 0.052, "metal", bev=0.004),
+    P([(-0.36, -0.002), (-0.14, -0.002), (-0.13, -0.03), (-0.2, -0.038), (-0.34, -0.03)], 0.05, "wood", bev=0.005),
+    Bx((0, 0.034, 0.05), (0.012, 0.01, 0.032), "silver"),
+    P([(0.075, 0.02), (0.11, 0.016), (0.16, -0.02), (0.4, -0.03), (0.4, -0.12), (0.2, -0.07), (0.14, -0.08), (0.08, -0.035)], 0.045, "wood", bev=0.005),
+    P([(0.4, -0.03), (0.412, -0.03), (0.412, -0.122), (0.4, -0.12)], 0.047, "poly", bev=0.002)] + trigger(-0.042, 0.06))
+
+# =================================================================== AA-12
+body = P([(-0.3, -0.045), (-0.3, 0.04), (-0.27, 0.055), (0.12, 0.055), (0.2, 0.045), (0.21, -0.02), (0.2, -0.06), (0.12, -0.06),
+          (0.12, -0.035), (-0.05, -0.035), (-0.08, -0.05), (-0.28, -0.05)], 0.068, "poly", bev=0.006)
+cut(body, [Bx((s * 0.034, 0.02, -0.25 + k * 0.03), (0.012, 0.012, 0.018), "poly", 0) for s in (-1, 1) for k in range(4)]
+    + [Bx((s * 0.034, y, 0.065), (0.008, 0.005, 0.2), "poly", 0) for s in (-1, 1) for y in (0.036, 0.018, 0.0)]
+    + [Bx((s * 0.034, -0.02, 0.165), (0.008, 0.03, 0.05), "poly", 0) for s in (-1, 1)])
+done("aa12", [body, C((0, 0.02, -0.51), (0, 0.02, -0.29), 0.017, "metal"), C((0, 0.02, -0.515), (0, 0.02, -0.48), 0.021, "metal", bev=0.001), bore(-0.5155, 0.02, 0.011),
+    Bx((0, 0.064, -0.06), (0.02, 0.018, 0.32), "metal"), P([(-0.27, 0.07), (-0.25, 0.07), (-0.255, 0.095), (-0.262, 0.095)], 0.008, "metal", bev=0.0006),
+    grip(0.1, -0.055, "poly", 0.32, 0.09, 0.032, 0.045),
+    P([(0.2, 0.045), (0.215, 0.045), (0.215, -0.065), (0.2, -0.062)], 0.07, "poly", bev=0.003),
+    C((-0.034, 0.038, -0.2), (-0.056, 0.038, -0.2), 0.006, "metal", verts=12), Sph((-0.058, 0.038, -0.2), 0.008, "metal"),
+    Tube([(0, -0.035, -0.3), (0, -0.05, -0.29), (0, -0.05, -0.27), (0, -0.035, -0.26)], 0.003, "metal"),
+    *[C((-0.035, y, z), (0.035, y, z), 0.0035, "silver", verts=10) for y, z in ((-0.02, 0.06), (-0.02, 0.15), (0.03, 0.17))]]
+     + rail(-0.2, 0.1, 0.073) + trigger(-0.062, 0.065, 1.1))
+drum = C((-0.036, -0.12, -0.1), (0.036, -0.12, -0.1), 0.08, "metal", verts=36, bev=0.002)
+cut(drum, [Tor((k, -0.12, -0.1), 0.08, 0.003, "metal", "x", 36) for k in (-0.02, 0.0, 0.02)])
+done("aa12_mag", [drum, C((-0.038, -0.12, -0.1), (0.038, -0.12, -0.1), 0.018, "metal", verts=16)])
+
+# =================================================================== AWM
+stock = P([(-0.26, -0.035), (-0.26, 0.012), (0.1, 0.012), (0.14, 0.004), (0.22, 0.018), (0.46, 0.022), (0.48, 0.02), (0.48, -0.1),
+           (0.44, -0.1), (0.3, -0.05), (0.2, -0.05), (0.18, -0.13), (0.13, -0.13), (0.11, -0.05), (-0.22, -0.045)], 0.05, "olive", bev=0.006)
+cut(stock, [C((-0.03, -0.075, 0.26), (0.03, -0.075, 0.26), 0.022, "olive", verts=20)])  # thumbhole-style lightening cut
+scope = C((0, 0.075, -0.19), (0, 0.075, 0.09), 0.0165, "metal", verts=28)
+done("awm", [stock, scope, C((0, 0.075, -0.25), (0, 0.075, -0.19), 0.027, "metal", r1=0.0165, verts=28), C((0, 0.075, 0.09), (0, 0.075, 0.15), 0.017, "metal", r1=0.022, verts=28),
+    C((0, 0.075, -0.2505), (0, 0.075, -0.248), 0.025, "lens"), C((0, 0.075, 0.148), (0, 0.075, 0.1505), 0.02, "lens"),
+    C((0, 0.09, -0.05), (0, 0.108, -0.05), 0.011, "metal", verts=16), C((0.015, 0.075, -0.05), (0.033, 0.075, -0.05), 0.011, "metal", verts=16),
+    *[Bx((0, 0.05, z), (0.022, 0.034, 0.018), "metal") for z in (-0.12, 0.03)],
+    C((0, 0.012, -0.1), (0, 0.012, 0.13), 0.021, "metal", verts=24),
+    C((0, 0.01, -0.7), (0, 0.01, -0.1), 0.0105, "metal", r1=0.0135),
+    cut(C((0, 0.01, -0.745), (0, 0.01, -0.698), 0.018, "metal", bev=0.001), [Bx((s * 0.016, 0.01, -0.73 + k * 0.012), (0.012, 0.008, 0.006), "metal", 0) for s in (-1, 1) for k in range(3)]),
+    bore(-0.7455, 0.01, 0.006),
+    Tube([(0.02, 0.02, 0.12), (0.055, 0.018, 0.125), (0.07, 0.02, 0.12)], 0.004, "metal"), Sph((0.072, 0.02, 0.12), 0.011, "metal"),
+    Bx((0, 0.04, 0.34), (0.04, 0.02, 0.14), "olive"),
+    *[Tube([(s * 0.014, -0.035, -0.22), (s * 0.016, -0.04, -0.1), (s * 0.018, -0.042, 0.02)], 0.0045, "metal") for s in (-1, 1)],
+    grip(0.18, -0.04, "olive", 0.3, 0.09, 0.03, 0.04)] + trigger(-0.05, 0.14))
+done("awm_mag", [Bx((0, -0.07, -0.02), (0.03, 0.06, 0.08), "metal")])
+
+# =================================================================== M249 SAW
+recv = P([(-0.17, -0.05), (-0.17, 0.045), (0.17, 0.045), (0.17, -0.05)], 0.068, "metal", bev=0.004)
+done("m249", [recv, P([(-0.12, 0.045), (0.12, 0.045), (0.14, 0.06), (-0.1, 0.062)], 0.064, "metal", bev=0.003),
+    Tube([(0, 0.06, -0.16), (0, 0.095, -0.13), (0, 0.095, -0.05), (0, 0.06, -0.02)], 0.006, "metal"),
+    C((0, 0.01, -0.66), (0, 0.01, -0.17), 0.0135, "metal"), C((0, 0.01, -0.675), (0, 0.01, -0.64), 0.017, "metal", bev=0.001), bore(-0.6755, 0.01, 0.007),
+    cut(C((0, 0.03, -0.44), (0, 0.03, -0.2), 0.02, "metal", verts=20), [C((0, 0.01, -0.46), (0, 0.01, -0.18), 0.0145, "metal"), Bx((0, 0.01, -0.32), (0.05, 0.03, 0.26), "metal", 0)]
+        + [Bx((0, 0.05, -0.42 + k * 0.03), (0.01, 0.02, 0.012), "metal", 0) for k in range(8)]),
+    C((0, -0.02, -0.5), (0, -0.02, -0.17), 0.012, "metal"),
+    P([(-0.3, -0.03), (-0.17, -0.03), (-0.17, -0.06), (-0.28, -0.052)], 0.05, "poly", bev=0.004),
+    *[Tube([(s * 0.015, -0.035, -0.52), (s * 0.016, -0.036, -0.4), (s * 0.017, -0.034, -0.28)], 0.004, "metal") for s in (-1, 1)],
+    P([(-0.62, 0.02), (-0.595, 0.02), (-0.598, 0.072), (-0.606, 0.072)], 0.01, "metal", bev=0.0008),
+    cut(Bx((0, 0.062, 0.06), (0.024, 0.014, 0.012), "metal"), [Bx((0, 0.068, 0.06), (0.005, 0.01, 0.03), "metal", 0)]),
+    grip(0.115, -0.05, "poly", 0.3, 0.09, 0.03, 0.042),
+    P([(0.17, 0.03), (0.4, 0.02), (0.42, 0.018), (0.42, -0.07), (0.4, -0.072), (0.3, -0.04), (0.17, -0.03)], 0.048, "poly", bev=0.004)]
+     + rail(-0.1, 0.12, 0.062) + trigger(-0.057, 0.1, 1.1))
+done("m249_mag", [Bx((-0.05, -0.11, -0.03), (0.075, 0.11, 0.11), "olive", 0.12), Bx((-0.05, -0.052, -0.03), (0.06, 0.01, 0.07), "metal", 0.1)]
+     + [Bx((-0.02 + k * 0.009, -0.052 + k * 0.009, -0.03), (0.011, 0.007, 0.02), "brass", 0.15) for k in range(6)]
+     + [C((-0.02 + k * 0.009, -0.052 + k * 0.009, -0.045), (-0.02 + k * 0.009, -0.052 + k * 0.009, -0.075), 0.0035, "brass", verts=8) for k in range(6)])
+
+# =================================================================== M134 minigun (the barrel cluster spins separately)
+motor = P([(-0.12, -0.08), (-0.12, 0.05), (-0.1, 0.06), (0.2, 0.06), (0.22, 0.04), (0.22, -0.08)], 0.1, "metal", bev=0.008)
+cut(motor, [Bx((s * 0.05, -0.01, -0.05 + k * 0.03), (0.012, 0.08, 0.012), "metal", 0) for s in (-1, 1) for k in range(7)])
+done("minigun", [motor,
+    Tube([(0, 0.06, -0.06), (0, 0.15, -0.03), (0, 0.15, 0.08), (0, 0.06, 0.12)], 0.011, "metal"),
+    Bx((0, 0.1, 0.02), (0.02, 0.1, 0.18), "metal", 0.1),
+    Bx((-0.1, -0.08, 0.1), (0.12, 0.14, 0.16), "olive", 0.1),
+    Tube([(-0.06, -0.02, 0.1), (-0.04, 0.0, 0.07), (-0.045, 0.01, 0.04)], 0.012, "poly"),
+    C((0, -0.01, -0.13), (0, -0.01, -0.1), 0.055, "metal", verts=28)]
+     + [Bx((-0.06 + k * 0.008, -0.04 - k * 0.006, 0.08), (0.011, 0.007, 0.02), "brass", 0.15) for k in range(8)])
+barrels = []
+for k in range(6):
+    a = k / 6 * math.pi * 2
+    x, y = math.cos(a) * 0.035, math.sin(a) * 0.035
+    barrels += [C((x, y, -0.715), (x, y, -0.1), 0.0105, "metal", verts=14), bore(-0.7155, y, 0.0055, x=x)]
+barrels += [C((0, 0, z - 0.012), (0, 0, z + 0.012), 0.052, "metal", verts=28, bev=0.001) for z in (-0.63, -0.4, -0.16)]
+barrels += [C((0, 0, -0.7), (0, 0, -0.1), 0.012, "metal", verts=12)]
+done("minigun_barrels", barrels)
+
+# =================================================================== flamethrower
+body = P([(-0.17, -0.03), (-0.17, 0.03), (0.17, 0.03), (0.17, -0.035)], 0.058, "metal", bev=0.004)
+shield = C((0, 0.012, -0.5), (0, 0.012, -0.2), 0.026, "metal", verts=24)
+cut(shield, [C((0, 0.012, -0.52), (0, 0.012, -0.18), 0.022, "metal", verts=24)]
+    + [C((0, 0.012 + math.sin(a) * 0.03, -0.46 + k * 0.05), (0, 0.012 + math.sin(a) * 0.03, -0.46 + k * 0.05), 0.001, "metal") for a in (0,) for k in range(0)]
+    + [Bx((s * 0.026, 0.012, -0.46 + k * 0.04), (0.012, 0.012, 0.016), "metal", 0) for s in (-1, 1) for k in range(7)])
+cut(body, [Bx((0, 0.03, -0.12 + k * 0.03), (0.04, 0.01, 0.012), "metal", 0) for k in range(6)])
+done("flamer", [body, shield,
+    C((0.028, 0.0, -0.04), (0.04, 0.0, -0.04), 0.017, "metal", verts=24, bev=0.001), C((0.04, 0.0, -0.04), (0.0405, 0.0, -0.04), 0.014, "lens", verts=24),
+    Bx((0.041, 0.004, -0.04), (0.001, 0.011, 0.0018), "silver", 0),
+    C((0, 0.03, -0.1), (0, 0.05, -0.1), 0.004, "metal", verts=10), Tor((0, 0.05, -0.1), 0.014, 0.003, "fuel", "y", 20), C((0, 0.012, -0.58), (0, 0.012, -0.18), 0.015, "metal"), C((0, 0.012, -0.585), (0, 0.012, -0.565), 0.02, "metal", r1=0.017, bev=0.001),
+    bore(-0.5855, 0.012, 0.009), Sph((0, -0.012, -0.57), 0.009, "pilot"), Bx((0, -0.012, -0.55), (0.014, 0.012, 0.04), "metal"),
+    *[C((s, -0.07, -0.23), (s, -0.07, 0.07), 0.032, "fuel", verts=24, bev=0.002) for s in (-0.035, 0.035)],
+    *[Sph((s, -0.07, z), 0.032, "fuel", (1, 1, 0.5)) for s in (-0.035, 0.035) for z in (-0.23, 0.07)],
+    *[C((s, -0.035, 0.0), (s, -0.025, 0.0), 0.008, "metal", verts=10) for s in (-0.035, 0.035)],
+    Tube([(0.035, -0.04, -0.2), (0.05, -0.02, -0.3), (0.03, 0.0, -0.38), (0.012, 0.005, -0.42)], 0.007, "poly"),
+    P([(-0.27, -0.03), (-0.235, -0.03), (-0.228, -0.1), (-0.262, -0.1)], 0.028, "poly", bev=0.004),
+    grip(0.12, -0.035, "poly", 0.3, 0.09, 0.03, 0.04),
+    P([(0.17, 0.02), (0.36, 0.01), (0.37, -0.06), (0.2, -0.04)], 0.04, "poly", bev=0.004)] + trigger(-0.042, 0.06))
+
+# =================================================================== tesla gun
+body = P([(-0.2, -0.035), (-0.2, 0.03), (-0.16, 0.045), (0.16, 0.045), (0.18, 0.03), (0.18, -0.045)], 0.058, "poly", bev=0.006)
+cut(body, [Bx((s * 0.029, 0.005, -0.12 + k * 0.03), (0.012, 0.03, 0.012), "poly", 0) for s in (-1, 1) for k in range(8)])
+done("tesla", [body, C((0, 0.005, -0.58), (0, 0.005, -0.2), 0.012, "silver"),
+    *[Tor((0, 0.005, z), 0.034, 0.0075, "coil", "z", 36) for z in (-0.26, -0.36, -0.46)],
+    *[Tor((0, 0.005, z), 0.026, 0.004, "metal", "z", 28) for z in (-0.31, -0.41)],
+    Sph((0, 0.005, -0.56), 0.018, "coil"),
+    *[Tube([(math.cos(a) * 0.02, 0.005 + math.sin(a) * 0.02, -0.46), (math.cos(a) * 0.04, 0.005 + math.sin(a) * 0.04, -0.52), (math.cos(a) * 0.028, 0.005 + math.sin(a) * 0.028, -0.585)], 0.0035, "silver")
+      for a in (math.pi / 2, math.pi / 2 + 2.094, math.pi / 2 + 4.189)],
+    Bx((0, 0.056, -0.02), (0.034, 0.018, 0.12), "coil"), Bx((0, 0.05, -0.02), (0.042, 0.012, 0.14), "metal"),
+    grip(0.1, -0.035, "poly", 0.3, 0.09, 0.03, 0.04),
+    P([(0.18, 0.03), (0.34, 0.02), (0.35, -0.06), (0.2, -0.045)], 0.04, "poly", bev=0.004)] + trigger(-0.045, 0.05))
+
+# =================================================================== M79 grenade launcher
+tube = C((0, 0.02, -0.46), (0, 0.02, -0.1), 0.029, "metal", verts=32)
+cut(tube, [C((0, 0.02, -0.47), (0, 0.02, -0.3), 0.021, "metal", verts=32)])
+done("m79", [tube, C((0, 0.02, -0.3), (0, 0.02, -0.299), 0.021, "poly", verts=32),
+    P([(-0.1, -0.02), (-0.1, 0.035), (0.03, 0.035), (0.04, 0.02), (0.04, -0.03), (-0.08, -0.03)], 0.046, "metal", bev=0.004),
+    P([(-0.3, -0.01), (-0.12, -0.01), (-0.11, -0.032), (-0.28, -0.035)], 0.05, "wood", bev=0.005),
+    P([(0.03, 0.02), (0.07, 0.018), (0.12, -0.02), (0.38, -0.02), (0.39, -0.03), (0.39, -0.12), (0.37, -0.12), (0.18, -0.07), (0.1, -0.08), (0.04, -0.035)], 0.048, "wood", bev=0.005),
+    P([(0.39, -0.02), (0.41, -0.02), (0.41, -0.125), (0.39, -0.122)], 0.052, "poly", bev=0.003),
+    Bx((0, 0.037, -0.1), (0.02, 0.006, 0.016), "metal"), Bx((0, 0.058, -0.44), (0.003, 0.02, 0.008), "metal", 0.1),
+    cut(P([(-0.102, 0.04), (-0.097, 0.04), (-0.097, 0.078), (-0.102, 0.078)], 0.022, "metal", bev=0.0004), [Bx((0, 0.07, -0.1), (0.012, 0.011, 0.02), "metal", 0)]),
+    Bx((0, 0.06, 0.02), (0.014, 0.006, 0.02), "silver")] + trigger(-0.04, 0.02))
+
+# =================================================================== RPG-7
+done("rpg", [C((0, 0.02, -0.58), (0, 0.02, 0.34), 0.03, "metal", verts=28),
+    C((0, 0.02, -0.26), (0, 0.02, 0.06), 0.042, "wood", verts=28, bev=0.003),
+    C((0, 0.02, 0.34), (0, 0.02, 0.47), 0.03, "metal", r1=0.055, verts=28), bore(0.4705, 0.02, 0.045, back=-0.02),
+    C((0, 0.02, -0.6), (0, 0.02, -0.56), 0.036, "metal", verts=28, bev=0.002),
+    C((0, 0.02, -0.64), (0, 0.02, -0.6), 0.022, "olive", r1=0.03, verts=24),
+    C((0, 0.02, -0.76), (0, 0.02, -0.64), 0.028, "olive", r1=0.052, verts=24),
+    C((0, 0.02, -0.8), (0, 0.02, -0.76), 0.052, "olive", r1=0.052, verts=24, bev=0.002),
+    C((0, 0.02, -0.88), (0, 0.02, -0.8), 0.006, "olive", r1=0.052, verts=24),
+    grip(0.03, -0.012, "wood", 0.3, 0.09, 0.03, 0.04), grip(-0.2, -0.012, "wood", 0.2, 0.08, 0.028, 0.035),
+    Bx((-0.05, 0.07, -0.12), (0.03, 0.05, 0.08), "metal", 0.15), C((-0.05, 0.075, -0.07), (-0.05, 0.075, -0.03), 0.012, "poly", verts=16),
+    C((-0.05, 0.075, -0.165), (-0.05, 0.075, -0.16), 0.013, "lens", verts=16)] + trigger(-0.02, 0.03))
+
+# =================================================================== repeating crossbow
+stock = P([(-0.42, -0.02), (-0.42, 0.02), (0.02, 0.02), (0.1, 0.02), (0.22, 0.01), (0.24, -0.08), (0.2, -0.085), (0.12, -0.035), (-0.38, -0.03)], 0.04, "olive", bev=0.004)
+done("crossbow", [stock, Bx((0, 0.027, -0.2), (0.012, 0.008, 0.4), "metal", 0.1),
+    Bx((0, 0.005, -0.4), (0.06, 0.05, 0.05), "poly", 0.15),
+    *[Tube([(s * 0.03, 0.01, -0.4), (s * 0.14, 0.014, -0.39), (s * 0.24, 0.016, -0.35), (s * 0.3, 0.014, -0.29)], 0.009, "poly", [1.3, 1.0, 0.8, 0.55]) for s in (-1, 1)],
+    *[Tube([(s * 0.3, 0.014, -0.29), (s * 0.15, 0.03, -0.2), (0, 0.035, -0.1)], 0.0018, "lens") for s in (-1, 1)],
+    C((0, 0.04, -0.56), (0, 0.04, -0.06), 0.004, "silver", verts=10),
+    C((0, 0.04, -0.6), (0, 0.04, -0.56), 0.0005, "silver", r1=0.009, verts=4),
+    *[Bx((0, 0.04 + dy, -0.08), (0.001 + abs(dx) * 0.9, 0.001 + abs(dy) * 0.9, 0.04), "fuel", 0) for dx, dy in ((0.012, 0), (0, 0.012))],
+    Tube([(-0.035, -0.01, -0.42), (-0.04, -0.03, -0.47), (0, -0.04, -0.5), (0.04, -0.03, -0.47), (0.035, -0.01, -0.42)], 0.004, "metal"),
+    cut(C((0, 0.075, -0.13), (0, 0.075, -0.03), 0.019, "metal", verts=28), [C((0, 0.075, -0.14), (0, 0.075, -0.02), 0.0158, "metal", verts=28)]),
+    Tor((0, 0.075, -0.031), 0.0172, 0.0022, "lens", "z"), Tor((0, 0.075, -0.129), 0.0172, 0.0022, "lens", "z"),
+    Sph((0, 0.075, -0.1), 0.0022, "dot", segs=8), C((0.019, 0.075, -0.08), (0.028, 0.075, -0.08), 0.006, "metal", verts=12),
+    *[Bx((0, 0.045, z), (0.018, 0.022, 0.014), "metal") for z in (-0.11, -0.05)],
+    grip(0.085, -0.02, "poly", 0.3, 0.09, 0.03, 0.04)] + trigger(-0.028, 0.06))
+
+# ---------------------------------------------------------------- export
+for ob in scene.objects:
+    ob.select_set(ob in PARTS)
+bpy.ops.export_scene.gltf(filepath=OUT, export_format="GLB", use_selection=True, export_apply=True, export_yup=True, export_materials="EXPORT")
+for o in PARTS:
+    print("  part", o.name, sum(len(p.vertices) - 2 for p in o.data.polygons))
+print("exported", OUT)
+
+if PREVIEW:
+    layout = ["pistol", "deagle", "mp5", "rifle", "ak", "shotgun", "dbarrel", "aa12", "awm", "m249", "minigun", "flamer", "tesla", "m79", "rpg", "crossbow"]
+    for i, name in enumerate(layout):
+        col, row = i % 4, i // 4
+        off = Vector((col * 1.45 - 2.2, 0, -row * 0.62 + 0.93))
+        for o in PARTS:
+            if o.name == name or o.name == name + "_mag" or (name == "minigun" and o.name == "minigun_barrels"):
+                o.location = off
+                o.rotation_mode = "XYZ"; o.rotation_euler = (0, 0, -math.pi / 2 + 0.3)  # right side toward the camera, muzzle right
+    world = bpy.data.worlds.new("w"); scene.world = world; world.use_nodes = True
+    world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.08, 0.085, 0.09, 1)
+    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 1.0
+    cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam")); scene.collection.objects.link(cam)
+    cam.data.type = "ORTHO"; cam.data.ortho_scale = 5.9
+    cam.location = (0, -6, 1.3); cam.rotation_euler = (math.pi / 2 - 0.2, 0, 0)
+    scene.camera = cam
+    for loc, e in (((2, -4, 3), 400), ((-3, -3, -1), 150), ((0, 3, 2), 200)):
+        l = bpy.data.objects.new("l", bpy.data.lights.new("l", "AREA")); scene.collection.objects.link(l)
+        l.data.energy = e; l.data.size = 4; l.location = loc
+        l.rotation_euler = (Vector((0, 0, 0)) - Vector(loc)).to_track_quat("-Z", "Y").to_euler()
+    scene.render.engine = "CYCLES"; scene.cycles.samples = 32; scene.cycles.device = "CPU"
+    scene.render.resolution_x, scene.render.resolution_y = 1600, 900
+    scene.render.filepath = PREVIEW
+    bpy.ops.render.render(write_still=True)
+    print("rendered", PREVIEW)

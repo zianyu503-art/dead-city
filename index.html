@@ -2356,6 +2356,22 @@ function useModelKatana(k) {
   while (k.children.length) k.remove(k.children[0]);
   k.add(KATANA_GLB.clone());
 }
+// the guns are modelled in Blender (tools/blender/guns.py) in the same frame as buildGun below: "<id>" is the
+// weapon, "<id>_mag" the magazine that drops out on reload and "minigun_barrels" the spinning cluster.
+// Their material names are gunMats keys, so they pick up the game's textured materials
+let GUNS = null;
+loadModel('guns', (scene) => {
+  scene.traverse((o) => { if (o.isMesh) o.material = gunMats[o.material.name] || gunMats.metal; });
+  GUNS = {}; scene.children.forEach((o) => { GUNS[o.name] = o; });
+  weapons.forEach((w) => { if (GUNS[w.c.id]) useModelGun(w.view.group, w.c.id, w.view); }); // arrived after the loadout was built
+});
+function useModelGun(g, id, extra) {
+  for (const o of [...g.children]) if (!o.userData.armSlot && !o.userData.keep) g.remove(o); // arms, red dot and muzzle flash stay
+  const part = (name) => { const m = GUNS[name].clone(); m.traverse((o) => { o.frustumCulled = false; }); g.add(m); return m; };
+  part(id);
+  if (GUNS[id + '_mag']) extra.mags = [part(id + '_mag')];
+  if (id === 'minigun') extra.spinner = part('minigun_barrels'); // modelled around the spin axis (x = y = 0)
+}
 function buildProceduralKatana(k) {
     const blade = new THREE.Mesh(KATANA.blade, katanaMats().blade); k.add(blade);
     const habaki = new THREE.Mesh(roundedBox(0.011, 0.038, 0.03), gunMats.brass); habaki.position.set(0, 0.001, -0.02); k.add(habaki);
@@ -2379,7 +2395,7 @@ function buildGun(id) {
     extra.port = new THREE.Vector3(0.02, 0.03, -0.01);
     gb(g, 0.006, 0.01, 0.006, gunMats.metal, 0, 0.043, -0.1); gb(g, 0.02, 0.01, 0.006, gunMats.metal, 0, 0.043, 0.065);
     arm(g, 0, -0.07, 0.06, 0.04, -0.2, 0.4);
-    muzzle = new THREE.Vector3(0, 0.02, -0.13); hip = new THREE.Vector3(0.15, -0.15, -0.34); aim = new THREE.Vector3(0, -0.044, -0.28);
+    muzzle = new THREE.Vector3(0, 0.02, -0.13); hip = new THREE.Vector3(0.15, -0.15, -0.34); aim = new THREE.Vector3(0, -0.035, -0.28);
   } else if (id === 'rifle') {
     gb(g, 0.05, 0.07, 0.34, gunMats.metal, 0, 0, 0);
     gb(g, 0.056, 0.062, 0.28, gunMats.poly, 0, 0, -0.3);
@@ -2397,10 +2413,10 @@ function buildGun(id) {
     gb(g, 0.03, 0.01, 0.028, gunMats.metal, 0, 0.038, 0.13);           // charging handle
     triggerGroup(g, -0.035, 0.05);
     extra.port = new THREE.Vector3(0.03, 0.012, -0.02);
-    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.0022, 6, 4), gunMats.dot); dot.position.set(0, 0.066, -0.07); g.add(dot);
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.0022, 6, 4), gunMats.dot); dot.position.set(0, 0.066, -0.07); dot.userData.keep = true; g.add(dot);
     arm(g, 0, -0.08, 0.11, 0.05, -0.22, 0.42);
     arm(g, 0, -0.04, -0.32, -0.14, -0.22, -0.05);
-    muzzle = new THREE.Vector3(0, 0.006, -0.7); hip = new THREE.Vector3(0.17, -0.17, -0.5); aim = new THREE.Vector3(0, -0.066, -0.3);
+    muzzle = new THREE.Vector3(0, 0.006, -0.7); hip = new THREE.Vector3(0.17, -0.17, -0.5); aim = new THREE.Vector3(0, -0.053, -0.3);
   } else if (id === 'deagle') {
     gb(g, 0.037, 0.043, 0.25, gunMats.silver, 0, 0.022, -0.04);
     gb(g, 0.034, 0.03, 0.18, gunMats.silver, 0, -0.01, -0.02);
@@ -2412,7 +2428,7 @@ function buildGun(id) {
     extra.port = new THREE.Vector3(0.022, 0.03, -0.02);
     gb(g, 0.006, 0.012, 0.006, gunMats.metal, 0, 0.05, -0.155); gb(g, 0.022, 0.012, 0.006, gunMats.metal, 0, 0.05, 0.075);
     arm(g, 0, -0.075, 0.065, 0.04, -0.2, 0.4);
-    muzzle = new THREE.Vector3(0, 0.022, -0.17); hip = new THREE.Vector3(0.15, -0.15, -0.36); aim = new THREE.Vector3(0, -0.052, -0.3);
+    muzzle = new THREE.Vector3(0, 0.022, -0.17); hip = new THREE.Vector3(0.15, -0.15, -0.36); aim = new THREE.Vector3(0, -0.044, -0.3);
   } else if (id === 'mp5') {
     gb(g, 0.045, 0.065, 0.3, gunMats.metal, 0, 0, -0.02);
     gb(g, 0.05, 0.055, 0.14, gunMats.poly, 0, -0.005, -0.24);
@@ -2426,7 +2442,7 @@ function buildGun(id) {
     gb(g, 0.045, 0.07, 0.016, gunMats.metal, 0, -0.005, 0.33);
     gb(g, 0.02, 0.028, 0.02, gunMats.metal, 0, 0.046, 0.08); gb(g, 0.006, 0.03, 0.006, gunMats.metal, 0, 0.046, -0.29);
     arm(g, 0, -0.075, 0.09, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.24, -0.14, -0.22, -0.02);
-    muzzle = new THREE.Vector3(0, 0.005, -0.39); hip = new THREE.Vector3(0.16, -0.16, -0.42); aim = new THREE.Vector3(0, -0.058, -0.26);
+    muzzle = new THREE.Vector3(0, 0.005, -0.39); hip = new THREE.Vector3(0.16, -0.16, -0.42); aim = new THREE.Vector3(0, -0.05, -0.26);
   } else if (id === 'ak') {
     gb(g, 0.05, 0.07, 0.36, gunMats.metal, 0, 0, 0);
     gb(g, 0.056, 0.06, 0.22, gunMats.wood, 0, -0.004, -0.28);
@@ -2443,7 +2459,7 @@ function buildGun(id) {
     gb(g, 0.042, 0.08, 0.27, gunMats.wood, 0, -0.03, 0.3, 0.1);
     gb(g, 0.02, 0.014, 0.03, gunMats.metal, 0, 0.042, -0.06);
     arm(g, 0, -0.08, 0.11, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.3, -0.14, -0.22, -0.05);
-    muzzle = new THREE.Vector3(0, 0.002, -0.68); hip = new THREE.Vector3(0.17, -0.17, -0.5); aim = new THREE.Vector3(0, -0.049, -0.32);
+    muzzle = new THREE.Vector3(0, 0.002, -0.68); hip = new THREE.Vector3(0.17, -0.17, -0.5); aim = new THREE.Vector3(0, -0.041, -0.32);
   } else if (id === 'aa12') {
     gb(g, 0.07, 0.1, 0.5, gunMats.poly, 0, 0, -0.05);
     gc(g, 0.017, 0.2, gunMats.metal, 0, 0.02, -0.4);
@@ -2455,7 +2471,7 @@ function buildGun(id) {
     gb(g, 0.02, 0.03, 0.32, gunMats.metal, 0, 0.065, -0.06);
     gb(g, 0.006, 0.02, 0.006, gunMats.metal, 0, 0.09, -0.26);
     arm(g, 0, -0.09, 0.13, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.25, -0.14, -0.22, -0.02);
-    muzzle = new THREE.Vector3(0, 0.02, -0.51); hip = new THREE.Vector3(0.18, -0.19, -0.5); aim = new THREE.Vector3(0, -0.09, -0.33);
+    muzzle = new THREE.Vector3(0, 0.02, -0.51); hip = new THREE.Vector3(0.18, -0.19, -0.5); aim = new THREE.Vector3(0, -0.076, -0.33);
   } else if (id === 'awm') {
     gb(g, 0.05, 0.08, 0.5, gunMats.olive, 0, -0.01, 0.05);
     gc(g, 0.012, 0.5, gunMats.metal, 0, 0.01, -0.45); gc(g, 0.017, 0.05, gunMats.metal, 0, 0.01, -0.71);
@@ -2485,7 +2501,7 @@ function buildGun(id) {
     gb(g, 0.03, 0.1, 0.04, gunMats.poly, 0, -0.09, 0.12, 0.3);
     gb(g, 0.006, 0.022, 0.006, gunMats.metal, 0, 0.06, -0.6); gb(g, 0.022, 0.012, 0.01, gunMats.metal, 0, 0.06, 0.06);
     arm(g, 0, -0.09, 0.13, 0.05, -0.22, 0.42); arm(g, 0, -0.03, -0.24, -0.14, -0.22, -0.02);
-    muzzle = new THREE.Vector3(0, 0.01, -0.67); hip = new THREE.Vector3(0.19, -0.2, -0.5); aim = new THREE.Vector3(0, -0.066, -0.33);
+    muzzle = new THREE.Vector3(0, 0.01, -0.67); hip = new THREE.Vector3(0.19, -0.2, -0.5); aim = new THREE.Vector3(0, -0.057, -0.33);
   } else if (id === 'm79') {
     gc(g, 0.029, 0.36, gunMats.metal, 0, 0.02, -0.28);
     gb(g, 0.045, 0.05, 0.12, gunMats.metal, 0, 0.01, -0.04);
@@ -2493,7 +2509,7 @@ function buildGun(id) {
     gb(g, 0.05, 0.035, 0.18, gunMats.wood, 0, -0.018, -0.2);
     gb(g, 0.03, 0.04, 0.004, gunMats.metal, 0, 0.065, -0.1);
     arm(g, 0, -0.07, 0.08, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.2, -0.14, -0.22, 0.0);
-    muzzle = new THREE.Vector3(0, 0.02, -0.47); hip = new THREE.Vector3(0.17, -0.18, -0.45); aim = new THREE.Vector3(0, -0.075, -0.34);
+    muzzle = new THREE.Vector3(0, 0.02, -0.47); hip = new THREE.Vector3(0.17, -0.18, -0.45); aim = new THREE.Vector3(0, -0.056, -0.34);
   } else if (id === 'katana') {
     // the sword is built along its own axis (blade toward -z, handle toward +z) and then posed in a two-handed guard
     const k = new THREE.Group(); g.add(k); extra.katana = k;
@@ -2516,7 +2532,7 @@ function buildGun(id) {
     triggerGroup(g, -0.03, 0.06);
     gb(g, 0.045, 0.1, 0.32, gunMats.wood, 0, -0.04, 0.23, 0.12);
     arm(g, 0, -0.07, 0.1, 0.05, -0.22, 0.42); arm(g, 0, -0.05, -0.28, -0.14, -0.22, -0.05);
-    muzzle = new THREE.Vector3(0, 0.018, -0.68); hip = new THREE.Vector3(0.18, -0.19, -0.44); aim = new THREE.Vector3(0, -0.045, -0.3);
+    muzzle = new THREE.Vector3(0, 0.018, -0.68); hip = new THREE.Vector3(0.18, -0.19, -0.44); aim = new THREE.Vector3(0, -0.035, -0.3);
   } else if (id === 'crossbow') {
     gb(g, 0.04, 0.05, 0.62, gunMats.olive, 0, 0, -0.1);
     gb(g, 0.62, 0.02, 0.04, gunMats.poly, 0, 0.01, -0.38);
@@ -2525,7 +2541,7 @@ function buildGun(id) {
     gb(g, 0.03, 0.1, 0.04, gunMats.poly, 0, -0.07, 0.08, 0.3);
     gc(g, 0.018, 0.14, gunMats.metal, 0, 0.075, -0.05);
     arm(g, 0, -0.07, 0.09, 0.05, -0.22, 0.42); arm(g, 0, -0.03, -0.3, -0.14, -0.22, -0.04);
-    muzzle = new THREE.Vector3(0, 0.04, -0.56); hip = new THREE.Vector3(0.18, -0.18, -0.46); aim = new THREE.Vector3(0, -0.075, -0.28);
+    muzzle = new THREE.Vector3(0, 0.04, -0.56); hip = new THREE.Vector3(0.18, -0.18, -0.46); aim = new THREE.Vector3(0, -0.06, -0.28);
   } else if (id === 'minigun') {
     gb(g, 0.1, 0.12, 0.34, gunMats.metal, 0, -0.02, 0.05);
     const sp = new THREE.Group(); sp.position.set(0, 0, -0.1); g.add(sp);
@@ -2576,12 +2592,13 @@ function buildGun(id) {
     gb(g, 0.006, 0.008, 0.006, gunMats.metal, 0, 0.036, -0.69);
     arm(g, 0, -0.07, 0.1, 0.05, -0.22, 0.42);
     arm(g, 0, -0.05, -0.3, -0.14, -0.22, -0.05);
-    muzzle = new THREE.Vector3(0, 0.018, -0.71); hip = new THREE.Vector3(0.17, -0.17, -0.5); aim = new THREE.Vector3(0, -0.036, -0.34);
+    muzzle = new THREE.Vector3(0, 0.018, -0.71); hip = new THREE.Vector3(0.17, -0.17, -0.5); aim = new THREE.Vector3(0, -0.032, -0.34);
   }
+  if (GUNS && GUNS[id]) useModelGun(g, id, extra);
   g.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
   g.scale.setScalar(0.8); muzzle.multiplyScalar(0.8);
   const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.flash, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
-  flash.position.copy(muzzle).divideScalar(0.8); flash.scale.setScalar(0.22); flash.visible = false; g.add(flash);
+  flash.position.copy(muzzle).divideScalar(0.8); flash.scale.setScalar(0.22); flash.visible = false; flash.userData.keep = true; g.add(flash);
   return { group: g, muzzle, hip, aim, flash, ...extra };
 }
 
@@ -4709,7 +4726,7 @@ $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 window.__game = { get state() { return state; }, player, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
-  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
+  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
   spawnNear(type, d = 8) { const z = new Zombie(type, player.pos.x + rand(-2, 2), player.pos.z - d); zombies.push(z); return z; } };
 </script>
