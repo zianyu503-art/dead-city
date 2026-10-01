@@ -197,6 +197,7 @@
   .ac .bars { grid-template-columns: 34px 1fr 38px; }
   #armorline { font-size: 12px; color: var(--dim); margin-top: 7px; letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #armorline b { color: var(--fg); font-weight: 600; }
+  #armorline b.broke { color: var(--accent); }
   #wlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px; }
   .wc { border: 1px solid var(--line); padding: 12px 14px; display: grid; gap: 7px; align-content: start; }
   .wc.eq { border-color: rgba(232,180,74,0.6); }
@@ -208,6 +209,11 @@
   .wc .bars { display: grid; grid-template-columns: 34px 1fr 38px; gap: 3px 8px; font-size: 11px; color: var(--dim); align-items: center; }
   .wc .bar { height: 4px; background: rgba(255,255,255,0.1); }
   .wc .bar i { display: block; height: 100%; background: var(--fg); }
+  #armorbar { height: 3px; background: rgba(255,255,255,0.1); margin-top: 4px; }
+  #armorbar i, .wc .durb .bar i { display: block; height: 100%; background: #8fb4d8; transition: width 0.15s; }
+  #armorbar i.low, .wc .durb .bar i.low { background: var(--accent2); }
+  .wc .durb .bar i.out { background: var(--accent); width: 4% !important; }
+  .wc .pr.broke { color: var(--accent); }
   .wc .act { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--dim); }
   .wc .act .b { font-size: 13px; padding: 6px 14px; }
   .wc .act .b:disabled { opacity: 0.4; cursor: not-allowed; background: transparent; color: var(--fg); }
@@ -274,7 +280,7 @@
     <div class="cash num" id="cash">$0</div><div class="cashpop num" id="cashpop"></div>
     <div class="small">分數 <span class="num" id="pts">0</span></div></div>
   <div id="health"><div class="label">生命值</div><div id="hpnum" class="num">100</div>
-    <div id="hpbar"><div id="hpfill"></div></div><div id="armorline"></div></div>
+    <div id="hpbar"><div id="hpfill"></div></div><div id="armorline"></div><div id="armorbar"><i></i></div></div>
   <div id="ammo"><div id="wname"></div><div id="reloadtip"></div>
     <div id="ammonum" class="num">12 <small>/ 72</small></div>
     <div id="slots"></div></div>
@@ -480,26 +486,28 @@ const WEAPONS = [
 const WEAPON = Object.fromEntries(WEAPONS.map((w) => [w.id, w]));
 
 // ---- body armour (models: tools/blender/armor.py → assets/armor.webp). One is worn at a time: def cuts every hit,
-// res adds protection against one kind of damage (capped at 85%), move scales running speed ----
+// res adds protection against one kind of damage (capped at 85%), move scales running speed. Every point of damage the
+// armour stops wears its durability (dur) down; at zero it stops protecting until it is repaired in the shop ----
 const DMG_KINDS = [['melee', '近戰'], ['bullet', '子彈'], ['fire', '火焰'], ['acid', '酸液'], ['shock', '電擊'], ['blast', '爆炸']];
 const ARMORS = [
-  { id: 'jacket', name: '機車皮衣', cat: '輕型', price: 500, def: 0.08, res: { melee: 0.1 }, move: 1, sleeve: 0x2a160c, gloss: 0.45,
+  { id: 'jacket', name: '機車皮衣', cat: '輕型', price: 500, dur: 60, def: 0.08, res: { melee: 0.1 }, move: 1, sleeve: 0x2a160c, gloss: 0.45,
     desc: '厚牛皮擋得住指甲和牙齒，完全不影響行動。最便宜的第一件護具。' },
-  { id: 'stab', name: '防刺背心', cat: '輕型', price: 1000, def: 0.12, res: { melee: 0.23 }, move: 1,
+  { id: 'stab', name: '防刺背心', cat: '輕型', price: 1000, dur: 90, def: 0.12, res: { melee: 0.23 }, move: 1,
     desc: '菱格縫線裡夾著防刺鋼片，專門對付殭屍的爪子、牙齒和警棍。' },
-  { id: 'kevlar', name: '警用防彈背心', cat: '中型', price: 1800, def: 0.18, res: { bullet: 0.42, melee: 0.07, blast: 0.04 }, move: 0.98,
+  { id: 'kevlar', name: '警用防彈背心', cat: '中型', price: 1800, dur: 120, def: 0.18, res: { bullet: 0.42, melee: 0.07, blast: 0.04 }, move: 0.98,
     desc: '凱夫拉纖維防彈層，對持槍警察殭屍特別有效。' },
-  { id: 'firesuit', name: '消防衣', cat: '中型', price: 2400, def: 0.15, res: { fire: 0.6, blast: 0.1, acid: 0.1 }, move: 0.96, sleeve: 0x6e5c34,
+  { id: 'firesuit', name: '消防衣', cat: '中型', price: 2400, dur: 120, def: 0.15, res: { fire: 0.6, blast: 0.1, acid: 0.1 }, move: 0.96, sleeve: 0x6e5c34,
     desc: '耐高溫的消防員外套，火焰殭屍噴出的火幾乎燒不穿，爆炸的熱浪也擋得住一些。' },
-  { id: 'hazmat', name: '防化服', cat: '中型', price: 2800, def: 0.12, res: { acid: 0.68, shock: 0.33, fire: 0.08 }, move: 0.95, sleeve: 0x9c7a0c, gloss: 0.5,
+  { id: 'hazmat', name: '防化服', cat: '中型', price: 2800, dur: 100, def: 0.12, res: { acid: 0.68, shock: 0.33, fire: 0.08 }, move: 0.95, sleeve: 0x9c7a0c, gloss: 0.5,
     desc: '全密封的橡膠防護服。不怕吐酸和酸池，絕緣層還能擋掉一部分電擊。' },
-  { id: 'plate', name: '軍用插板背心', cat: '重型', price: 4000, def: 0.3, res: { bullet: 0.35, blast: 0.15, melee: 0.05 }, move: 0.92,
+  { id: 'plate', name: '軍用插板背心', cat: '重型', price: 4000, dur: 180, def: 0.3, res: { bullet: 0.35, blast: 0.15, melee: 0.05 }, move: 0.92,
     desc: '前後各一片陶瓷防彈板，各種攻擊都能擋掉三成以上，跑起來稍慢。' },
-  { id: 'eod', name: '重型防爆服', cat: '重型', price: 7500, def: 0.42, res: { blast: 0.4, fire: 0.25, bullet: 0.23, acid: 0.1 }, move: 0.78, sleeve: 0x2c3a20, steady: true,
+  { id: 'eod', name: '重型防爆服', cat: '重型', price: 7500, dur: 280, def: 0.42, res: { blast: 0.4, fire: 0.25, bullet: 0.23, acid: 0.1 }, move: 0.78, sleeve: 0x2c3a20, steady: true,
     desc: '拆彈專家的全身防爆裝甲，連近距離爆炸都扛得住，被打中也幾乎不會晃。代價是又重又慢。' },
 ];
 const ARMOR = Object.fromEntries(ARMORS.map((a) => [a.id, a]));
 const armorRes = (a, kind) => Math.min(0.85, a.def + (a.res[kind] || 0));
+const REPAIR_RATE = 0.35; // repairing a completely broken armour costs this share of its price
 const DEFAULT_KIT = ['pistol', 'rifle', 'shotgun'];
 
 // ---- money, owned weapons and the three-slot loadout (kept in this browser) ----
@@ -515,6 +523,10 @@ if (!Array.isArray(loadout) || loadout.length !== 3 || !loadout.every((id) => ow
 let ownedArmor = store.get('deadcity_armors', []).filter((id) => ARMOR[id]);
 let armorId = store.get('deadcity_armor', null);
 if (!ownedArmor.includes(armorId)) armorId = null;
+let armorDur = store.get('deadcity_armor_dur', {}) || {};
+const durOf = (id) => Math.max(0, Math.min(ARMOR[id].dur, armorDur[id] ?? ARMOR[id].dur));
+const repairPer = (id) => ARMOR[id].price * REPAIR_RATE / ARMOR[id].dur;
+const armorOn = () => (armorId && durOf(armorId) > 0 ? ARMOR[armorId] : null); // worn and not broken
 let levelCash = 0;
 
 // ============================================================
@@ -2381,9 +2393,17 @@ loadModel('zombie', (scene) => {
 const forEachView = (fn) => weapons.forEach((w) => fn(w.view));
 // suits with sleeves (jacket, fire coat, hazmat, bomb suit) re-colour the arm model's sleeve; vests leave the jacket underneath
 let SLEEVE = null;
+function renderArmorHud() {
+  const a = ARMOR[armorId], bar = $('armorbar');
+  bar.style.display = a ? '' : 'none';
+  if (!a) { $('armorline').textContent = '未穿護甲'; return; }
+  const d = durOf(a.id), f = d / a.dur;
+  $('armorline').innerHTML = d > 0 ? `護甲 <b>${a.name}</b> · 耐久 <span class="num">${Math.ceil(f * 100)}%</span>` : `護甲 <b class="broke">${a.name} 已損壞</b>`;
+  bar.firstChild.style.width = f * 100 + '%'; bar.firstChild.className = f < 0.25 ? 'low' : '';
+}
 function applyArmorLook() {
   const a = ARMOR[armorId];
-  $('armorline').innerHTML = a ? `護甲 <b>${a.name}</b> · 基本減傷 ${Math.round(a.def * 100)}%` : '未穿護甲';
+  renderArmorHud();
   if (!SLEEVE) return;
   const { sleeve, cuff } = SLEEVE, col = a && a.sleeve;
   sleeve.map = col ? null : SLEEVE.map; sleeve.bumpMap = col ? SLEEVE.map : null; sleeve.bumpScale = 2;
@@ -3222,7 +3242,7 @@ class Zombie {
     const to = hit ? camera.position.clone().add(new THREE.Vector3(0, -0.35, 0)) : from.clone().add(new THREE.Vector3(Math.sin(this.g.rotation.y), 0.1, Math.cos(this.g.rotation.y)).multiplyScalar(dist));
     addBolt(from, to);
     sfx('zap', clamp(1.3 - dist / 30, 0.3, 1.2));
-    if (hit) { hurtPlayer(this.c.dmg, 'shock'); shockFlash = 1; player.slowT = ARMOR[armorId]?.steady ? 0.6 : 1.3; }
+    if (hit) { hurtPlayer(this.c.dmg, 'shock'); shockFlash = 1; player.slowT = armorOn()?.steady ? 0.6 : 1.3; }
   }
   dropHelmet() {
     const ids = new Set(this.helmet);
@@ -3869,13 +3889,26 @@ let lastHurtSfx = 0;
 // kind: melee, bullet, fire, acid, shock or blast — the worn armour decides how much of it gets through
 function hurtPlayer(dmg, kind = 'melee') {
   if (state !== 'playing') return;
-  const a = ARMOR[armorId];
-  if (a) dmg *= 1 - armorRes(a, kind);
+  const a = armorOn();
+  if (a) { const stopped = dmg * armorRes(a, kind); dmg -= stopped; wearArmorDown(a, stopped); }
   player.hp = Math.max(0, player.hp - dmg);
   hurtAlpha = Math.min(1, hurtAlpha + 0.5 + dmg / 40); shake = Math.min(1, shake + (a && a.steady ? 0.2 : 0.5));
   const now = performance.now();
   if (now - lastHurtSfx > 350) { sfx('hurt'); lastHurtSfx = now; }
   if (player.hp <= 0) gameOver();
+}
+function wearArmorDown(a, n) {
+  const before = durOf(a.id);
+  armorDur[a.id] = Math.max(0, before - n); store.set('deadcity_armor_dur', armorDur);
+  if (armorDur[a.id] <= 0) { showMsg('', `${a.name}已損壞，失去防護。到「武器裝備」花錢修理`, 3); sfx('glass'); }
+  else if (before > a.dur * 0.25 && armorDur[a.id] <= a.dur * 0.25) showMsg('', `${a.name}耐久度剩不到 25%`, 2);
+  renderArmorHud();
+}
+function armorStatus() {
+  const a = ARMOR[armorId]; if (!a) return '';
+  const d = durOf(a.id);
+  return d > 0 ? `<br>護甲 ${a.name} 耐久 ${Math.ceil(d / a.dur * 100)}%${d < a.dur ? `，修好要 ${money(Math.ceil((a.dur - d) * repairPer(a.id)))}` : ''}`
+    : `<br><span style="color:var(--accent)">${a.name}已損壞</span>，修好要 ${money(Math.ceil(a.dur * repairPer(a.id)))}`;
 }
 function updateHUD() {
   const boss = zombies.find((z) => !z.dead && z.c.boss);
@@ -3996,7 +4029,7 @@ function levelComplete() {
   if (next > loadUnlocked()) saveUnlocked(next);
   unlockPointer();
   const bonus = 150 + LV.num * 100; addCash(bonus);
-  const stats = `擊殺 ${kills} · 分數 ${score}<br>本關賺得 ${money(levelCash)}（含過關獎勵 ${money(bonus)}）`;
+  const stats = `擊殺 ${kills} · 分數 ${score}<br>本關賺得 ${money(levelCash)}（含過關獎勵 ${money(bonus)}）${armorStatus()}`;
   $('winStats').innerHTML = next >= 0 ? `${stats}<br>下一關已解鎖：第 ${LEVELS[next].num} 關 · ${LEVELS[next].name}`
     : LV.num === 10 ? `你守住了最後防線，撤離成功！<br>${stats}` : `${stats}<br>更多關卡製作中，敬請期待。`;
   $('btnNext').style.display = next >= 0 ? '' : 'none';
@@ -4007,7 +4040,7 @@ function gameOver() {
   $('scope').style.display = 'none';
   state = 'dead'; releaseTouch();
   unlockPointer();
-  $('deadStats').innerHTML = `第 ${LV.num} 關 · 第 ${waveIdx + 1} 波<br>擊殺 ${kills} · 分數 ${score}<br>賺到的 ${money(levelCash)} 已經存下來了`;
+  $('deadStats').innerHTML = `第 ${LV.num} 關 · 第 ${waveIdx + 1} 波<br>擊殺 ${kills} · 分數 ${score}<br>賺到的 ${money(levelCash)} 已經存下來了${armorStatus()}`;
   $('dead').classList.add('show');
 }
 function toMenu() {
@@ -4270,7 +4303,7 @@ function renderShop() {
   document.querySelectorAll('#shop .tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === shopTab));
   $('wpane').hidden = shopTab !== 'w'; $('apane').hidden = shopTab !== 'a';
   $('shopSub').textContent = shopTab === 'w' ? '每擊殺一隻殭屍都能賺錢，過關還有獎勵。選三把武器帶上戰場。'
-    : '盔甲買了就永久擁有，同一時間只能穿一件。每件盔甲擅長擋的攻擊不同，越重的跑得越慢。';
+    : '盔甲擋下的傷害會消耗耐久度，耐久歸零就失去防護，要花錢修理。同一時間只能穿一件，越重的跑得越慢。';
   if (shopTab === 'a') { renderArmorShop(); return; }
   $('loadout').innerHTML = loadout.map((id, i) => `<div class="slot"><div class="k">欄位 ${i + 1}</div><div class="v">${WEAPON[id].name}</div></div>`).join('');
   const bar = (v) => `<div class="bar"><i style="width:${Math.round(clamp(v, 0.04, 1) * 100)}%"></i></div>`;
@@ -4317,18 +4350,26 @@ function renderArmorShop() {
   const pct = (v) => Math.round(v * 100) + '%';
   $('alist').innerHTML = ARMORS.map((a, i) => {
     const have = ownedArmor.includes(a.id), on = armorId === a.id;
-    const act = on ? '<button class="b" data-unwear="1">脫下</button>'
+    const d = durOf(a.id), f = d / a.dur, broken = have && d <= 0, missing = a.dur - d;
+    let act = on ? '<button class="b" data-unwear="1">脫下</button>'
       : have ? `<button class="b primary" data-wear="${a.id}">穿上</button>`
       : cash >= a.price ? `<button class="b primary" data-abuy="${a.id}">購買 ${money(a.price)}</button>`
       : `<button class="b" disabled>購買 ${money(a.price)}</button><span>還差 ${money(a.price - cash)}</span>`;
+    if (have && missing >= 1) { // full repair, or as much as the wallet allows
+      const full = Math.ceil(missing * repairPer(a.id)), pts = Math.floor(cash / repairPer(a.id));
+      act += cash >= full ? `<button class="b${broken ? ' primary' : ''}" data-repair="${a.id}">修理 ${money(full)}</button>`
+        : pts >= 1 ? `<button class="b" data-repair="${a.id}">修理 ${pts} 點 ${money(Math.ceil(pts * repairPer(a.id)))}</button><span>全修要 ${money(full)}</span>`
+        : `<button class="b" disabled>修理 ${money(full)}</button>`;
+    }
     const rows = DMG_KINDS.map(([k, label]) => { const r = armorRes(a, k);
       return `<span>${label}</span><div class="bar"><i style="width:${Math.round(r / 0.85 * 100)}%"></i></div><span class="num">${pct(r)}</span>`; }).join('');
     return `<div class="wc ac${on ? ' eq' : ''}">
       <div class="aimg" style="background-position:${-i * 156}px 0, center" role="img" aria-label="${a.name}"></div>
       <div class="top"><div><div class="nm">${a.name}</div><div class="ct">${a.cat}護甲 · ${a.move < 1 ? `移動速度 -${Math.round((1 - a.move) * 100)}%` : '不影響移動'}</div></div>
-        <div class="pr num">${on ? '穿著中' : have ? '已擁有' : money(a.price)}</div></div>
+        <div class="pr num${broken ? ' broke' : ''}">${broken ? '已損壞' : on ? '穿著中' : have ? '已擁有' : money(a.price)}</div></div>
       <div class="ds">${a.desc}</div>
-      <div class="ct">各類攻擊減傷</div>
+      <div class="bars durb"><span>耐久</span><div class="bar"><i class="${broken ? 'out' : f < 0.25 ? 'low' : ''}" style="width:${f * 100}%"></i></div><span class="num">${Math.ceil(d)}/${a.dur}</span></div>
+      <div class="ct">各類攻擊減傷${broken ? '（損壞時無效）' : ''}</div>
       <div class="bars">${rows}</div>
       <div class="act">${act}</div></div>`;
   }).join('');
@@ -4338,10 +4379,20 @@ $('alist').addEventListener('click', (e) => {
   if (buy) {
     const a = ARMOR[buy.dataset.abuy];
     if (ownedArmor.includes(a.id) || cash < a.price) return;
-    cash -= a.price; ownedArmor.push(a.id);
-    store.set('deadcity_cash', cash); store.set('deadcity_armors', ownedArmor);
+    cash -= a.price; ownedArmor.push(a.id); armorDur[a.id] = a.dur;
+    store.set('deadcity_cash', cash); store.set('deadcity_armors', ownedArmor); store.set('deadcity_armor_dur', armorDur);
     audio(); sfx('cash'); wearArmor(a.id); renderMenu();
   } else if (wear) { audio(); sfx('pickup'); wearArmor(wear.dataset.wear); }
+  else if (e.target.closest('[data-repair]')) {
+    const id = e.target.closest('[data-repair]').dataset.repair, missing = ARMOR[id].dur - durOf(id);
+    const full = Math.ceil(missing * repairPer(id));
+    const pts = cash >= full ? missing : Math.floor(cash / repairPer(id));
+    if (pts < 1 && cash < full) return;
+    cash -= cash >= full ? full : Math.ceil(pts * repairPer(id));
+    armorDur[id] = durOf(id) + pts;
+    store.set('deadcity_cash', cash); store.set('deadcity_armor_dur', armorDur);
+    audio(); sfx('reload'); renderShop(); renderArmorHud(); renderMenu();
+  }
   else if (e.target.closest('[data-unwear]')) wearArmor(null);
 });
 document.querySelectorAll('#shop .tab').forEach((t) => (t.onclick = () => { shopTab = t.dataset.tab; renderShop(); $('shop').querySelector('.panel').scrollTop = 0; }));
@@ -4819,7 +4870,7 @@ $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 window.__game = { get state() { return state; }, player, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
-  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
+  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
   spawnNear(type, d = 8) { const z = new Zombie(type, player.pos.x + rand(-2, 2), player.pos.z - d); zombies.push(z); return z; } };
 </script>
