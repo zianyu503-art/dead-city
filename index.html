@@ -187,6 +187,16 @@
   .slot { border: 1px solid var(--fg); padding: 10px 12px; }
   .slot .k { font-size: 11px; letter-spacing: 0.2em; color: var(--dim); }
   .slot .v { font-size: 16px; font-weight: 700; margin-top: 2px; }
+  .tabs { display: flex; gap: 6px; margin-top: 12px; }
+  .tab { font: inherit; font-size: 15px; letter-spacing: 0.1em; padding: 7px 20px; background: transparent; color: var(--dim); border: 1px solid var(--line); cursor: pointer; }
+  .tab.on { color: #000; background: var(--fg); border-color: var(--fg); font-weight: 700; }
+  .tab:hover:not(.on) { color: var(--fg); border-color: var(--fg); }
+  #alist { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .ac .aimg { width: 156px; height: 200px; margin: -4px auto -6px; background: url(./assets/armor.webp) no-repeat 0 0 / 1092px 200px,
+    radial-gradient(ellipse 50% 45% at 50% 58%, rgba(255,255,255,0.08), transparent); }
+  .ac .bars { grid-template-columns: 34px 1fr 38px; }
+  #armorline { font-size: 12px; color: var(--dim); margin-top: 7px; letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #armorline b { color: var(--fg); font-weight: 600; }
   #wlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px; }
   .wc { border: 1px solid var(--line); padding: 12px 14px; display: grid; gap: 7px; align-content: start; }
   .wc.eq { border-color: rgba(232,180,74,0.6); }
@@ -264,7 +274,7 @@
     <div class="cash num" id="cash">$0</div><div class="cashpop num" id="cashpop"></div>
     <div class="small">分數 <span class="num" id="pts">0</span></div></div>
   <div id="health"><div class="label">生命值</div><div id="hpnum" class="num">100</div>
-    <div id="hpbar"><div id="hpfill"></div></div></div>
+    <div id="hpbar"><div id="hpfill"></div></div><div id="armorline"></div></div>
   <div id="ammo"><div id="wname"></div><div id="reloadtip"></div>
     <div id="ammonum" class="num">12 <small>/ 72</small></div>
     <div id="slots"></div></div>
@@ -275,7 +285,7 @@
   <div class="title">死城<span>突圍</span></div>
   <div class="subtitle">DEAD CITY</div>
   <div id="levels"></div>
-  <div class="menubtns"><span class="wallet num" id="menuCash">$0</span><button class="b primary" id="btnShop">武器庫</button><button class="b" id="btnBestiary">感染者圖鑑</button><button class="b" id="quality">畫質：自動</button></div>
+  <div class="menubtns"><span class="wallet num" id="menuCash">$0</span><button class="b primary" id="btnShop">武器裝備</button><button class="b" id="btnBestiary">感染者圖鑑</button><button class="b" id="quality">畫質：自動</button></div>
   <div class="controls">
     <span class="keyhelp"><b>W A S D</b> 移動　<b>Shift</b> 衝刺　<b>空白鍵</b> 跳躍　<b>滑鼠左鍵</b> 射擊　<b>右鍵</b> 瞄準<br>
     <b>R</b> 換彈　<b>1 2 3</b> / 滾輪 切換武器　<b>Esc</b> 暫停　·　</span>爆頭傷害 ×2.5
@@ -288,20 +298,21 @@
   <div class="btns"><button class="b primary" id="btnResume">繼續</button><button class="b" id="btnQuit">返回選單</button></div></div></div>
 
 <div id="dead" class="overlay"><div class="panel"><h2 style="color:var(--accent)">你已陣亡</h2><p id="deadStats"></p>
-  <div class="btns"><button class="b primary" id="btnRetry">重新挑戰</button><button class="b shopbtn">武器庫</button><button class="b" id="btnQuit2">返回選單</button></div></div></div>
+  <div class="btns"><button class="b primary" id="btnRetry">重新挑戰</button><button class="b shopbtn">武器裝備</button><button class="b" id="btnQuit2">返回選單</button></div></div></div>
 
 <div id="bestiary" class="overlay"><div class="panel"><h2>感染者圖鑑</h2><div id="zlist"></div>
   <div class="btns"><button class="b" id="btnCloseBestiary">關閉</button></div></div></div>
 
 <div id="shop" class="overlay"><div class="panel">
-  <div class="shophead"><h2>武器庫</h2><span class="wallet num" id="shopCash">$0</span></div>
-  <p class="shopsub">每擊殺一隻殭屍都能賺錢，過關還有獎勵。選三把武器帶上戰場。</p>
-  <div id="loadout"></div>
-  <div id="wlist"></div>
+  <div class="shophead"><h2>武器裝備</h2><span class="wallet num" id="shopCash">$0</span></div>
+  <div class="tabs" role="tablist"><button class="tab on" role="tab" data-tab="w">武器</button><button class="tab" role="tab" data-tab="a">盔甲</button></div>
+  <p class="shopsub" id="shopSub"></p>
+  <div id="wpane"><div id="loadout"></div><div id="wlist"></div></div>
+  <div id="apane" hidden><div id="alist"></div></div>
   <div class="btns"><button class="b primary" id="btnCloseShop">完成</button></div></div></div>
 
 <div id="win" class="overlay"><div class="panel"><h2>區域已肅清</h2><p id="winStats"></p>
-  <div class="btns"><button class="b primary" id="btnNext">下一關</button><button class="b shopbtn">武器庫</button><button class="b" id="btnQuit3">返回選單</button></div></div></div>
+  <div class="btns"><button class="b primary" id="btnNext">下一關</button><button class="b shopbtn">武器裝備</button><button class="b" id="btnQuit3">返回選單</button></div></div></div>
 
 <div id="touch">
   <div id="stickHint"></div>
@@ -467,6 +478,28 @@ const WEAPONS = [
     explosive: true, rocket: true, radius: 7.5, move: 0.9, desc: '直線飛行的火箭，爆炸範圍和威力都是榴彈的兩倍。能一發炸死巨型感染者。' },
 ];
 const WEAPON = Object.fromEntries(WEAPONS.map((w) => [w.id, w]));
+
+// ---- body armour (models: tools/blender/armor.py → assets/armor.webp). One is worn at a time: def cuts every hit,
+// res adds protection against one kind of damage (capped at 85%), move scales running speed ----
+const DMG_KINDS = [['melee', '近戰'], ['bullet', '子彈'], ['fire', '火焰'], ['acid', '酸液'], ['shock', '電擊'], ['blast', '爆炸']];
+const ARMORS = [
+  { id: 'jacket', name: '機車皮衣', cat: '輕型', price: 500, def: 0.08, res: { melee: 0.1 }, move: 1, sleeve: 0x2a160c, gloss: 0.45,
+    desc: '厚牛皮擋得住指甲和牙齒，完全不影響行動。最便宜的第一件護具。' },
+  { id: 'stab', name: '防刺背心', cat: '輕型', price: 1000, def: 0.12, res: { melee: 0.23 }, move: 1,
+    desc: '菱格縫線裡夾著防刺鋼片，專門對付殭屍的爪子、牙齒和警棍。' },
+  { id: 'kevlar', name: '警用防彈背心', cat: '中型', price: 1800, def: 0.18, res: { bullet: 0.42, melee: 0.07, blast: 0.04 }, move: 0.98,
+    desc: '凱夫拉纖維防彈層，對持槍警察殭屍特別有效。' },
+  { id: 'firesuit', name: '消防衣', cat: '中型', price: 2400, def: 0.15, res: { fire: 0.6, blast: 0.1, acid: 0.1 }, move: 0.96, sleeve: 0x6e5c34,
+    desc: '耐高溫的消防員外套，火焰殭屍噴出的火幾乎燒不穿，爆炸的熱浪也擋得住一些。' },
+  { id: 'hazmat', name: '防化服', cat: '中型', price: 2800, def: 0.12, res: { acid: 0.68, shock: 0.33, fire: 0.08 }, move: 0.95, sleeve: 0x9c7a0c, gloss: 0.5,
+    desc: '全密封的橡膠防護服。不怕吐酸和酸池，絕緣層還能擋掉一部分電擊。' },
+  { id: 'plate', name: '軍用插板背心', cat: '重型', price: 4000, def: 0.3, res: { bullet: 0.35, blast: 0.15, melee: 0.05 }, move: 0.92,
+    desc: '前後各一片陶瓷防彈板，各種攻擊都能擋掉三成以上，跑起來稍慢。' },
+  { id: 'eod', name: '重型防爆服', cat: '重型', price: 7500, def: 0.42, res: { blast: 0.4, fire: 0.25, bullet: 0.23, acid: 0.1 }, move: 0.78, sleeve: 0x2c3a20, steady: true,
+    desc: '拆彈專家的全身防爆裝甲，連近距離爆炸都扛得住，被打中也幾乎不會晃。代價是又重又慢。' },
+];
+const ARMOR = Object.fromEntries(ARMORS.map((a) => [a.id, a]));
+const armorRes = (a, kind) => Math.min(0.85, a.def + (a.res[kind] || 0));
 const DEFAULT_KIT = ['pistol', 'rifle', 'shotgun'];
 
 // ---- money, owned weapons and the three-slot loadout (kept in this browser) ----
@@ -479,6 +512,9 @@ let owned = store.get('deadcity_owned', DEFAULT_KIT).filter((id) => WEAPON[id]);
 DEFAULT_KIT.forEach((id) => { if (!owned.includes(id)) owned.push(id); });
 let loadout = store.get('deadcity_loadout', DEFAULT_KIT);
 if (!Array.isArray(loadout) || loadout.length !== 3 || !loadout.every((id) => owned.includes(id)) || new Set(loadout).size !== 3) loadout = [...DEFAULT_KIT];
+let ownedArmor = store.get('deadcity_armors', []).filter((id) => ARMOR[id]);
+let armorId = store.get('deadcity_armor', null);
+if (!ownedArmor.includes(armorId)) armorId = null;
 let levelCash = 0;
 
 // ============================================================
@@ -2343,8 +2379,22 @@ loadModel('zombie', (scene) => {
   ['teeth_upper', 'teeth_lower', 'mouth', 'claws', 'boil'].forEach((n) => parts[n] && NO_SHADOW.add(parts[n]));
 });
 const forEachView = (fn) => weapons.forEach((w) => fn(w.view));
+// suits with sleeves (jacket, fire coat, hazmat, bomb suit) re-colour the arm model's sleeve; vests leave the jacket underneath
+let SLEEVE = null;
+function applyArmorLook() {
+  const a = ARMOR[armorId];
+  $('armorline').innerHTML = a ? `護甲 <b>${a.name}</b> · 基本減傷 ${Math.round(a.def * 100)}%` : '未穿護甲';
+  if (!SLEEVE) return;
+  const { sleeve, cuff } = SLEEVE, col = a && a.sleeve;
+  sleeve.map = col ? null : SLEEVE.map; sleeve.bumpMap = col ? SLEEVE.map : null; sleeve.bumpScale = 2;
+  sleeve.color.set(col || 0xffffff); sleeve.roughness = col ? a.gloss || 0.9 : SLEEVE.rough; sleeve.needsUpdate = true;
+  if (cuff) cuff.color.copy(col ? new THREE.Color(col).multiplyScalar(0.55) : SLEEVE.cuffColor);
+}
 loadModel('arm', (scene) => {
   ARM_GLB = scene;
+  const mats = {}; scene.traverse((o) => { if (o.isMesh) mats[o.material.name] = o.material; });
+  if (mats.sleeve) SLEEVE = { sleeve: mats.sleeve, cuff: mats.cuff, map: mats.sleeve.map, rough: mats.sleeve.roughness, cuffColor: mats.cuff ? mats.cuff.color.clone() : null };
+  applyArmorLook();
   forEachView((v) => v.group.traverse((o) => { if (o.userData.armSlot) fillArm(o); }));
 });
 const onKatanaModel = (gltf) => {
@@ -3147,7 +3197,7 @@ class Zombie {
     addTracer(muzzle, end);
     this.flash.visible = true; this.flashT = 0.06; this.flash.material.rotation = rand(0, 6);
     sfx('copshot', clamp(1.2 - dist / 40, 0.25, 1));
-    if (hit) hurtPlayer(this.c.dmg);
+    if (hit) hurtPlayer(this.c.dmg, 'bullet');
     else if (dist < 30) sfx('whiz');
   }
   updateArcs() {
@@ -3172,7 +3222,7 @@ class Zombie {
     const to = hit ? camera.position.clone().add(new THREE.Vector3(0, -0.35, 0)) : from.clone().add(new THREE.Vector3(Math.sin(this.g.rotation.y), 0.1, Math.cos(this.g.rotation.y)).multiplyScalar(dist));
     addBolt(from, to);
     sfx('zap', clamp(1.3 - dist / 30, 0.3, 1.2));
-    if (hit) { hurtPlayer(this.c.dmg); shockFlash = 1; player.slowT = 1.3; }
+    if (hit) { hurtPlayer(this.c.dmg, 'shock'); shockFlash = 1; player.slowT = ARMOR[armorId]?.steady ? 0.6 : 1.3; }
   }
   dropHelmet() {
     const ids = new Set(this.helmet);
@@ -3321,7 +3371,7 @@ class Zombie {
           this.flameTick = 0.25;
           sfx('flame', clamp(1.2 - dist / 25, 0.2, 1));
           let fa = Math.atan2(dx, dz) - this.g.rotation.y; fa = Math.atan2(Math.sin(fa), Math.cos(fa));
-          if (dist < 8.2 && Math.abs(fa) < 0.5) { hurtPlayer(this.c.dmg); fireFlash = Math.min(1, fireFlash + 0.5); }
+          if (dist < 8.2 && Math.abs(fa) < 0.5) { hurtPlayer(this.c.dmg, 'fire'); fireFlash = Math.min(1, fireFlash + 0.5); }
         }
       }
     }
@@ -3623,7 +3673,7 @@ function updateBoss(dt) {
     burst(p, UP, dustMat, 26, 6); burst(p, UP, sparkMat, 6, 5); sfx('slam', 1);
     const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
     shake = Math.min(1, shake + clamp(1 - dP / 20, 0, 0.8));
-    if (dP < 3.2 && player.pos.y < 1.2) hurtPlayer(30);
+    if (dP < 3.2 && player.pos.y < 1.2) hurtPlayer(30, 'blast');
     for (const o of zombies) if (!o.dead && !o.c.boss && Math.hypot(o.pos.x - p.x, o.pos.z - p.z) < 2.5) o.damage(80, { part: 'body' }, null);
     return false;
   });
@@ -3638,7 +3688,7 @@ function blastAt(p, radius, dmg, playerDmg, src = null) {
   const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
   sfx('boom', clamp(1.2 - dP / 50, 0.25, 1.2));
   shake = Math.min(1, shake + clamp(1 - dP / 25, 0, 1));
-  if (dP < radius) hurtPlayer(Math.round(playerDmg * (1 - dP / radius)) + 5);
+  if (dP < radius) hurtPlayer(Math.round(playerDmg * (1 - dP / radius)) + 5, 'blast');
   for (const o of zombies) {
     if (o === src || o.dead) continue;
     const d = Math.hypot(o.pos.x - p.x, o.pos.z - p.z);
@@ -3713,7 +3763,7 @@ function updateHazards(dt) {
     p.life -= dt; p.v.y -= 9.8 * dt; p.m.position.addScaledVector(p.v, dt);
     if (Math.random() < 0.5) burst(p.m.position, UP, acidPartMat, 1, 0.5);
     const done = (fx) => { scene.remove(p.m); return false; };
-    if (p.m.position.distanceTo(eye) < 0.75) { hurtPlayer(ZTYPES.spitter.dmg + 4); acidFlash = 1; sfx('splash'); return done(); }
+    if (p.m.position.distanceTo(eye) < 0.75) { hurtPlayer(ZTYPES.spitter.dmg + 4, 'acid'); acidFlash = 1; sfx('splash'); return done(); }
     if (p.m.position.y <= 0.05) { makePool(p.m.position.x, p.m.position.z, TEX.acid, 1.5, true); burst(p.m.position, UP, acidPartMat, 8, 2.5); sfx('splash', 0.6); return done(); }
     if (p.m.position.y < 10 && blocked(p.m.position.x, p.m.position.z, 0)) { burst(p.m.position, UP, acidPartMat, 8, 2.5); return done(); }
     if (p.life <= 0) return done();
@@ -3728,7 +3778,7 @@ function updateHazards(dt) {
     if (player.pos.y < 0.3 && Math.hypot(player.pos.x - a.x, player.pos.z - a.z) < a.r) inAcid = true;
     return true;
   });
-  if (inAcid && acidTick <= 0) { acidTick = 0.5; hurtPlayer(4); acidFlash = Math.min(1, acidFlash + 0.6); }
+  if (inAcid && acidTick <= 0) { acidTick = 0.5; hurtPlayer(4, 'acid'); acidFlash = Math.min(1, acidFlash + 0.6); }
   acidFlash = Math.max(0, acidFlash - dt * 1.5);
   shockFlash = Math.max(0, shockFlash - dt * 2.5);
   $('shockfx').style.opacity = shockFlash;
@@ -3816,10 +3866,13 @@ const money = (n) => '$' + n.toLocaleString('en-US');
 function hitMarker(kill) { const h = $('hitmark'); h.className = kill ? 'kill' : ''; h.style.opacity = 1; hitTimer = 0.12; }
 let hurtAlpha = 0;
 let lastHurtSfx = 0;
-function hurtPlayer(dmg) {
+// kind: melee, bullet, fire, acid, shock or blast — the worn armour decides how much of it gets through
+function hurtPlayer(dmg, kind = 'melee') {
   if (state !== 'playing') return;
+  const a = ARMOR[armorId];
+  if (a) dmg *= 1 - armorRes(a, kind);
   player.hp = Math.max(0, player.hp - dmg);
-  hurtAlpha = Math.min(1, hurtAlpha + 0.5 + dmg / 40); shake = Math.min(1, shake + 0.5);
+  hurtAlpha = Math.min(1, hurtAlpha + 0.5 + dmg / 40); shake = Math.min(1, shake + (a && a.steady ? 0.2 : 0.5));
   const now = performance.now();
   if (now - lastHurtSfx > 350) { sfx('hurt'); lastHurtSfx = now; }
   if (player.hp <= 0) gameOver();
@@ -4211,8 +4264,14 @@ $('quality').onclick = () => {
   try { localStorage.setItem('deadcity_quality', qSetting); } catch {}
   applyQuality(qSetting === 'auto' ? (IS_TOUCH || navigator.hardwareConcurrency <= 4 ? 'medium' : 'high') : qSetting);
 };
+let shopTab = 'w';
 function renderShop() {
   $('shopCash').textContent = money(cash);
+  document.querySelectorAll('#shop .tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === shopTab));
+  $('wpane').hidden = shopTab !== 'w'; $('apane').hidden = shopTab !== 'a';
+  $('shopSub').textContent = shopTab === 'w' ? '每擊殺一隻殭屍都能賺錢，過關還有獎勵。選三把武器帶上戰場。'
+    : '盔甲買了就永久擁有，同一時間只能穿一件。每件盔甲擅長擋的攻擊不同，越重的跑得越慢。';
+  if (shopTab === 'a') { renderArmorShop(); return; }
   $('loadout').innerHTML = loadout.map((id, i) => `<div class="slot"><div class="k">欄位 ${i + 1}</div><div class="v">${WEAPON[id].name}</div></div>`).join('');
   const bar = (v) => `<div class="bar"><i style="width:${Math.round(clamp(v, 0.04, 1) * 100)}%"></i></div>`;
   $('wlist').innerHTML = WEAPONS.map((w) => {
@@ -4254,6 +4313,39 @@ $('wlist').addEventListener('click', (e) => {
     store.set('deadcity_loadout', loadout); renderShop();
   }
 });
+function renderArmorShop() {
+  const pct = (v) => Math.round(v * 100) + '%';
+  $('alist').innerHTML = ARMORS.map((a, i) => {
+    const have = ownedArmor.includes(a.id), on = armorId === a.id;
+    const act = on ? '<button class="b" data-unwear="1">脫下</button>'
+      : have ? `<button class="b primary" data-wear="${a.id}">穿上</button>`
+      : cash >= a.price ? `<button class="b primary" data-abuy="${a.id}">購買 ${money(a.price)}</button>`
+      : `<button class="b" disabled>購買 ${money(a.price)}</button><span>還差 ${money(a.price - cash)}</span>`;
+    const rows = DMG_KINDS.map(([k, label]) => { const r = armorRes(a, k);
+      return `<span>${label}</span><div class="bar"><i style="width:${Math.round(r / 0.85 * 100)}%"></i></div><span class="num">${pct(r)}</span>`; }).join('');
+    return `<div class="wc ac${on ? ' eq' : ''}">
+      <div class="aimg" style="background-position:${-i * 156}px 0, center" role="img" aria-label="${a.name}"></div>
+      <div class="top"><div><div class="nm">${a.name}</div><div class="ct">${a.cat}護甲 · ${a.move < 1 ? `移動速度 -${Math.round((1 - a.move) * 100)}%` : '不影響移動'}</div></div>
+        <div class="pr num">${on ? '穿著中' : have ? '已擁有' : money(a.price)}</div></div>
+      <div class="ds">${a.desc}</div>
+      <div class="ct">各類攻擊減傷</div>
+      <div class="bars">${rows}</div>
+      <div class="act">${act}</div></div>`;
+  }).join('');
+}
+$('alist').addEventListener('click', (e) => {
+  const buy = e.target.closest('[data-abuy]'), wear = e.target.closest('[data-wear]');
+  if (buy) {
+    const a = ARMOR[buy.dataset.abuy];
+    if (ownedArmor.includes(a.id) || cash < a.price) return;
+    cash -= a.price; ownedArmor.push(a.id);
+    store.set('deadcity_cash', cash); store.set('deadcity_armors', ownedArmor);
+    audio(); sfx('cash'); wearArmor(a.id); renderMenu();
+  } else if (wear) { audio(); sfx('pickup'); wearArmor(wear.dataset.wear); }
+  else if (e.target.closest('[data-unwear]')) wearArmor(null);
+});
+document.querySelectorAll('#shop .tab').forEach((t) => (t.onclick = () => { shopTab = t.dataset.tab; renderShop(); $('shop').querySelector('.panel').scrollTop = 0; }));
+function wearArmor(id) { armorId = id; store.set('deadcity_armor', id); applyArmorLook(); renderShop(); }
 function openShop() { renderShop(); $('shop').classList.add('show'); }
 $('btnShop').onclick = openShop;
 document.querySelectorAll('.shopbtn').forEach((b) => (b.onclick = openShop));
@@ -4493,7 +4585,7 @@ const _v = new THREE.Vector3();
 function updatePlayer(dt) {
   const sprint = (keys.ShiftLeft && keys.KeyW || joyWantsSprint) && !aiming;
   player.slowT = Math.max(0, (player.slowT || 0) - dt);
-  const speed = (aiming ? 2.8 : sprint ? 8.2 : 5.2) * (weapons[wi]?.c.move || 1) * (player.slowT > 0 ? 0.5 : 1);
+  const speed = (aiming ? 2.8 : sprint ? 8.2 : 5.2) * (weapons[wi]?.c.move || 1) * (ARMOR[armorId]?.move || 1) * (player.slowT > 0 ? 0.5 : 1);
   const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);
   let wx = 0, wz = 0;
   if (keys.KeyW) { wx += fx; wz += fz; } if (keys.KeyS) { wx -= fx; wz -= fz; }
@@ -4722,11 +4814,12 @@ loadLevel(0);
 applyQuality(qLevel);
 resetWeapons();
 renderMenu();
+applyArmorLook();
 $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 window.__game = { get state() { return state; }, player, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
-  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
+  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
   spawnNear(type, d = 8) { const z = new Zombie(type, player.pos.x + rand(-2, 2), player.pos.z - d); zombies.push(z); return z; } };
 </script>
