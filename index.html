@@ -203,6 +203,10 @@
   .wc.eq { border-color: rgba(232,180,74,0.6); }
   .wc .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .wc .nm { font-weight: 700; font-size: 16px; }
+  .sale { margin-top: 12px; padding: 9px 14px; background: linear-gradient(90deg, rgba(200,50,30,0.9), rgba(232,162,58,0.85)); color: #fff; font-size: 14px; letter-spacing: 0.06em; }
+  .sale b { font-size: 18px; margin-right: 12px; letter-spacing: 0.15em; }
+  .wc .pr .was { color: var(--dim); font-size: 12px; margin-right: 4px; }
+  .salebadge { margin-left: 8px; padding: 1px 6px; font-size: 11px; background: #fff; color: var(--accent); font-weight: 700; vertical-align: 2px; }
   .wc .ltd { display: inline-block; margin-left: 8px; padding: 1px 7px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; vertical-align: 2px;
     color: #fff; background: linear-gradient(90deg, #c8321e, #e8a23a); border-radius: 2px; }
   .wc .ct { font-size: 11px; letter-spacing: 0.15em; color: var(--dim); }
@@ -293,7 +297,7 @@
   <div class="title">死城<span>突圍</span></div>
   <div class="subtitle">DEAD CITY</div>
   <div id="levels"></div>
-  <div class="menubtns"><span class="wallet num" id="menuCash">$0</span><button class="b primary" id="btnShop">武器裝備</button><button class="b" id="btnBestiary">感染者圖鑑</button><button class="b" id="quality">畫質：自動</button></div>
+  <div class="menubtns"><span class="wallet num" id="menuCash">$0</span><button class="b primary" id="btnShop">武器裝備<span class="salebadge">3折</span></button><button class="b" id="btnBestiary">感染者圖鑑</button><button class="b" id="quality">畫質：自動</button></div>
   <div class="controls">
     <span class="keyhelp"><b>W A S D</b> 移動　<b>Shift</b> 衝刺　<b>空白鍵</b> 跳躍　<b>滑鼠左鍵</b> 射擊　<b>右鍵</b> 瞄準<br>
     <b>R</b> 換彈　<b>1 2 3</b> / 滾輪 切換武器　<b>Esc</b> 暫停　·　</span>爆頭傷害 ×2.5
@@ -313,6 +317,7 @@
 
 <div id="shop" class="overlay"><div class="panel">
   <div class="shophead"><h2>武器裝備</h2><span class="wallet num" id="shopCash">$0</span></div>
+  <div class="sale"><b>全場三折</b>所有武器和盔甲只要原價的 30%</div>
   <div class="tabs" role="tablist"><button class="tab on" role="tab" data-tab="w">武器</button><button class="tab" role="tab" data-tab="a">盔甲</button></div>
   <p class="shopsub" id="shopSub"></p>
   <div id="wpane"><div id="loadout"></div><div id="wlist"></div></div>
@@ -531,6 +536,10 @@ if (!ownedArmor.includes(armorId)) armorId = null;
 let armorDur = store.get('deadcity_armor_dur', {}) || {};
 const durOf = (id) => Math.max(0, Math.min(ARMOR[id].dur, armorDur[id] ?? ARMOR[id].dur));
 const repairPer = (id) => ARMOR[id].price * REPAIR_RATE / ARMOR[id].dur;
+// storewide sale: every weapon and armour costs 30% of its list price (三折); repairs keep the list price
+const SALE = 0.3;
+const cost = (item) => Math.round(item.price * SALE);
+const priceTag = (item) => `<s class="was">${money(item.price)}</s> ${money(cost(item))}`;
 const armorOn = () => (armorId && durOf(armorId) > 0 ? ARMOR[armorId] : null); // worn and not broken
 let levelCash = 0;
 
@@ -4369,15 +4378,15 @@ function renderShop() {
     const acc = 1 - Math.min(1, (w.hipSpread || w.spread) / 0.09);
     let act;
     if (!have) {
-      act = cash >= w.price ? `<button class="b primary" data-buy="${w.id}">購買 ${money(w.price)}</button>`
-        : `<button class="b" disabled>購買 ${money(w.price)}</button><span>還差 ${money(w.price - cash)}</span>`;
+      act = cash >= cost(w) ? `<button class="b primary" data-buy="${w.id}">購買 ${money(cost(w))}</button>`
+        : `<button class="b" disabled>購買 ${money(cost(w))}</button><span>還差 ${money(cost(w) - cash)}</span>`;
     } else {
       act = `裝備到欄位 ${[0, 1, 2].map((k) => `<button class="slotbtn${slot === k ? ' on' : ''}" data-eq="${w.id}" data-slot="${k}" aria-label="裝備到欄位 ${k + 1}">${k + 1}</button>`).join('')}`;
     }
     const tags = [w.melee ? '免彈藥' : '', w.flame ? '持續燃燒' : '', w.chain ? `連鎖 ${w.chain}` : '', w.spin ? '需預熱' : '', w.pierce > 1 ? `貫穿 ${w.pierce}` : '', w.ap ? '穿甲' : '', w.explosive ? '範圍爆炸' : '', w.burn ? '點燃目標' : '', w.scope ? '瞄準鏡' : '', w.move && w.move < 1 ? '移動較慢' : ''].filter(Boolean).join(' · ');
     return `<div class="wc${slot >= 0 ? ' eq' : ''}">
       <div class="top"><div><div class="nm">${w.name}${w.limited ? `<span class="ltd">${w.limited}</span>` : ''}</div><div class="ct">${w.cat}${tags ? ' · ' + tags : ''}</div></div>
-        <div class="pr num">${have ? (slot >= 0 ? `欄位 ${slot + 1}` : '已擁有') : money(w.price)}</div></div>
+        <div class="pr num">${have ? (slot >= 0 ? `欄位 ${slot + 1}` : '已擁有') : priceTag(w)}</div></div>
       <div class="ds">${w.desc}</div>
       <div class="bars"><span>傷害</span>${bar(perShot / 260)}<span class="num">${perShot}</span>
         <span>射速</span>${bar(rpm / 900)}<span class="num">${rpm}</span>
@@ -4390,8 +4399,8 @@ $('wlist').addEventListener('click', (e) => {
   const buy = e.target.closest('[data-buy]'), eq = e.target.closest('[data-eq]');
   if (buy) {
     const w = WEAPON[buy.dataset.buy];
-    if (owned.includes(w.id) || cash < w.price) return;
-    cash -= w.price; owned.push(w.id);
+    if (owned.includes(w.id) || cash < cost(w)) return;
+    cash -= cost(w); owned.push(w.id);
     store.set('deadcity_cash', cash); store.set('deadcity_owned', owned);
     audio(); sfx('cash'); renderShop(); renderMenu();
   } else if (eq) {
@@ -4409,8 +4418,8 @@ function renderArmorShop() {
     const d = durOf(a.id), f = d / a.dur, broken = have && d <= 0, missing = a.dur - d;
     let act = on ? '<button class="b" data-unwear="1">脫下</button>'
       : have ? `<button class="b primary" data-wear="${a.id}">穿上</button>`
-      : cash >= a.price ? `<button class="b primary" data-abuy="${a.id}">購買 ${money(a.price)}</button>`
-      : `<button class="b" disabled>購買 ${money(a.price)}</button><span>還差 ${money(a.price - cash)}</span>`;
+      : cash >= cost(a) ? `<button class="b primary" data-abuy="${a.id}">購買 ${money(cost(a))}</button>`
+      : `<button class="b" disabled>購買 ${money(cost(a))}</button><span>還差 ${money(cost(a) - cash)}</span>`;
     if (have && missing >= 1) { // full repair, or as much as the wallet allows
       const full = Math.ceil(missing * repairPer(a.id)), pts = Math.floor(cash / repairPer(a.id));
       act += cash >= full ? `<button class="b${broken ? ' primary' : ''}" data-repair="${a.id}">修理 ${money(full)}</button>`
@@ -4422,7 +4431,7 @@ function renderArmorShop() {
     return `<div class="wc ac${on ? ' eq' : ''}">
       <div class="aimg" style="background-position:${-i * 156}px 0, center" role="img" aria-label="${a.name}"></div>
       <div class="top"><div><div class="nm">${a.name}</div><div class="ct">${a.cat}護甲 · ${a.move < 1 ? `移動速度 -${Math.round((1 - a.move) * 100)}%` : '不影響移動'}</div></div>
-        <div class="pr num${broken ? ' broke' : ''}">${broken ? '已損壞' : on ? '穿著中' : have ? '已擁有' : money(a.price)}</div></div>
+        <div class="pr num${broken ? ' broke' : ''}">${broken ? '已損壞' : on ? '穿著中' : have ? '已擁有' : priceTag(a)}</div></div>
       <div class="ds">${a.desc}</div>
       <div class="bars durb"><span>耐久</span><div class="bar"><i class="${broken ? 'out' : f < 0.25 ? 'low' : ''}" style="width:${f * 100}%"></i></div><span class="num">${Math.ceil(d)}/${a.dur}</span></div>
       <div class="ct">各類攻擊減傷${broken ? '（損壞時無效）' : ''}</div>
@@ -4434,8 +4443,8 @@ $('alist').addEventListener('click', (e) => {
   const buy = e.target.closest('[data-abuy]'), wear = e.target.closest('[data-wear]');
   if (buy) {
     const a = ARMOR[buy.dataset.abuy];
-    if (ownedArmor.includes(a.id) || cash < a.price) return;
-    cash -= a.price; ownedArmor.push(a.id); armorDur[a.id] = a.dur;
+    if (ownedArmor.includes(a.id) || cash < cost(a)) return;
+    cash -= cost(a); ownedArmor.push(a.id); armorDur[a.id] = a.dur;
     store.set('deadcity_cash', cash); store.set('deadcity_armors', ownedArmor); store.set('deadcity_armor_dur', armorDur);
     audio(); sfx('cash'); wearArmor(a.id); renderMenu();
   } else if (wear) { audio(); sfx('pickup'); wearArmor(wear.dataset.wear); }
