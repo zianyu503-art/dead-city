@@ -4118,6 +4118,7 @@ function toMenu() {
 }
 
 function renderMenu() {
+  if (updateReady) { location.replace(location.pathname + '?v=' + updateReady); return; } // a newer build came out mid-level
   const un = loadUnlocked();
   $('menuCash').textContent = money(cash);
   $('levels').innerHTML = '';
@@ -4959,6 +4960,24 @@ function frame(dt, now) {
 }
 
 // ============================================================
+//  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
+//  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
+// ============================================================
+const BUILD = '2026100301'; // YYYYMMDDNN — bump on every deploy
+let updateReady = null;
+function checkForUpdate() {
+  if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
+  fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' }).then((r) => r.text()).then((t) => {
+    const m = t.match(/const BUILD = '([^']+)'/);
+    if (!m || +m[1] <= +BUILD) return; // only ever move forward, never loop on a lagging CDN copy
+    updateReady = m[1];
+    if (state === 'menu') renderMenu();
+  }).catch(() => {});
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
+setTimeout(checkForUpdate, 3000);
+
+// ============================================================
 //  Boot
 // ============================================================
 buildTextures();
@@ -4972,7 +4991,7 @@ $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 window.__game = { get state() { return state; }, player, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
-  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
+  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
   spawnNear(type, d = 8) { const z = new Zombie(type, player.pos.x + rand(-2, 2), player.pos.z - d); zombies.push(z); return z; } };
 </script>
