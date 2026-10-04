@@ -104,6 +104,10 @@
   .card .ds { font-size: 12px; color: #cfc8bb; margin-top: 8px; line-height: 1.5; }
   .card.locked { cursor: not-allowed; filter: grayscale(1) brightness(0.5); }
   .card.locked::after { content: "未解鎖"; position: absolute; right: 10px; top: 12px; font-size: 11px; letter-spacing: 0.15em; }
+  .card.event { border-color: #e8a23a; background: linear-gradient(160deg, rgba(200, 50, 30, 0.6), rgba(232, 162, 58, 0.3)); }
+  .card.event .n { color: #ffd27a; opacity: 0.95; font-family: inherit; font-weight: 900; letter-spacing: 0.1em; }
+  .card.event .tm { color: #ffd27a; }
+  .card.event.locked::after { content: "活動未開放"; }
   .t-day { background: linear-gradient(160deg, rgba(90,120,150,0.55), rgba(20,20,20,0.85)); }
   .t-dusk { background: linear-gradient(160deg, rgba(190,100,50,0.55), rgba(20,15,15,0.85)); }
   .t-night { background: linear-gradient(160deg, rgba(30,40,80,0.7), rgba(5,5,10,0.9)); }
@@ -385,10 +389,27 @@ const LEVELS = [
   // level 10 is the finale: the helicopter extraction
   { num: 10, name: '最後防線', theme: 'evac', time: 'dawn', evac: true, desc: '撤離直升機即將抵達。守住市中心廣場的撤離點，擊敗巢母，然後衝上直升機。',
     hpMul: 1.75, speedMul: 1.28, waves: [{ walker: 20, runner: 12, crawler: 6, dog: 6 }, { walker: 18, runner: 14, spitter: 4, bloater: 4, riot: 4, gunner: 3 }, { runner: 18, armored: 5, shocker: 4, stalker: 5, flamer: 3, brute: 2 }, { walker: 16, runner: 18, splitter: 4, medic: 4, mutant: 3, screamer: 2, behemoth: 1 }, { runner: 20, walker: 14, crawler: 8, broodmother: 1 }] },
+  // 國慶特別版: an event level outside the numbered campaign, open only during 國慶期間 (see CONTEXT.md).
+  // num only sets the clear bonus; it plays at level 5's difficulty
+  { id: 'national-day', event: true, label: '國慶特別版', num: 5, name: '國慶夜・煙火大道', theme: 'downtown', time: 'night',
+    desc: '慶典大道上煙火正在綻放，被聲光引來的屍群擠滿了街道。撐過六波，迎接最後的煙火秀。',
+    hpMul: 1.35, speedMul: 1.15, waves: [{ walker: 12, runner: 4, crawler: 4 }, { walker: 10, runner: 6, crawler: 4, bloater: 3 }, { walker: 10, runner: 6, riot: 4, bloater: 2 },
+      { walker: 10, runner: 6, shocker: 3, riot: 3, crawler: 3 }, { runner: 20, shocker: 2, bloater: 3 }, { behemoth: 1, runner: 10, crawler: 4, riot: 2 }] },
 ];
 LEVELS.forEach((l, i) => { l.num ??= i + 1; });
-const nextVisible = (i) => { for (let k = i + 1; k < LEVELS.length; k++) if (!LEVELS[k].hidden) return k; return -1; };
-const LAST_VISIBLE = LEVELS.reduce((m, l, i) => (l.hidden ? m : i), 0);
+const inCampaign = (l) => !l.hidden && !l.event;
+const nextVisible = (i) => { if (LEVELS[i].event) return -1; for (let k = i + 1; k < LEVELS.length; k++) if (inCampaign(LEVELS[k])) return k; return -1; };
+const LAST_VISIBLE = LEVELS.reduce((m, l, i) => (inCampaign(l) ? i : m), 0);
+const EVENT_LEVEL = LEVELS.findIndex((l) => l.event);
+const levelTitle = (l) => (l.event ? `${l.label} · ${l.name}` : `第 ${l.num} 關 · ${l.name}`);
+// 國慶期間 is 10/1–10/15 every year, on the player's own clock (docs/adr/0001); ?date=YYYY-MM-DD fakes the date for testing
+let dateOverride = null;
+function today() {
+  if (dateOverride) return dateOverride;
+  const q = new URLSearchParams(location.search).get('date'), d = q ? new Date(q + 'T12:00:00') : null;
+  return d && !isNaN(d) ? d : new Date();
+}
+function eventDaysLeft() { const d = today(); return d.getMonth() === 9 && d.getDate() <= 15 ? 16 - d.getDate() : 0; }
 
 const TIMES = {
   day:   { label: '白天', sky: true, elev: 38, azi: 135, turb: 6, ray: 1.2, mie: 0.005, mieG: 0.8, fog: 0xa9b6c2, fogD: 0.0055,
@@ -3987,7 +4008,7 @@ function updateHUD() {
   $('ammonum').innerHTML = w.c.melee ? '∞' : `${w.ammo} <small>/ ${w.reserve}</small>`;
   $('reloadtip').textContent = reloading > 0 ? '換彈中…' : (w.ammo === 0 ? (w.reserve ? '按 R 換彈' : '沒有彈藥') : '');
   [...$('slots').children].forEach((s, i) => s.classList.toggle('on', i === wi));
-  $('lvname').textContent = `第 ${LV.num} 關 · ${LV.name}`;
+  $('lvname').textContent = levelTitle(LV);
   $('wave').textContent = interT > 0 && !waveActive ? `下一波 ${Math.ceil(interT)}` : `第 ${waveIdx + 1} / ${LV.waves.length} 波`;
   const alive = zombies.filter((z) => !z.dead).length;
   $('remain').textContent = `剩餘感染者 ${queue.length + alive}`;
@@ -4027,6 +4048,7 @@ function loadLevel(i) {
 }
 
 function startLevel(i) {
+  if (LEVELS[i].event && !eventDaysLeft()) return; // 國慶特別版 is closed outside 國慶期間
   audio();
   if (!modelsLoaded) { // finish downloading the Blender models first
     $('loading').textContent = '載入模型中…'; $('loading').style.display = 'flex';
@@ -4038,7 +4060,7 @@ function startLevel(i) {
   player.yaw = 0; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0);
   wi = 1; resetWeapons(); reloading = 0; switching = 0;
   kills = 0; score = 0; levelCash = 0; waveIdx = 0; queue = []; waveActive = false; interT = 3;
-  showMsg(`第 ${LV.num} 關 · ${LV.name}`, `${TIMES[LV.time].label} — 撐過 ${LV.waves.length} 波感染者`, 3);
+  showMsg(levelTitle(LV), `${TIMES[LV.time].label} — 撐過 ${LV.waves.length} 波感染者`, 3);
   document.querySelectorAll('.overlay').forEach((o) => o.classList.remove('show'));
   $('hud').style.display = 'block';
   state = 'playing';
@@ -4093,9 +4115,12 @@ function levelComplete() {
   const next = nextVisible(levelIndex);
   if (next > loadUnlocked()) saveUnlocked(next);
   unlockPointer();
-  const bonus = 150 + LV.num * 100; addCash(bonus);
+  const firstEvent = LV.event && !store.get('deadcity_event_cleared', false); // the first 國慶特別版 clear pays an extra $1,000
+  if (LV.event) store.set('deadcity_event_cleared', true);
+  const bonus = 150 + LV.num * 100 + (firstEvent ? 1000 : 0); addCash(bonus);
   const stats = `擊殺 ${kills} · 分數 ${score}<br>本關賺得 ${money(levelCash)}（含過關獎勵 ${money(bonus)}）${armorStatus()}`;
-  $('winStats').innerHTML = next >= 0 ? `${stats}<br>下一關已解鎖：第 ${LEVELS[next].num} 關 · ${LEVELS[next].name}`
+  $('winStats').innerHTML = LV.event ? `國慶快樂！${firstEvent ? '首次通關另得 $1,000。' : ''}<br>${stats}`
+    : next >= 0 ? `${stats}<br>下一關已解鎖：第 ${LEVELS[next].num} 關 · ${LEVELS[next].name}`
     : LV.num === 10 ? `你守住了最後防線，撤離成功！<br>${stats}` : `${stats}<br>更多關卡製作中，敬請期待。`;
   $('btnNext').style.display = next >= 0 ? '' : 'none';
   $('win').classList.add('show');
@@ -4105,7 +4130,7 @@ function gameOver() {
   $('scope').style.display = 'none';
   state = 'dead'; releaseTouch();
   unlockPointer();
-  $('deadStats').innerHTML = `第 ${LV.num} 關 · 第 ${waveIdx + 1} 波<br>擊殺 ${kills} · 分數 ${score}<br>賺到的 ${money(levelCash)} 已經存下來了${armorStatus()}`;
+  $('deadStats').innerHTML = `${LV.event ? LV.label : `第 ${LV.num} 關`} · 第 ${waveIdx + 1} 波<br>擊殺 ${kills} · 分數 ${score}<br>賺到的 ${money(levelCash)} 已經存下來了${armorStatus()}`;
   $('dead').classList.add('show');
 }
 function toMenu() {
@@ -4122,8 +4147,15 @@ function renderMenu() {
   const un = loadUnlocked();
   $('menuCash').textContent = money(cash);
   $('levels').innerHTML = '';
+  if (EVENT_LEVEL >= 0) {
+    const l = LEVELS[EVENT_LEVEL], left = eventDaysLeft(), b = document.createElement('button');
+    b.className = 'card event' + (left ? '' : ' locked');
+    b.innerHTML = `<div class="n">國慶</div><div class="nm">${l.name}</div><div class="tm">${left ? `國慶限定 · 剩 ${left} 天` : '每年 10/1–10/15 開放'}</div><div class="ds">${l.desc}</div>`;
+    if (left) b.onclick = () => startLevel(EVENT_LEVEL);
+    $('levels').appendChild(b);
+  }
   LEVELS.forEach((l, i) => {
-    if (l.hidden) return;
+    if (!inCampaign(l)) return;
     const b = document.createElement('button');
     b.className = `card t-${l.time}` + (i > un ? ' locked' : '') + (padActive && i === menuSel ? ' sel' : '');
     b.innerHTML = `<div class="n">${String(l.num).padStart(2, '0')}</div><div class="nm">${l.name}</div><div class="tm">${TIMES[l.time].label} · ${l.waves.length} 波</div><div class="ds">${l.desc}</div>`;
@@ -4480,7 +4512,7 @@ function renderBestiary() {
     const hpBar = z.hp + (z.shield || 0);
     const bar = (v, m) => `<div class="bar"><i style="width:${Math.max(6, Math.min(100, v / m * 100))}%"></i></div>`;
     return `<div class="zc"><div class="zh"><span class="dot" style="background:${z.color}"></span>${known ? z.name : '？？？'}</div>
-      <div class="first">${z.from ? `由${ZTYPES[z.from].name}產生` : '首次出現'}：第 ${LEVELS[lv].num} 關 · ${LEVELS[lv].name} · 擊殺獎勵 ${money(z.cash)}</div>
+      <div class="first">${z.from ? `由${ZTYPES[z.from].name}產生` : '首次出現'}：${levelTitle(LEVELS[lv])} · 擊殺獎勵 ${money(z.cash)}</div>
       <div class="zd ${known ? '' : 'unk'}">${known ? z.desc : '還沒遇過。玩到這一關就會解鎖說明。'}</div>
       <div class="bars"><span>生命</span>${bar(hpBar, maxHp)}<span>速度</span>${bar(z.speed, maxSp)}<span>傷害</span>${bar(dmg, maxDmg)}</div></div>`;
   }).join('');
@@ -4991,7 +5023,7 @@ $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 window.__game = { get state() { return state; }, player, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
-  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
+  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), EVENT_LEVEL, completeLevel: () => levelComplete(), setDate(d) { dateOverride = d ? new Date(d + 'T12:00:00') : null; renderMenu(); }, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
   spawnNear(type, d = 8) { const z = new Zombie(type, player.pos.x + rand(-2, 2), player.pos.z - d); zombies.push(z); return z; } };
 </script>
