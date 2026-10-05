@@ -100,7 +100,7 @@
 
 - `tools/blender/festival.py`：場景道具。
 - `tools/blender/guns.py`：加入煙花發射器和煙火彈，沿用槍枝的材質命名。
-- `tools/blender/zombie.py`：只新增配件，不改既有零件：
+- `tools/blender/fest_zombies.py`（獨立檔案，不改 `zombie.py`）：國慶殭屍的配件：
   - 鞭炮串；
   - 煙火背包；
   - 舞獅頭套和披布；

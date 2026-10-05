@@ -211,6 +211,8 @@
   .sale b { font-size: 18px; margin-right: 12px; letter-spacing: 0.15em; }
   .wc .pr .was { color: var(--dim); font-size: 12px; margin-right: 4px; }
   .salebadge { margin-left: 8px; padding: 1px 6px; font-size: 11px; background: #fff; color: var(--accent); font-weight: 700; vertical-align: 2px; }
+  #winStats .gift { color: #ffd27a; font-size: 1.15em; }
+  .wc .act .earn { color: #ffd27a; font-weight: 700; letter-spacing: 0.06em; }
   .wc .ltd { display: inline-block; margin-left: 8px; padding: 1px 7px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; vertical-align: 2px;
     color: #fff; background: linear-gradient(90deg, #c8321e, #e8a23a); border-radius: 2px; }
   .wc .ct { font-size: 11px; letter-spacing: 0.15em; color: var(--dim); }
@@ -391,10 +393,11 @@ const LEVELS = [
     hpMul: 1.75, speedMul: 1.28, waves: [{ walker: 20, runner: 12, crawler: 6, dog: 6 }, { walker: 18, runner: 14, spitter: 4, bloater: 4, riot: 4, gunner: 3 }, { runner: 18, armored: 5, shocker: 4, stalker: 5, flamer: 3, brute: 2 }, { walker: 16, runner: 18, splitter: 4, medic: 4, mutant: 3, screamer: 2, behemoth: 1 }, { runner: 20, walker: 14, crawler: 8, broodmother: 1 }] },
   // 國慶特別版: an event level outside the numbered campaign, open only during 國慶期間 (see CONTEXT.md).
   // num only sets the clear bonus; it plays at level 5's difficulty
-  { id: 'national-day', event: true, label: '國慶特別版', num: 5, name: '國慶夜・煙火大道', theme: 'downtown', time: 'night',
+  { id: 'national-day', event: true, label: '國慶特別版', num: 5, name: '國慶夜・煙火大道', theme: 'festival', time: 'festival',
     desc: '慶典大道上煙火正在綻放，被聲光引來的屍群擠滿了街道。撐過六波，迎接最後的煙火秀。',
-    hpMul: 1.35, speedMul: 1.15, waves: [{ walker: 12, runner: 4, crawler: 4 }, { walker: 10, runner: 6, crawler: 4, bloater: 3 }, { walker: 10, runner: 6, riot: 4, bloater: 2 },
-      { walker: 10, runner: 6, shocker: 3, riot: 3, crawler: 3 }, { runner: 20, shocker: 2, bloater: 3 }, { behemoth: 1, runner: 10, crawler: 4, riot: 2 }] },
+    hpMul: 1.35, speedMul: 1.15, waves: [{ walker: 12, runner: 4, firecracker: 4 }, { walker: 10, runner: 6, firecracker: 4, fireworker: 3 },
+      { walker: 10, runner: 6, liondance: 4, fireworker: 2 }, { walker: 10, runner: 6, gong: 3, liondance: 3, firecracker: 3 },
+      { dragon: 2, runner: 8, gong: 2, fireworker: 3 }, { floatboss: 1, runner: 10, firecracker: 4, liondance: 2 }] },
 ];
 LEVELS.forEach((l, i) => { l.num ??= i + 1; });
 const inCampaign = (l) => !l.hidden && !l.event;
@@ -420,6 +423,8 @@ const TIMES = {
            sun: 0x7f93c8, sunI: 0.3, hemiSky: 0x2a3550, hemiGround: 0x0a0a0a, hemiI: 0.35, exp: 1.0, envI: 0, night: true },
   dawn:  { label: '黎明', sky: true, elev: 5, azi: 95, turb: 8, ray: 2.2, mie: 0.006, mieG: 0.82, fog: 0xc9a896, fogD: 0.0075,
            sun: 0xffc4a0, sunI: 2.5, hemiSky: 0xa8b0d0, hemiGround: 0x3a302c, hemiI: 0.6, exp: 0.62, envI: 0.5, night: false },
+  festival: { label: '慶典夜', sky: false, bg: 0x0b0718, festival: true, fog: 0x160a1c, fogD: 0.011,
+           sun: 0xa08ad0, sunI: 0.4, hemiSky: 0x6a4070, hemiGround: 0x2a1008, hemiI: 0.6, exp: 1.1, envI: 0, night: true },
   bloodmoon: { label: '血月', sky: false, bg: 0x160607, moon: true, fog: 0x2a0c0c, fogD: 0.02,
            sun: 0xff6a50, sunI: 0.75, hemiSky: 0x7a3030, hemiGround: 0x1a0a0a, hemiI: 0.55, exp: 1.0, envI: 0, night: true },
   snow:  { label: '雪夜', sky: false, bg: 0x141a24, snow: true, fog: 0x1e2734, fogD: 0.022,
@@ -471,6 +476,20 @@ const ZTYPES = {
               desc: '胸前的綠色十字會發光。它會躲在屍群後面，每隔幾秒治療附近的殭屍。優先擊殺。' },
   mutant:   { name: '突變實驗體', color: '#d08a8a', hp: 460, speed: 2.0, dmg: 22, scale: 1.25, rate: 1.3, cash: 70, score: 600, leap: true,
               desc: '實驗室逃出的怪物，右手異常巨大。會先蹲低蓄力，再從十幾公尺外撲過來，看到它蹲下就往旁邊跑。' },
+  // ---- 國慶特別版 (CONTEXT.md: 國慶殭屍); costumes from tools/blender/fest_zombies.py ----
+  firecracker: { name: '鞭炮殭屍', color: '#d8321e', hp: 110, speed: 2.0, dmg: 10, scale: 1, rate: 1.1, cash: 30, score: 300, crackers: true, fest: true,
+              desc: '全身纏滿鞭炮串，走路一直冒火花。靠近你時鞭炮會連環炸開，造成連續傷害並讓你減速。被火焰或爆炸打到會提前引爆，連帶炸傷身邊的殭屍。' },
+  fireworker: { name: '煙火殭屍', color: '#e8a23a', hp: 130, speed: 1.6, dmg: 12, scale: 1.02, rate: 1.2, cash: 35, score: 350, fwPack: true, fest: true,
+              desc: '背著一大捆煙火。中彈時可能有煙火亂竄出來；被擊殺時整捆煙火炸開，會炸傷附近的人並點燃殭屍。別讓它死在你身邊。' },
+  liondance: { name: '舞獅殭屍', color: '#c8281a', hp: 150, speed: 2.0, dmg: 12, scale: 1.05, rate: 1.2, cash: 45, score: 400, leap: true, lion: 220, fest: true,
+              desc: '頂著舞獅頭套，獅頭從正面擋得住子彈，要先打爛獅頭或繞到側面才傷得到它。會蹲低後撲過來。' },
+  gong:     { name: '敲鑼殭屍', color: '#c89a3a', hp: 140, speed: 1.5, dmg: 12, scale: 1.02, rate: 1.2, cash: 40, score: 400, gong: true, fest: true,
+              desc: '提著銅鑼邊走邊敲。每次敲鑼，地面會擴散出一圈金色衝擊波，被掃到會受傷、被震飛並減速。波紋接近時跳起來就能躲過。' },
+  dragon:   { name: '舞龍殭屍隊', color: '#e0b030', hp: 65, speed: 4.0, dmg: 9, scale: 0.98, rate: 0.8, cash: 20, score: 200, dragon: 6, headHp: 300, fest: true,
+              desc: '六隻殭屍頂著一條長龍蛇行衝來。打倒最前面頂著龍頭的那隻，龍身就會散掉，剩下的殭屍各自亂竄。' },
+  floatboss: { name: '遊行花車巨屍', color: '#e04020', hp: 3000, speed: 1.3, dmg: 35, scale: 2.4, rate: 2.2, cash: 1000, score: 5000, boss: true, look: 'behemoth',
+              float: 1500, stomp: true, fest: true,
+              desc: '推著滿載煙火的遊行花車，會朝你拋射煙火彈，還會突然衝撞。花車擋在前面時，打本體只有四分之一傷害；先打爆花車，巨屍就只能用拳腳了。' },
   brute:    { name: '巨型感染者', color: '#9a3a2a', hp: 650, speed: 1.3, dmg: 30, scale: 1.45, rate: 1.6, cash: 60, score: 500,
               desc: '體型巨大、血量極高，一拳就能打掉你三成生命。' },
 };
@@ -513,6 +532,9 @@ const WEAPONS = [
     explosive: true, radius: 5.5, move: 0.95, desc: '發射會爆炸的榴彈，範圍傷害能炸碎盾牌。太近開火會炸到自己。' },
   { id: 'rpg', name: 'RPG-7 火箭筒', cat: '爆裂物', price: 6000, sound: 'rpg', dmg: 720, rate: 1.4, auto: false, mag: 1, reserve: 8, reload: 2.8, spread: 0.002, pellets: 1, recoil: 0.08,
     explosive: true, rocket: true, radius: 7.5, move: 0.9, desc: '直線飛行的火箭，爆炸範圍和威力都是榴彈的兩倍。能一發炸死巨型感染者。' },
+  { id: 'fireworks', name: '煙花發射器', cat: '爆裂物', reward: '通關國慶特別版解鎖', limited: '國慶限定', price: 0, sound: 'fwshoot', dmg: 160, direct: 220, rate: 0.7, auto: false,
+    mag: 6, reserve: 36, reload: 3, spread: 0.004, pellets: 1, recoil: 0.04, explosive: true, rocket: true, firework: true, burn: 3, radius: 5.5, move: 0.95,
+    desc: '國慶特別版的通關獎勵，商店買不到。射出拖著火花的煙火彈，炸成一朵彩色煙火，直擊與範圍傷害都很高，還會點燃殭屍。' },
 ];
 const WEAPON = Object.fromEntries(WEAPONS.map((w) => [w.id, w]));
 
@@ -551,6 +573,11 @@ let owned = store.get('deadcity_owned', DEFAULT_KIT).filter((id) => WEAPON[id]);
 DEFAULT_KIT.forEach((id) => { if (!owned.includes(id)) owned.push(id); });
 let loadout = store.get('deadcity_loadout', DEFAULT_KIT);
 if (!Array.isArray(loadout) || loadout.length !== 3 || !loadout.every((id) => owned.includes(id)) || new Set(loadout).size !== 3) loadout = [...DEFAULT_KIT];
+// a 限定武器 is awarded, not bought: the first 國慶特別版 clear grants the fireworks launcher
+function grantWeapon(id) {
+  if (owned.includes(id)) return false;
+  owned.push(id); store.set('deadcity_owned', owned); return true;
+}
 let ownedArmor = store.get('deadcity_armors', []).filter((id) => ARMOR[id]);
 let armorId = store.get('deadcity_armor', null);
 if (!ownedArmor.includes(armorId)) armorId = null;
@@ -1497,6 +1524,11 @@ function explodeBarrel(b) {
   b.m.parent && b.m.parent.remove(b.m);
   const ci = colliders.indexOf(b.col); if (ci >= 0) colliders.splice(ci, 1);
   const wi2 = worldMeshes.indexOf(b.m); if (wi2 >= 0) worldMeshes.splice(wi2, 1);
+  if (b.fw) { // a firework crate: its parts leave the shootable list too, and the blast sets zombies alight
+    b.m.traverse((c) => { const i = worldMeshes.indexOf(c); if (i >= 0) worldMeshes.splice(i, 1); });
+    for (let k = 0; k < 3; k++) burstFirework(new THREE.Vector3(b.x, 1 + k * 0.6, b.z), pick(FW_COLORS), 90, 9, 1.3, true);
+    for (const z of zombies) if (!z.dead && Math.hypot(z.pos.x - b.x, z.pos.z - b.z) < 5.5) z.burnT = Math.max(z.burnT || 0, 3);
+  }
   const p = new THREE.Vector3(b.x, b.big ? 1.6 : 0.6, b.z);
   for (let i = 0; i < (b.big ? 60 : 26); i++) emitFire(p, new THREE.Vector3(rand(-1, 1), rand(0.3, 1.4), rand(-1, 1)).normalize(), rand(3, b.big ? 12 : 8));
   const sc = makePool(b.x, b.z, TEX.hole, 1); sc.scale.setScalar(b.big ? 5 : 2.6);
@@ -1652,6 +1684,226 @@ function updateEvac(dt) {
   if (evac.spawnT <= 0 && zombies.filter((z) => !z.dead).length < 14) { evac.spawnT = 2.4; spawnZombie(Math.random() < 0.7 ? 'runner' : 'walker'); }
   if (evac.landed && Math.hypot(pad.x - player.pos.x, pad.z - player.pos.z) < 7) { evac = null; levelComplete(); }
 }
+// ============================================================
+//  國慶特別版: the festival boulevard. Props come from tools/blender/festival.py; the text panels
+//  (banners, the arch sign, the stage screen, stall signs, crate labels) are painted here.
+// ============================================================
+const FEST_FONT = '"Noto Sans TC", "PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif';
+let FEST = null, _festMats = null;
+let festBanners = [], fwRacks = [];
+function festText(w, h, draw) {
+  const [c, x] = makeCanvas(w, h); draw(x, w, h);
+  const t = toTex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.flipY = false; return t; // glTF UVs run top-down
+}
+function redCloth(x, w, h) {
+  const gr = x.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#a3140c'); gr.addColorStop(0.5, '#cc1e10'); gr.addColorStop(1, '#8e0f08');
+  x.fillStyle = gr; x.fillRect(0, 0, w, h);
+}
+function goldFrame(x, w, h, m) {
+  x.strokeStyle = '#f0c048'; x.lineWidth = m * 0.35; x.strokeRect(m, m, w - 2 * m, h - 2 * m);
+  x.lineWidth = m * 0.15; x.strokeRect(m * 1.8, m * 1.8, w - 3.6 * m, h - 3.6 * m);
+}
+function goldText(x, text, cx, cy, size) {
+  x.font = `900 ${size}px ${FEST_FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.lineWidth = size * 0.09; x.strokeStyle = '#4a0804'; x.strokeText(text, cx, cy);
+  const gr = x.createLinearGradient(0, cy - size / 2, 0, cy + size / 2);
+  gr.addColorStop(0, '#fff3b8'); gr.addColorStop(0.55, '#f2c24a'); gr.addColorStop(1, '#c8861c');
+  x.fillStyle = gr; x.fillText(text, cx, cy);
+}
+function starburst(x, cx, cy, r, color, rays = 28) {
+  x.strokeStyle = color; x.lineCap = 'round';
+  for (let i = 0; i < rays; i++) {
+    const a = i / rays * Math.PI * 2, r0 = r * 0.2, r1 = r * rand(0.75, 1);
+    x.lineWidth = rand(2, 4); x.globalAlpha = rand(0.6, 1);
+    x.beginPath(); x.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); x.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); x.stroke();
+  }
+  x.globalAlpha = 1;
+}
+function festMats() {
+  if (_festMats) return _festMats;
+  const bannerV = festText(256, 1152, (x, w, h) => { redCloth(x, w, h); goldFrame(x, w, h, 18); [...'歡度國慶'].forEach((ch, i) => goldText(x, ch, w / 2, 175 + i * 268, 186)); });
+  const bannerH = festText(1024, 136, (x, w, h) => { redCloth(x, w, h); goldFrame(x, w, h, 10); goldText(x, '國慶快樂', w / 2, h / 2 + 4, 94); for (const sx of [120, w - 120]) goldText(x, '✦', sx, h / 2, 56); });
+  const archSign = festText(1024, 216, (x, w, h) => { redCloth(x, w, h); goldFrame(x, w, h, 14); goldText(x, '歡度國慶', w / 2, h / 2 + 6, 150); });
+  const screen = festText(1024, 576, (x, w, h) => {
+    const gr = x.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#120624'); gr.addColorStop(1, '#4a0a10'); x.fillStyle = gr; x.fillRect(0, 0, w, h);
+    for (const [cx, cy, r, c] of [[170, 140, 120, '#ff5a3a'], [860, 120, 110, '#ffd24a'], [520, 90, 80, '#7affb0'], [300, 420, 90, '#6ab8ff'], [780, 430, 100, '#ff7ad8']]) starburst(x, cx, cy, r, c);
+    goldText(x, '國慶快樂', w / 2, h * 0.56, 168);
+  });
+  const stallSigns = ['烤香腸', '珍珠奶茶', '雞蛋糕', '棉花糖'].map((t) => festText(512, 96, (x, w, h) => { redCloth(x, w, h); goldFrame(x, w, h, 6); goldText(x, t, w / 2, h / 2 + 3, 60); }));
+  const crateLabel = festText(256, 160, (x, w, h) => {
+    x.fillStyle = '#efe4c8'; x.fillRect(0, 0, w, h); starburst(x, 52, 80, 44, '#d02010', 18);
+    x.fillStyle = '#b01a10'; x.font = `900 66px ${FEST_FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('煙火', 165, 66);
+    x.font = `700 24px ${FEST_FONT}`; x.fillText('小心火源', 165, 124);
+  });
+  const glow = (map, i) => std({ map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: i, roughness: 0.7, side: THREE.DoubleSide });
+  const cloth = (c) => std({ color: c, roughness: 0.85, side: THREE.DoubleSide });
+  _festMats = {
+    lantern_silk: std({ color: 0x6a0c06, emissive: 0xff2a0c, emissiveIntensity: 1.8, roughness: 0.6 }),
+    gold: std({ color: 0xd0a040, metalness: 0.85, roughness: 0.32 }), tassel: std({ color: 0x9a1208, roughness: 0.8 }),
+    wire: std({ color: 0x111111, roughness: 0.6 }), pole_red: std({ color: 0x8a120a, roughness: 0.35, metalness: 0.15 }),
+    pennant_red: cloth(0xb81810), pennant_gold: cloth(0xe0a828), pennant_white: cloth(0xe8e4dc), pennant_orange: cloth(0xe8601a),
+    banner_v: glow(bannerV, 0.35), banner_h: glow(bannerH, 0.35), arch_sign: glow(archSign, 1.1), screen: glow(screen, 1.7),
+    stall_sign: glow(stallSigns[0], 0.8), stallSigns: stallSigns.map((t) => glow(t, 0.8)), crate_label: std({ map: crateLabel, roughness: 0.8 }),
+    bulb: std({ color: 0x332211, emissive: 0xffcf80, emissiveIntensity: 3.5 }), bulb_color: std({ color: 0x331111, emissive: 0xff5a3a, emissiveIntensity: 3.5 }),
+    truss: std({ color: 0x9a9ea4, metalness: 0.85, roughness: 0.35 }), speaker: std({ color: 0x0c0c0d, roughness: 0.7 }),
+    stage_floor: std({ color: 0x18120f, roughness: 0.6 }), carpet: std({ color: 0x8a0c08, roughness: 0.95 }),
+    spot_lens: std({ color: 0x222222, emissive: 0xfff2d8, emissiveIntensity: 5 }), wood: std({ color: 0x6a3e1c, roughness: 0.75 }),
+    awning_red: cloth(0xb01a10), awning_white: cloth(0xe8e2d6), metal: std({ color: 0x55585e, metalness: 0.7, roughness: 0.4 }),
+    paper_red: std({ color: 0xa8140c, roughness: 0.8 }), paper_gold: std({ color: 0xd8a83a, metalness: 0.4, roughness: 0.5 }), fuse: std({ color: 0x3a2c1c }),
+    balloon_red: std({ color: 0xc81810, roughness: 0.25 }), balloon_gold: std({ color: 0xe0b040, metalness: 0.6, roughness: 0.25 }),
+    balloon_white: std({ color: 0xeeeeea, roughness: 0.25 }), string: std({ color: 0xdddddd }),
+    bark: std({ color: 0x3a2618, roughness: 1 }), foliage: std({ color: 0x14361c, roughness: 0.9 }),
+    flower_red: std({ color: 0xb0100c, roughness: 0.7 }), flower_gold: std({ color: 0xe8a018, roughness: 0.6 }),
+    fringe: std({ color: 0xd8a83a, metalness: 0.6, roughness: 0.4 }), float_body: std({ color: 0x9a120a, roughness: 0.4 }), tire: std({ color: 0x111111, roughness: 0.9 }),
+    strap: std({ color: 0x2a1e14, roughness: 0.85 }), lion_red: std({ color: 0xb01a10, roughness: 0.5 }), lion_gold: std({ color: 0xe0a830, metalness: 0.6, roughness: 0.35 }),
+    lion_fur: std({ color: 0xf0ece0, roughness: 1 }), lion_green: std({ color: 0x1a7a30, roughness: 0.5 }), eye_white: std({ color: 0xf2eee4, roughness: 0.3 }),
+    eye_black: std({ color: 0x080808, roughness: 0.2 }), mirror: std({ color: 0xffffff, metalness: 1, roughness: 0.05, emissive: 0x404040 }),
+    mouth_red: std({ color: 0x400404, roughness: 0.6 }), bronze: std({ color: 0xa07030, metalness: 0.9, roughness: 0.3 }),
+    sash_red: std({ color: 0x9a1008, roughness: 0.8 }), dragon_scale: std({ color: 0xd09a20, metalness: 0.45, roughness: 0.45 }),
+    dragon_belly: std({ color: 0xc81a10, roughness: 0.6, side: THREE.DoubleSide }),
+  };
+  return _festMats;
+}
+// one prop, cloned; its meshes can be shot
+function festPut(g, name, x, y, z, rot = 0, s = 1, shoot = true) {
+  if (!FEST || !FEST[name]) return null;
+  const o = FEST[name].clone(); o.position.set(x, y, z); o.rotation.y = rot; o.scale.setScalar(s);
+  o.traverse((c) => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; if (shoot) worldMeshes.push(c); } });
+  g.add(o); return o;
+}
+// many copies of a prop as instanced meshes (one per material): items are [x, y, z, rotY, scale]
+const _fm4 = new THREE.Matrix4(), _fq = new THREE.Quaternion(), _fv = new THREE.Vector3(), _fsc = new THREE.Vector3(), _UPY = new THREE.Vector3(0, 1, 0);
+function festMany(g, name, items, shadow = false) {
+  if (!FEST || !FEST[name] || !items.length) return;
+  FEST[name].traverse((c) => {
+    if (!c.isMesh) return;
+    const im = new THREE.InstancedMesh(c.geometry, c.material, items.length);
+    items.forEach(([x, y, z, rot = 0, sc = 1], k) => { _fq.setFromAxisAngle(_UPY, rot); im.setMatrixAt(k, _fm4.compose(_fv.set(x, y, z), _fq, _fsc.set(sc, sc, sc))); });
+    im.castShadow = shadow; im.receiveShadow = true; im.frustumCulled = false; g.add(im);
+  });
+}
+// a crate of fireworks: shoot it and it goes up in a shower of colour, setting nearby zombies alight
+function addCrate(g, x, z, rot = rand(0, 6)) {
+  const o = festPut(g, 'firework_crate', x, 0.16, z, rot, 1, false);
+  if (!o) return addBarrel(g, x, z, 0.16);
+  addCollider(x, z, 0.9, 0.9);
+  const b = { m: o, x, z, big: false, col: colliders[colliders.length - 1], gone: false, fw: true };
+  o.traverse((c) => { if (c.isMesh) { c.userData.barrel = b; worldMeshes.push(c); } });
+  BARRELS.push(b);
+}
+function festivalBlock(g, bi, bj, cx, cz, inside) {
+  if (bi === 2 && bj === 2) return festivalPlaza(g, cx, cz);
+  const ring = Math.max(Math.abs(bi - 2), Math.abs(bj - 2));
+  if (inside && ring === 1 && (bi === 2 || bj === 2)) return nightMarket(g, cx, cz);
+  if (inside && ring === 1) return lightPark(g, cx, cz);
+  // the rest of the city: towers hung with red banners
+  const spots = Math.random() < 0.35 ? [[0, 0, pick([28, 32, 36]), pick([28, 32, 36]), randi(10, 22)]]
+    : [[-9.5, -9.5], [9.5, -9.5], [-9.5, 9.5], [9.5, 9.5]].map(([ox, oz]) => [ox + rand(-1, 1), oz + rand(-1, 1), pick([12, 16]), pick([12, 16]), randi(5, 15)]);
+  for (const [ox, oz, w, d, floors] of spots) {
+    const x = cx + ox, z = cz + oz, h = floors * 3.5;
+    addBuilding(g, x, z, w, d, h, Math.random() < 0.4 ? pick(M.brick) : pick(M.office), M.roof, inside);
+    for (const [nx, nz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      if (Math.random() < 0.3) continue;
+      const along = nx ? d : w;
+      for (const o of along > 20 ? [-along / 4, along / 4] : [0]) {
+        festBanners.push([x + nx * (w / 2 + 0.12) + (nz ? o : 0), Math.min(h - 1.5, 14), z + nz * (d / 2 + 0.12) + (nx ? o : 0), Math.atan2(nx, nz), 1]);
+      }
+    }
+  }
+}
+function festivalPlaza(g, cx, cz) {
+  // a red carpet from the west entrance to the stage, lined with barriers and crossed by lantern strings
+  festPut(g, 'carpet', cx - 7, 0.17, cz, Math.PI / 2, 1, false);
+  const st = festPut(g, 'stage', cx + 13, 0.16, cz, -Math.PI / 2);
+  addCollider(cx + 13, cz, 7.4, 13); addCollider(cx + 8.6, cz, 1.9, 3.4);
+  const barriers = [];
+  for (let x = cx - 16; x <= cx + 4; x += 2.3) {
+    if (Math.round((x - cx + 16) / 2.3) % 4 === 3) continue; // gaps to slip through
+    for (const sz of [-2.4, 2.4]) { barriers.push([x, 0.16, cz + sz, 0, 1]); addCollider(x, cz + sz, 2.2, 0.15); }
+  }
+  festMany(g, 'barrier', barriers, true);
+  const spans = [];
+  for (const x of [cx - 15, cx - 9, cx - 3]) { spans.push([x, 0.16, cz, Math.PI / 2, 1]); for (const sz of [-7, 7]) addCollider(x, cz + sz, 0.3, 0.3); }
+  festMany(g, 'lantern_span', spans);
+  // fireworks racks in the corners, each with spare crates
+  for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const x = cx + sx * 17, z = cz + sz * 17;
+    festPut(g, 'firework_rack', x, 0.16, z, Math.atan2(-sx, -sz)); addCollider(x, z, 1.7, 1.7);
+    fwRacks.push(new THREE.Vector3(x, 1.4, z));
+    addCrate(g, x - sx * 2.4, z); addCrate(g, x, z - sz * 2.4);
+  }
+  // parade floats parked either side, light trees and balloons around the edge
+  for (const sz of [-1, 1]) { festPut(g, 'parade_float', cx - 6, 0.16, cz + sz * 12.5, Math.PI / 2); addCollider(cx - 6, cz + sz * 12.5, 6.6, 3); }
+  const trees = [], balloons = [];
+  for (let t = -19; t <= 19; t += 7.6) {
+    for (const [x, z] of [[cx + t, cz - 20], [cx + t, cz + 20], [cx - 20, cz + t]]) {
+      if (Math.abs(z - cz) < 5 && x < cx) continue; // keep the carpet entrance open
+      trees.push([x, 0.16, z, rand(0, 6), rand(0.9, 1.1)]); addCollider(x, z, 0.6, 0.6);
+    }
+  }
+  for (const [x, z] of [[cx + 6, cz - 8], [cx + 6, cz + 8], [cx - 18, cz - 5], [cx - 18, cz + 5], [cx + 2, cz - 16], [cx + 2, cz + 16]]) { balloons.push([x, 0.16, z, rand(0, 6), 1]); addCollider(x, z, 0.5, 0.5); }
+  festMany(g, 'light_tree', trees, true); festMany(g, 'balloons', balloons);
+}
+function nightMarket(g, cx, cz) {
+  // stalls face every street around the block; inside, the crowd's tables are gone and only lights remain
+  for (const [nx, nz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const rot = Math.atan2(nx, nz);
+    for (let k = -4; k <= 4; k++) {
+      if (Math.random() < 0.15) continue;
+      const t = k * 3.9, x = cx + nx * 18.5 + (nz ? t : 0), z = cz + nz * 18.5 + (nx ? t : 0);
+      const o = festPut(g, 'stall', x, 0.16, z, rot);
+      if (o) { const sign = pick(festMats().stallSigns); o.traverse((c) => { if (c.isMesh && c.material === festMats().stall_sign) c.material = sign; }); }
+      rotCollider(x, z, 3.0, 2.4, rot);
+    }
+  }
+  festMany(g, 'bunting_span', [[cx, 0.16, cz, 0, 1], [cx, 0.16, cz, Math.PI / 2, 1]]);
+  for (const [x, z] of [[cx - 7, cz], [cx + 7, cz], [cx, cz - 7], [cx, cz + 7]]) addCollider(x, z, 0.3, 0.3);
+  const trees = [];
+  for (const [ox, oz] of [[-10, -10], [10, -10], [-10, 10], [10, 10]]) { trees.push([cx + ox, 0.16, cz + oz, rand(0, 6), 1]); addCollider(cx + ox, cz + oz, 0.6, 0.6); }
+  festMany(g, 'light_tree', trees, true);
+  for (let k = 0; k < 3; k++) addCrate(g, cx + rand(-12, 12), cz + rand(-12, 12));
+}
+function lightPark(g, cx, cz) {
+  const pk = mesh(new THREE.PlaneGeometry(38, 38), M.grass, g, cx, 0.17, cz, false); pk.rotation.x = -Math.PI / 2;
+  M.grass.map.repeat.set(10, 10);
+  const trees = [], balloons = [];
+  for (let i = -1.5; i <= 1.5; i++) for (let j = -1.5; j <= 1.5; j++) {
+    if (Math.abs(i) < 1 && Math.abs(j) < 1) continue;
+    const x = cx + i * 10 + rand(-1.5, 1.5), z = cz + j * 10 + rand(-1.5, 1.5);
+    trees.push([x, 0.16, z, rand(0, 6), rand(0.9, 1.2)]); addCollider(x, z, 0.6, 0.6);
+  }
+  const rot = pick([0, Math.PI / 2]);
+  festPut(g, 'parade_float', cx, 0.16, cz, rot); rotCollider(cx, cz, 3, 6.6, rot);
+  for (const [ox, oz] of [[-4, -5], [4, 5], [5, -4]]) { balloons.push([cx + ox, 0.16, cz + oz, rand(0, 6), 1]); addCollider(cx + ox, cz + oz, 0.5, 0.5); }
+  festMany(g, 'light_tree', trees, true); festMany(g, 'balloons', balloons);
+  addCrate(g, cx + rand(-14, 14), cz + rand(-14, 14));
+}
+// lantern strings over the streets beside the plaza, bunting and banners elsewhere, an arch on each plaza road
+function festivalStreets(g, lamps) {
+  const near = [ROAD_CENTERS[2], ROAD_CENTERS[3]], kinds = { lantern_span: [], bunting_span: [], road_banner: [] };
+  for (const rc of ROAD_CENTERS) {
+    if (Math.abs(rc) > HALF - 1) continue;
+    const main = near.includes(rc);
+    for (let t = -HALF + 10; t <= HALF - 10; t += main ? 9 : 14) {
+      if (ROAD_CENTERS.some((o) => Math.abs(o - t) < 9) || (main && Math.abs(t) < 7)) continue; // intersections stay clear; the arch stands at t = 0
+      const kind = main ? 'lantern_span' : Math.random() < 0.25 ? 'road_banner' : 'bunting_span';
+      kinds[kind].push([rc, 0.16, t, 0, 1], [t, 0.16, rc, Math.PI / 2, 1]);
+      for (const o of [-7, 7]) { addCollider(rc + o, t, 0.3, 0.3); addCollider(t, rc + o, 0.3, 0.3); }
+    }
+  }
+  for (const [k, list] of Object.entries(kinds)) festMany(g, k, list);
+  for (const rc of near) {
+    festPut(g, 'arch', rc, 0.16, 0, 0); for (const o of [-7.2, 7.2]) addCollider(rc + o, 0, 1.8, 1.8);
+    festPut(g, 'arch', 0, 0.16, rc, Math.PI / 2); for (const o of [-7.2, 7.2]) addCollider(0, rc + o, 1.8, 1.8);
+    for (const t of [-48, 48]) { // floats parked at the kerb
+      festPut(g, 'parade_float', rc + 3.6, 0.16, t, 0); addCollider(rc + 3.6, t, 3, 6.6);
+      festPut(g, 'parade_float', t, 0.16, rc - 3.6, Math.PI / 2); addCollider(t, rc - 3.6, 6.6, 3);
+    }
+  }
+  // small banners on every other street lamp, hung out over the pavement
+  lamps.forEach(([x, z, rot], k) => { if (k % 2 === 0) festBanners.push([x + Math.sin(rot) * 0.45, 6.4, z + Math.cos(rot) * 0.45, rot + Math.PI / 2, 0.5]); });
+  festMany(g, 'drop_banner', festBanners);
+}
 function buildMall(g, cx, cz) {
   const plaza = mesh(new THREE.PlaneGeometry(38, 38), M.pave, g, cx, 0.17, cz, false); plaza.rotation.x = -Math.PI / 2;
   const bx = cx + 7, w = 22, d = 34, h = 4 * 3.5;
@@ -1733,6 +1985,7 @@ function buildLevel() {
   }
   levelGroup = new THREE.Group(); scene.add(levelGroup);
   colliders = []; worldMeshes = []; lampPositions = []; POLICE_CARS.length = 0; BARRELS.length = 0; FIRE_SPOTS.length = 0; barrelQueue = [];
+  festBanners = []; fwRacks = [];
   makeMaterials();
   const g = levelGroup, theme = LV.theme;
 
@@ -1773,6 +2026,8 @@ function buildLevel() {
       }
       for (let k = 0; k < randi(3, 7); k++) trees.push([cx + rand(-17, 17), cz + rand(-17, 17), rand(0.8, 1.3)]);
       if (inside && Math.random() < 0.5) for (let k = 0; k < randi(1, 3); k++) addBarrel(g, cx + rand(-15, 15), cz + rand(-15, 15), 0.16);
+    } else if (theme === 'festival') {
+      festivalBlock(g, bi, bj, cx, cz, inside);
     } else if (theme === 'mall' && bi === 2 && bj === 2) {
       buildMall(g, cx, cz);
     } else if (theme === 'military' && bi === 2 && bj === 2) {
@@ -1935,7 +2190,8 @@ function buildLevel() {
     buildJam(g, jam);
   }
   // cars in the streets
-  if (theme !== 'highway') for (const rc of ROAD_CENTERS) for (let seg = 0; seg < N; seg++) {
+  if (theme === 'festival') festivalStreets(g, lamps); // the streets are closed to traffic for the festival
+  if (theme !== 'highway' && theme !== 'festival') for (const rc of ROAD_CENTERS) for (let seg = 0; seg < N; seg++) {
     if (Math.abs(rc) > HALF - 1) continue;
     const t0 = blockCenter(seg);
     const cnt = randi(0, 2);
@@ -2196,6 +2452,13 @@ function sfx(name, vol = 1) {
     case 'flame': sNoise(t, 0.3, 1400, 500, 0.35 * vol, 'bandpass'); sNoise(t, 0.3, 300, 120, 0.25 * vol); break;
     case 'slash': sNoise(t, 0.22, 1800, 7000, 0.5, 'bandpass'); sNoise(t + 0.03, 0.14, 5000, 11000, 0.25, 'highpass'); break;
     case 'cut': sNoise(t, 0.14, 1600, 350, 0.8, 'bandpass'); sTone(t, 0.12, 140, 55, 0.55); break;
+    case 'fwshoot': sNoise(t, 0.25, 2500, 600, 0.6); sTone(t, 0.6, 700, 2400, 0.12, 'sine'); sNoise(t + 0.05, 0.5, 3000, 5000, 0.12, 'bandpass'); break;
+    case 'gong': for (const [f, v] of [[196, 0.5], [283, 0.32], [371, 0.25], [529, 0.16], [702, 0.1]]) sTone(t, 2.6, f, f * 0.97, v * vol, 'triangle');
+      sNoise(t, 0.12, 3000, 800, 0.4 * vol, 'bandpass'); break;
+    case 'crack': sNoise(t, 0.07, 6000, 1800, 0.9 * vol, 'highpass'); sTone(t, 0.05, 220, 80, 0.4 * vol, 'square'); break;
+    case 'fwlaunch': sTone(t, 1.3, 500, 2600, 0.05 * vol, 'sine'); sNoise(t, 0.35, 1800, 4200, 0.08 * vol, 'bandpass'); break;
+    case 'fwboom': sNoise(t, 1.1, 1500, 60, 0.9 * vol); sTone(t, 0.5, 80, 30, 0.6 * vol);
+      for (let k = 0; k < 9; k++) sNoise(t + 0.3 + k * 0.07 + Math.random() * 0.05, 0.05, 7000, 3000, 0.14 * vol, 'highpass'); break;
     case 'saberon': sTone(t, 0.45, 55, 150, 0.35, 'sawtooth'); sNoise(t, 0.4, 250, 2600, 0.3, 'bandpass'); sTone(t + 0.05, 0.3, 300, 900, 0.08, 'square'); break;
     case 'saberswing': sTone(t, 0.32, 150, 80, 0.32, 'sawtooth'); sNoise(t, 0.28, 700, 2200, 0.28, 'bandpass'); break;
     case 'saberhit': sNoise(t, 0.3, 7000, 1800, 0.7, 'highpass'); sTone(t, 0.22, 260, 90, 0.45, 'square'); sNoise(t + 0.05, 0.25, 1500, 400, 0.35, 'bandpass'); break;
@@ -2263,6 +2526,8 @@ const gunMats = {
   dot: new THREE.MeshBasicMaterial({ color: 0xff2a1a }),
   brass: std({ color: 0xc8963c, roughness: 0.3, metalness: 1 }),
   shellRed: std({ color: 0xa81c14, roughness: 0.5, metalness: 0.2 }),
+  fwred: std({ color: 0x8e1208, roughness: 0.45, metalness: 0.15 }), fwgold: std({ color: 0xd8a640, roughness: 0.3, metalness: 0.9 }),
+  fwpaper: std({ color: 0xa0160c, roughness: 0.75 }),
 };
 // procedural surface detail for the view models, applied once the textures exist
 function texturiseGuns() {
@@ -2422,6 +2687,17 @@ let KATANA_GLB = null, ARM_GLB = null, EVAC = null;
 loadModel('evac', (scene) => {
   const parts = {}; scene.traverse((o) => { if (o.isMesh) parts[o.name] = o.geometry; }); EVAC = parts;
   if (HELI && !HELI.userData.rotor) fillHeli(); // the level was built before the model arrived
+});
+loadModel('festival', (scene) => {
+  const m = festMats();
+  scene.traverse((o) => { if (o.isMesh) o.material = m[o.material.name] || m.metal; });
+  FEST = {}; scene.children.forEach((o) => { FEST[o.name] = o; });
+});
+let FZ = null; // 國慶殭屍 costumes (tools/blender/fest_zombies.py), by name
+loadModel('festzombie', (scene) => {
+  const m = festMats();
+  scene.traverse((o) => { if (o.isMesh) o.material = m[o.material.name] || m.gold; });
+  FZ = {}; scene.children.forEach((o) => { FZ[o.name] = o; });
 });
 // zombie body parts and accessories (tools/blender/zombie.py), keyed by part name; each is modelled
 // in the frame of the joint it hangs from, so it is added at the joint's origin
@@ -2728,6 +3004,12 @@ function buildGun(id) {
     gb(g, 0.034, 0.02, 0.12, gunMats.coil, 0, 0.055, -0.02);
     arm(g, 0, -0.08, 0.11, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.2, -0.14, -0.22, -0.02);
     muzzle = new THREE.Vector3(0, 0.005, -0.58); hip = new THREE.Vector3(0.18, -0.18, -0.46); aim = new THREE.Vector3(0, -0.06, -0.3);
+  } else if (id === 'fireworks') {
+    for (const [x, y] of [[-0.031, 0.012], [0, 0.012], [0.031, 0.012], [-0.031, 0.043], [0, 0.043], [0.031, 0.043]]) gc(g, 0.014, 0.4, gunMats.fwpaper, x, y, -0.3);
+    gb(g, 0.09, 0.1, 0.17, gunMats.fwred, 0, 0.02, -0.01);
+    gb(g, 0.03, 0.09, 0.04, gunMats.poly, 0, -0.07, 0.08, 0.3);
+    arm(g, 0, -0.08, 0.08, 0.05, -0.22, 0.42); arm(g, 0, -0.06, -0.22, -0.14, -0.22, -0.02);
+    muzzle = new THREE.Vector3(0, 0.028, -0.52); hip = new THREE.Vector3(0.18, -0.17, -0.44); aim = new THREE.Vector3(0, -0.068, -0.3);
   } else if (id === 'rpg') {
     gc(g, 0.042, 0.95, gunMats.olive, 0, 0.02, -0.12);
     const war = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.22, 12), gunMats.olive); war.rotation.x = -Math.PI / 2; war.position.set(0, 0.02, -0.7); g.add(war);
@@ -2895,6 +3177,8 @@ const CLAW_G = new THREE.ConeGeometry(0.03, 0.22, 6);
 const TANK_G = new THREE.CapsuleGeometry(0.1, 0.42, 4, 12);
 const FILTER_G = new THREE.CylinderGeometry(0.045, 0.05, 0.06, 10); FILTER_G.rotateX(Math.PI / 2);
 const EAR_G = new THREE.ConeGeometry(0.045, 0.12, 5);
+const _dA = new THREE.Vector3(), _dB = new THREE.Vector3();
+const confettiMat = new THREE.MeshBasicMaterial({ color: 0xffc24a });
 class Zombie {
   constructor(type, x, z) {
     const c = ZTYPES[type], zm = zombieMats();
@@ -2907,14 +3191,15 @@ class Zombie {
     this.helmetHp = type === 'armored' ? 70 : 0; this.maxHp = this.hp;
     const g = this.g = new THREE.Group();
     const sw = c.scale * (c.boss ? 1 : rand(0.93, 1.07)); g.scale.set(sw, sw * (c.boss ? 1 : rand(0.95, 1.07)), sw); // varied height and build
-    const skin = type === 'stalker' ? zm.stalkerSkin : type === 'behemoth' ? zm.bossSkin[0] : pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' ? zm.paleSkin : type === 'mutant' ? zm.fleshSkin : type === 'splitter' ? zm.splitSkin : zm.skins);
+    const look = c.look || type; // the float boss wears the 屍王's body
+    const skin = type === 'stalker' ? zm.stalkerSkin : look === 'behemoth' ? zm.bossSkin[0] : pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' ? zm.paleSkin : type === 'mutant' ? zm.fleshSkin : type === 'splitter' ? zm.splitSkin : zm.skins);
     const cop = type === 'riot' || type === 'gunner';
     let cloth = cop ? pick(zm.police) : pick(zm.cloth), pants = cop ? zm.policePants : pick(zm.pants);
     if (type === 'medic') { cloth = pick(zm.scrubs); pants = cloth; }
     if (type === 'stalker') { cloth = skin; pants = skin; } // naked, gaunt hunter
     if (type === 'splitter') cloth = skin;
     if (type === 'shocker') cloth = zm.hiVis;
-    if (type === 'behemoth') { cloth = skin; pants = zm.gown; }
+    if (look === 'behemoth') { cloth = skin; pants = zm.gown; }
     this.boltCd = rand(1.5, 3); this.charge = 0; this.throwCd = rand(2, 4); this.windup = 0; this.enraged = false;
     this.revealT = 0;
     if (type === 'mutant') { cloth = skin; pants = zm.gown; } // bare, swollen torso
@@ -2922,7 +3207,7 @@ class Zombie {
     this.tankHp = type === 'flamer' ? 50 : 0; this.flameTick = 0; this.flaming = false;
     this.healCd = rand(2, 4); this.leapCd = rand(1.5, 3); this.crouch = 0; this.leapT = 0; this.airY = 0;
     this.shieldHp = c.shield ? c.shield * LV.hpMul : 0; this.shieldMax = this.shieldHp; this.gunT = rand(1.5, 3); this.aimT = 0;
-    const eyeMat = type === 'behemoth' ? zm.bossEye : type === 'shocker' ? zm.coil : type === 'stalker' ? zm.paleEye : type === 'spitter' ? zm.acid : type === 'screamer' ? zm.whiteEye : type === 'mutant' ? zm.yellowEye : zm.eye;
+    const eyeMat = look === 'behemoth' ? zm.bossEye : type === 'shocker' ? zm.coil : type === 'stalker' ? zm.paleEye : type === 'spitter' ? zm.acid : type === 'screamer' ? zm.whiteEye : type === 'mutant' ? zm.yellowEye : zm.eye;
     const body = this.body = new THREE.Group(); g.add(body);
     const add = (geo, mat, parent, px, py, pz, part = 'body') => {
       const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.castShadow = true;
@@ -2940,7 +3225,7 @@ class Zombie {
       return;
     }
     // ---- torso: one group so each type can reshape it around the waist ----
-    const torsoScale = { behemoth: [1.45, 1.1, 1.25], splitter: [1.5, 1.1, 1.35], stalker: [0.8, 1.12, 0.72], bloater: [1.6, 1.05, 1.5], screamer: [0.85, 1.05, 0.8], mutant: [1.35, 1.05, 1.1], brute: [1.1, 1, 1.05] }[type] || [1, 1, 1];
+    const torsoScale = { behemoth: [1.45, 1.1, 1.25], splitter: [1.5, 1.1, 1.35], stalker: [0.8, 1.12, 0.72], bloater: [1.6, 1.05, 1.5], screamer: [0.85, 1.05, 0.8], mutant: [1.35, 1.05, 1.1], brute: [1.1, 1, 1.05] }[look] || [1, 1, 1];
     const tg = this.torsoG = new THREE.Group(); tg.position.y = 1.2; tg.scale.set(...torsoScale); body.add(tg);
     const belly = type === 'walker' ? rand(0.92, 1.15) : 1;
     if (ZP) {
@@ -2967,7 +3252,7 @@ class Zombie {
     const hp = this.headPivot = new THREE.Group(); hp.position.set(0, 1.72, 0.03); body.add(hp);
     const headS = type === 'spitter' ? 1.22 : type === 'bloater' ? 1.12 : 1;
     const jw = this.jaw = new THREE.Group(); jw.position.set(0, 0.07, 0.03); hp.add(jw);
-    const hairless = ['armored', 'bloater', 'flamer', 'medic', 'stalker', 'splitter', 'behemoth'].includes(type);
+    const hairless = ['armored', 'bloater', 'flamer', 'medic', 'stalker', 'splitter', 'behemoth', 'liondance', 'floatboss'].includes(type);
     if (ZP) { // sculpted skull with brow, sockets, cheekbones, nose and ears; hinged jaw with teeth
       add(ZP.head, skin, hp, 0, 0, 0, 'head').scale.setScalar(headS);
       add(ZP.mouth, zm.mouth, hp, 0, 0, 0, 'head').scale.setScalar(headS);
@@ -3148,8 +3433,9 @@ class Zombie {
         new THREE.LineBasicMaterial({ color: 0xff2010, transparent: true, opacity: 0.8 }));
       this.laser.visible = false; this.laser.frustumCulled = false; scene.add(this.laser);
     }
+    if (c.fest) this.dressFest(type);
     if (type === 'crawler') { body.position.set(0, 0, -0.95); add(G.hand, pants, body, 0.1, 0.93, 0).scale.set(1.3, 1, 1.3); }
-    this.lean = { behemoth: 0.22, shocker: 0.08, runner: 0.32, brute: 0.18, crawler: 1.36, bloater: -0.08, screamer: 0.12, armored: 0.1, riot: 0.06, gunner: 0.05, medic: 0.1, mutant: 0.42 }[type] ?? rand(0.08, 0.2);
+    this.lean = { behemoth: 0.22, shocker: 0.08, runner: 0.32, brute: 0.18, crawler: 1.36, bloater: -0.08, screamer: 0.12, armored: 0.1, riot: 0.06, gunner: 0.05, medic: 0.1, mutant: 0.42, gong: 0.05, dragon: 0.25 }[look] ?? rand(0.08, 0.2);
     this.limp = type === 'walker' && Math.random() < 0.4 ? rand(0.2, 0.5) : 0;
     this.meshes.forEach((m) => { if (NO_SHADOW.has(m.geometry)) m.castShadow = false; });
     if (type === 'stalker') { // its own see-through material so each one fades independently
@@ -3159,6 +3445,69 @@ class Zombie {
     g.position.copy(this.pos);
     scene.add(g);
     zMeshes.push(...this.meshes);
+  }
+  // a costume piece from fest_zombies.py, attached to a joint and shootable as `part`
+  festPart(name, parent, part = 'body') {
+    if (!FZ || !FZ[name]) return null;
+    const o = FZ[name].clone();
+    o.traverse((m) => { if (!m.isMesh) return; m.castShadow = true; m.userData = { z: this, part, head: part === 'head', mesh: m }; this.meshes.push(m); });
+    parent.add(o); return o;
+  }
+  dressFest(type) {
+    const c = this.c, hp = this.headPivot, body = this.body;
+    if (type === 'firecracker') this.cracker = this.festPart('firecracker_wrap', body);
+    if (type === 'fireworker') this.festPart('firework_pack', body);
+    if (type === 'liondance') { this.lionHead = this.festPart('lion_head', hp, 'lion'); this.festPart('lion_cloak', body); this.lionHp = c.lion * LV.hpMul; }
+    if (type === 'gong') { this.festPart('gong', this.hands[0]); this.festPart('gong_mallet', this.hands[1]); this.festPart('red_sash', body); this.gongCd = rand(1.5, 3); this.strikeT = 0; }
+    if (type === 'floatboss') {
+      this.radius = 0.95; this.festPart('boss_crown', hp, 'head');
+      for (const [hi, h] of this.hands.entries()) if (ZP) { const m = new THREE.Mesh(ZP.claws, zombieMats().claw); m.scale.x = hi === 0 ? -1 : 1; m.userData = { z: this, part: 'body', mesh: m }; h.add(m); this.meshes.push(m); }
+      this.floatHp = this.floatMax = c.float * LV.hpMul; this.fwCd = 3; this.ramCd = 7; this.ramT = 0;
+      if (FEST && FEST.parade_float) { // the float rolls across the front of the boss
+        const f = this.floatObj = FEST.parade_float.clone();
+        f.scale.setScalar(1.25 / c.scale); f.position.set(0, 0, 3.0 / c.scale); f.rotation.y = Math.PI / 2;
+        f.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.userData = { z: this, part: 'float', mesh: m }; this.meshes.push(m); } });
+        this.g.add(f);
+      }
+    }
+  }
+  // 舞龍殭屍隊: the head wears the dragon's head; the others hold poles and carry the body between them
+  makeDancer(leader, last) {
+    this.leader = leader; this.dancer = true;
+    const added = [];
+    const put = (name, parent, part) => { const before = this.meshes.length, o = this.festPart(name, parent, part); added.push(...this.meshes.slice(before)); return o; };
+    if (!leader) {
+      this.hp = this.maxHp = this.c.headHp * LV.hpMul;
+      const h = put('dragon_head', this.headPivot, 'head'); if (h) h.scale.setScalar(1.15);
+      this.anchor = new THREE.Object3D(); this.anchor.position.set(0, 0.32, -0.12); this.headPivot.add(this.anchor);
+    } else {
+      const pole = put('dragon_pole', this.body); if (pole) pole.position.set(0, 1.55, 0.3);
+      this.anchor = new THREE.Object3D(); this.anchor.position.set(0, 2.42, 0.3); this.body.add(this.anchor);
+      const seg = (name) => { if (!FZ || !FZ[name]) return null; const o = FZ[name].clone(); o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.userData = { z: this, part: 'body', mesh: m }; added.push(m); } }); scene.add(o); return o; };
+      this.segment = seg('dragon_body'); if (last) this.tail = seg('dragon_tail');
+    }
+    zMeshes.push(...added);
+  }
+  updateDance() {
+    const a = this.anchor.getWorldPosition(_dA);
+    if (this.segment && this.leader && !this.leader.dead) {
+      const b = this.leader.anchor.getWorldPosition(_dB);
+      this.segment.position.copy(a); this.segment.lookAt(b); this.segment.scale.set(1, 1, Math.max(0.2, a.distanceTo(b)));
+    }
+    if (this.tail) { _dB.set(-Math.sin(this.g.rotation.y), 0, -Math.cos(this.g.rotation.y)).multiplyScalar(1.3).add(a); _dB.y -= 0.4; this.tail.position.copy(a); this.tail.lookAt(_dB); this.tail.scale.set(1, 1, 1.4); }
+  }
+  dropCostume(obj, msg) { // shot off: the piece falls away and stops catching bullets
+    if (!obj) return;
+    const gone = new Set(); obj.traverse((m) => { if (m.isMesh) gone.add(m); });
+    const wp = obj.getWorldPosition(new THREE.Vector3());
+    obj.parent && obj.parent.remove(obj);
+    zMeshes = zMeshes.filter((m) => !gone.has(m));
+    burst(wp, UP, confettiMat, 16, 4); burst(wp, UP, sparkMat, 8, 3);
+    if (msg) showMsg('', msg, 1.4);
+  }
+  igniteCrackers() {
+    if (!this.cracker || this.crackLeft !== undefined) return;
+    this.crackLeft = 8; this.crackPop = 0.15; sfx('hiss', 0.8);
   }
   // ud = userData of the mesh that was hit
   buildBrood(add, zm) {
@@ -3260,6 +3609,17 @@ class Zombie {
         }
       }
     }
+    if (ud.part === 'lion' && this.lionHp > 0) { // the lion's head soaks up shots from the front
+      this.lionHp -= dmg; this.lastFx = 'lion'; this.hitT = 0.05;
+      if (this.lionHp <= 0) { this.dropCostume(this.lionHead, '獅頭被打爛了！'); this.lionHead = null; sfx('thud'); }
+      return false;
+    }
+    if (ud.part === 'float' && this.floatHp > 0) {
+      this.floatHp -= dmg; this.lastFx = 'spark';
+      if (this.floatHp <= 0) wreckFloat(this);
+      return false;
+    }
+    if (this.c.fwPack && !this.dead && Math.random() < 0.3) strayFirework(this.pos.clone().setY(1.6 * this.g.scale.y));
     if (ud.part === 'tank' && this.tankHp > 0) {
       this.tankHp -= dmg; this.lastFx = 'spark';
       if (this.tankHp <= 0) { this.tankBlown = true; this.hp = 0; this.die(dir || new THREE.Vector3(0, 0, 1)); return true; }
@@ -3272,6 +3632,7 @@ class Zombie {
       return false;
     }
     if (ud.part === 'head') mul = 2.5;
+    if (this.floatHp > 0) mul *= 0.25; // the float shields the boss
     else if (ud.part === 'helmet') {
       mul = ap ? 0.6 : 0.3; this.lastFx = 'spark'; this.helmetHp -= dmg * (ap ? 2 : 1);
       if (this.helmetHp <= 0) this.dropHelmet();
@@ -3345,6 +3706,11 @@ class Zombie {
     if (this.laser) this.laser.visible = false;
     zMeshes = zMeshes.filter((m) => m.userData.z !== this);
     kills++; score += this.c.score; addCash(this.c.cash);
+    if (this.segment) { scene.remove(this.segment); burst(this.segment.position, UP, confettiMat, 12, 3); this.segment = null; }
+    if (this.tail) { scene.remove(this.tail); this.tail = null; }
+    if (this.dancer) breakDance(this);
+    if (this.c.fwPack) packBlast(this);
+    if (this.floatHp > 0) wreckFloat(this);
     if (this.c.explode || this.tankBlown) { this.explode(); return; }
     if (this.c.split) this.splitApart();
     if (this.c.shock) { // discharge stuns anything nearby
@@ -3429,12 +3795,18 @@ class Zombie {
       const ox = this.pos.x - o.pos.x, oz = this.pos.z - o.pos.z, d2 = ox * ox + oz * oz, rr = (this.radius + o.radius) * 1.6;
       if (d2 < rr * rr && d2 > 1e-6) { const d = Math.sqrt(d2); mx += ox / d * (rr - d) * 1.5; mz += oz / d * (rr - d) * 1.5; }
     }
+    if (this.dancer) { // the dragon snakes along: the head weaves toward the player, everyone else follows the one in front
+      if (this.leader && !this.leader.dead) {
+        const lx = this.leader.pos.x - this.pos.x, lz = this.leader.pos.z - this.pos.z, ld = Math.hypot(lx, lz) || 1;
+        mx = lx / ld; mz = lz / ld; this.follow = ld;
+      } else if (!this.leader) { const zig = Math.sin(this.phase * 0.35) * 0.7, ox = mx, oz = mz; mx = ox - oz * zig; mz = oz + ox * zig; }
+    }
     if (this.c.ghost && dist > 3.5) { // weave side to side while closing in
       const zig = Math.sin(this.phase * 0.55) * 0.9, ox = mx, oz = mz;
       mx = ox - oz * zig; mz = oz + ox * zig;
     }
     const ml = Math.hypot(mx, mz) || 1; mx /= ml; mz /= ml;
-    const reach = this.c.reach || 1.25 * this.c.scale;
+    const reach = this.floatHp > 0 ? 5.2 : this.dancer && this.leader && !this.leader.dead ? 1.35 : this.c.reach || 1.25 * this.c.scale;
     this.hitT = Math.max(0, this.hitT - dt);
     this.rage = Math.max(0, this.rage - dt);
     this.losT -= dt;
@@ -3524,6 +3896,39 @@ class Zombie {
         sfx('growl', clamp(1.3 - dist / 30, 0.3, 1));
       }
     }
+    if (this.cracker) { // 鞭炮殭屍: sparks fizz off the strings; close to the player they go off in a string of bangs
+      if (Math.random() < dt * 5) burst(this.pos.clone().setY(rand(1.0, 1.5) * this.g.scale.y), UP, sparkMat, 1, 1.5);
+      if (dist < 2.5 || this.burnT > 0) this.igniteCrackers();
+      if (this.crackLeft > 0 && (this.crackPop -= dt) <= 0) {
+        this.crackPop = 0.2; this.crackLeft--;
+        const at = this.pos.clone().add(new THREE.Vector3(rand(-0.3, 0.3), rand(0.9, 1.5), rand(-0.3, 0.3)));
+        burst(at, UP, sparkMat, 6, 4); burst(at, UP, confettiMat, 3, 2); sfx('crack', clamp(1.3 - dist / 30, 0.3, 1.2));
+        if (Math.hypot(player.pos.x - this.pos.x, player.pos.z - this.pos.z) < 3) { hurtPlayer(4, 'blast'); shake = Math.min(1, shake + 0.25); player.slowT = Math.max(player.slowT || 0, 0.6); }
+        for (const o of zombies) if (o !== this && !o.dead && o.pos.distanceTo(this.pos) < 1.6) o.damage(8, { part: 'body' }, null);
+        if (this.crackLeft <= 0) { this.dropCostume(this.cracker); this.cracker = null; }
+      }
+    }
+    if (this.c.gong) { // 敲鑼殭屍: stop, wind up, strike — a shockwave runs out along the ground
+      this.gongCd -= dt;
+      if (this.strikeT > 0) {
+        this.strikeT -= dt; hold = true;
+        if (this.strikeT <= 0.15 && !this.struck) { this.struck = true; gongWave(this); }
+      } else if (this.gongCd <= 0 && dist < 16 && this.los) { this.strikeT = 0.65; this.struck = false; this.gongCd = 5; }
+    }
+    if (this.c.float && this.floatHp > 0) { // the float lobs fireworks and now and then charges
+      this.fwCd -= dt; this.ramCd -= dt;
+      if (this.fwCd <= 0 && dist < 45 && this.los) {
+        this.fwCd = 4;
+        const from = this.floatObj ? this.floatObj.getWorldPosition(new THREE.Vector3()).setY(3) : this.pos.clone().setY(3);
+        for (let k = 0; k < 3; k++) lobFirework(from, player.pos.clone().add(new THREE.Vector3(rand(-3, 3), 0, rand(-3, 3))));
+      }
+      if (this.ramT > 0) {
+        this.ramT -= dt;
+        if (dist < 5.6 && player.pos.y < 1) { hurtPlayer(30, 'blast'); knockPlayer(this.pos, 16); shake = 1; this.ramT = 0; }
+      } else if (this.ramCd <= 0 && dist > 6 && dist < 26 && this.los) {
+        this.ramT = 1.5; this.ramCd = 10; sfx('bossroar'); showMsg('', '花車衝過來了！快閃開', 1.6);
+      }
+    }
     if (this.c.shock) {
       this.boltCd -= dt;
       if (this.charge > 0) {
@@ -3594,8 +3999,9 @@ class Zombie {
 
     const slow = this.hitT > 0 ? 0.3 : 1;
     let moving = false;
-    if (dist > reach && !hold) {
-      const sp = this.speed * slow * (this.flaming ? 0.4 : 1) * (this.rage > 0 ? 1.6 : 1) * (1 - this.limp * (0.5 + 0.5 * Math.sin(this.phase)));
+    const goal = this.dancer && this.leader && !this.leader.dead ? this.follow : dist; // dancers keep their place in the line
+    if (goal > reach && !hold) {
+      const sp = this.speed * slow * (this.flaming ? 0.4 : 1) * (this.rage > 0 ? 1.6 : 1) * (this.ramT > 0 ? 4 : 1) * (1 - this.limp * (0.5 + 0.5 * Math.sin(this.phase)));
       const px = this.pos.x, pz = this.pos.z;
       this.pos.x += mx * sp * dt; this.pos.z += mz * sp * dt;
       const res = this.c.boss ? resolveLarge : resolve;
@@ -3608,14 +4014,14 @@ class Zombie {
       moving = true;
     }
     this.atkT -= dt;
-    if (this.c.dmg > 0 && dist <= reach + 0.3 && this.atkT <= 0 && player.hp > 0 && !this.screaming) {
+    if (this.c.dmg > 0 && dist <= (this.dancer ? 1.4 : reach) + 0.3 && this.atkT <= 0 && player.hp > 0 && !this.screaming && !(this.floatHp > 0)) {
       this.atkT = this.c.rate; this.atkAnim = 0.001;
     }
     if (this.atkAnim > 0) {
       this.atkAnim += dt * 3;
       if (this.atkAnim > 0.5 && !this.atkHit) {
         this.atkHit = true;
-        if (this.type === 'behemoth') { // ground-shaking stomp
+        if (this.type === 'behemoth' || this.c.stomp) { // ground-shaking stomp
           const p = this.pos.clone(); burst(p.clone().setY(0.2), UP, dustMat, 30, 6); stompRing(p); sfx('slam', 1.4);
           shake = 1; if (dist <= reach + 1.8 && player.pos.y < 1) { hurtPlayer(this.c.dmg); player.slowT = 0.8; }
         } else if (dist <= reach + 0.5) hurtPlayer(this.c.dmg);
@@ -3629,6 +4035,7 @@ class Zombie {
       this.ghost.opacity += (target - this.ghost.opacity) * Math.min(1, dt * 5);
       this.ghost.depthWrite = this.ghost.opacity > 0.9;
     }
+    if (this.anchor && this.dancer) { this.g.updateMatrixWorld(true); this.updateDance(); }
     if (this.type === 'dog') { this.animateDog(dt, moving, dx, dz); return true; }
     if (this.type === 'broodmother') { this.animateBrood(dt, moving, dx, dz); return true; }
     // ---- animation ----
@@ -3669,8 +4076,16 @@ class Zombie {
     }
     if (t === 'shocker' && this.charge > 0) { this.arms[0].rotation.x = this.arms[1].rotation.x = -1.5; this.arms[0].rotation.z = -0.4; this.arms[1].rotation.z = 0.4; }
     if (t === 'behemoth' && this.windup > 0) { this.arms[1].rotation.x = -2.9; this.arms[1].rotation.z = 0.2; }
-    if (t === 'behemoth' && this.atkAnim > 0) { const k = Math.sin(this.atkAnim * Math.PI); this.arms[0].rotation.x = this.arms[1].rotation.x = -2.6 + k * 2.2; }
+    if ((t === 'behemoth' || this.c.stomp) && this.atkAnim > 0) { const k = Math.sin(this.atkAnim * Math.PI); this.arms[0].rotation.x = this.arms[1].rotation.x = -2.6 + k * 2.2; }
     if (t === 'flamer') { this.arms[1].rotation.x = -1.25; this.arms[0].rotation.x = -1.2; this.arms[0].rotation.z = -0.5; }
+    if (t === 'liondance' && this.lionHead && !this.leapT) { this.arms[0].rotation.x = this.arms[1].rotation.x = -2.3 + Math.sin(this.phase) * 0.15; this.arms[0].rotation.z = -0.35; this.arms[1].rotation.z = 0.35; }
+    if (t === 'gong') {
+      this.arms[0].rotation.x = -1.3; this.arms[0].rotation.z = -0.15;
+      const k = this.strikeT > 0 ? 1 - this.strikeT / 0.65 : 0;
+      this.arms[1].rotation.x = this.strikeT > 0 ? (k < 0.75 ? -1.4 - k * 1.6 : -2.6 + (k - 0.75) * 7) : -0.6 + Math.sin(this.phase) * 0.2; this.arms[1].rotation.z = -0.25;
+    }
+    if (this.dancer && this.leader && !this.leader.dead) { this.arms[0].rotation.x = -2.5 + Math.sin(this.phase) * 0.1; this.arms[1].rotation.x = -2.5 - Math.sin(this.phase) * 0.1; this.arms[0].rotation.z = 0.3; this.arms[1].rotation.z = -0.3; }
+    if (this.dancer && !this.leader) { this.arms[0].rotation.x = this.arms[1].rotation.x = -2.1; this.arms[0].rotation.z = -0.3; this.arms[1].rotation.z = 0.3; }
     if (t === 'medic' && hold) { this.arms[0].rotation.x = -0.4; this.arms[1].rotation.x = -0.4; }
     if (t === 'gunner') {
       const aiming = this.aimT > 0 || this.flashT > 0;
@@ -3687,6 +4102,9 @@ class Zombie {
     if (t === 'riot') { e0 = -1.25; e1 = this.atkAnim > 0 ? -0.4 : -0.9; }
     if (t === 'gunner') { const aim = this.aimT > 0 || this.flashT > 0; e1 = aim ? 0 : -0.9; e0 = aim ? -0.5 : -0.4; }
     if (t === 'flamer') { e0 = -0.9; e1 = -0.3; }
+    if (t === 'liondance' && this.lionHead) { e0 = e1 = -1.0; }
+    if (t === 'gong') { e0 = -1.1; e1 = this.strikeT > 0 ? -0.3 : -0.6; }
+    if (this.dancer) { e0 = e1 = -0.5; }
     if (t === 'mutant') { e0 = -0.6; e1 = -0.15; }
     if (t === 'medic' && hold) { e0 = e1 = -1.5; }
     this.elbows[0].rotation.x = e0; this.elbows[1].rotation.x = e1;
@@ -3715,7 +4133,7 @@ class Zombie {
     g.rotation.y += da * Math.min(1, dt * 6);
     return true;
   }
-  remove() { if (this.arcs) { scene.remove(this.arcs); this.arcs.geometry.dispose(); } if (this.ghost) this.ghost.dispose(); scene.remove(this.g); if (this.laser) { scene.remove(this.laser); this.laser.geometry.dispose(); } }
+  remove() { if (this.segment) scene.remove(this.segment); if (this.tail) scene.remove(this.tail); if (this.arcs) { scene.remove(this.arcs); this.arcs.geometry.dispose(); } if (this.ghost) this.ghost.dispose(); scene.remove(this.g); if (this.laser) { scene.remove(this.laser); this.laser.geometry.dispose(); } }
 }
 
 // ---- pools, acid spit, explosion light ----
@@ -3798,30 +4216,38 @@ function blastAt(p, radius, dmg, playerDmg, src = null) {
   for (const o of zombies) {
     if (o === src || o.dead) continue;
     const d = Math.hypot(o.pos.x - p.x, o.pos.z - p.z);
-    if (d < radius) o.damage(dmg * (1 - d / radius) + 25, { part: o.shieldHp > 0 ? 'blast' : 'body' }, o.pos.clone().sub(p).setY(0).normalize());
+    if (d < radius) { o.damage(dmg * (1 - d / radius) + 25, { part: o.shieldHp > 0 ? 'blast' : 'body' }, o.pos.clone().sub(p).setY(0).normalize()); if (o.cracker) o.igniteCrackers(); }
   }
   for (const b of BARRELS) if (!b.gone && !b.queued && Math.hypot(b.x - p.x, b.z - p.z) < radius * 0.85) { b.queued = true; barrelQueue.push({ b, t: rand(0.1, 0.25) }); }
 }
 function launchGrenade(from, dir, c) {
-  const m = new THREE.Mesh(grenadeGeo, grenadeMat); m.position.copy(from); m.castShadow = true; scene.add(m);
-  if (c.rocket) m.scale.set(1.6, 1.6, 5);
-  const v = c.rocket ? dir.clone().multiplyScalar(48) : dir.clone().multiplyScalar(36).add(new THREE.Vector3(0, 1.5, 0));
+  let m;
+  if (c.firework && GUNS && GUNS.fireworks_shell) { m = GUNS.fireworks_shell.clone(); m.scale.setScalar(1.6); }
+  else { m = new THREE.Mesh(grenadeGeo, grenadeMat); if (c.rocket) m.scale.set(1.6, 1.6, 5); }
+  m.position.copy(from); m.castShadow = true; scene.add(m);
+  const v = c.rocket ? dir.clone().multiplyScalar(c.firework ? 28 : 48) : dir.clone().multiplyScalar(36).add(new THREE.Vector3(0, 1.5, 0));
   grenades.push({ m, v, life: 4, c });
 }
 function updateGrenades(dt) {
   grenades = grenades.filter((gr) => {
     gr.life -= dt; if (!gr.c.rocket) gr.v.y -= 9.8 * dt;
-    if (gr.c.rocket) { burst(gr.m.position, UP, dustMat, 1, 0.4); if (Math.random() < 0.6) emitFire(gr.m.position, gr.v.clone().normalize().negate(), 2); }
+    if (gr.c.firework) { if (Math.random() < 0.9) emitFire(gr.m.position, gr.v.clone().normalize().negate(), 2.5); burst(gr.m.position, gr.v.clone().normalize().negate(), sparkMat, 2, 3); }
+    else if (gr.c.rocket) { burst(gr.m.position, UP, dustMat, 1, 0.4); if (Math.random() < 0.6) emitFire(gr.m.position, gr.v.clone().normalize().negate(), 2); }
     gr.m.position.addScaledVector(gr.v, dt); gr.m.lookAt(gr.m.position.clone().add(gr.v));
     const p = gr.m.position;
-    let hit = p.y <= 0.05 || gr.life <= 0 || (p.y < 14 && blocked(p.x, p.z, 0));
+    let hit = p.y <= 0.05 || gr.life <= 0 || (p.y < 14 && blocked(p.x, p.z, 0)), struck = null;
     if (!hit) for (const z of zombies) {
       if (z.dead) continue;
-      if (Math.hypot(z.pos.x - p.x, z.pos.z - p.z) < z.radius + 0.35 && p.y < 2 * z.c.scale) { hit = true; break; }
+      if (Math.hypot(z.pos.x - p.x, z.pos.z - p.z) < z.radius + 0.35 && p.y < 2 * z.c.scale) { hit = true; struck = z; break; }
     }
     if (!hit) return true;
     scene.remove(gr.m);
     const at = p.clone(); at.y = Math.max(0.3, at.y);
+    if (gr.c.firework) { // a direct hit on top of the blast, then a burst of colour that sets the crowd alight
+      if (struck) struck.damage(gr.c.direct - gr.c.dmg, { part: 'body' }, gr.v.clone().setY(0).normalize());
+      burstFirework(at.clone().setY(Math.max(1.2, at.y)), pick(FW_COLORS), 130, 9, 1.3, true);
+      for (const z of zombies) if (!z.dead && Math.hypot(z.pos.x - at.x, z.pos.z - at.z) < gr.c.radius) z.burnT = Math.max(z.burnT || 0, gr.c.burn);
+    }
     blastAt(at, gr.c.radius, gr.c.dmg, 45);
     const scorch = makePool(p.x, p.z, TEX.hole, 1); scorch.scale.setScalar(2.6);
     return false;
@@ -3912,10 +4338,33 @@ function spawnZombie(type) {
     if (Math.abs(x) > BOUND - 1 || Math.abs(z) > BOUND - 1) continue;
     const d = Math.hypot(x - player.pos.x, z - player.pos.z);
     if (d < 32 || d > 95 || blocked(x, z, 0.5)) continue;
+    if (ZTYPES[type].dragon) { spawnDragon(x, z); return true; }
     zombies.push(new Zombie(type, x, z));
     return true;
   }
   return false;
+}
+
+function spawnDragon(x, z) {
+  const ax = x - player.pos.x, az = z - player.pos.z, al = Math.hypot(ax, az) || 1;
+  let prev = null;
+  for (let k = 0, n = ZTYPES.dragon.dragon; k < n; k++) {
+    const d = new Zombie('dragon', x + ax / al * k * 1.4, z + az / al * k * 1.4);
+    d.makeDancer(prev, k === n - 1); addZombie(d); prev = d;
+  }
+}
+// a dancer falls: the dragon's head takes the whole dragon with it; otherwise the line closes up behind
+function breakDance(z) {
+  const followers = zombies.filter((o) => o.leader === z && !o.dead);
+  if (!z.leader) {
+    let o = followers[0];
+    while (o) {
+      if (o.segment) { burst(o.segment.position, UP, confettiMat, 14, 3); scene.remove(o.segment); o.segment = null; }
+      if (o.tail) { scene.remove(o.tail); o.tail = null; }
+      o.dancer = false; o.rage = 3; const next = zombies.find((q) => q.leader === o && !q.dead); o.leader = null; o = next;
+    }
+    showMsg('', '龍頭倒下了！舞龍隊散了', 1.6);
+  } else followers.forEach((o) => { o.leader = z.leader; });
 }
 
 // ============================================================
@@ -3999,8 +4448,8 @@ function armorStatus() {
 function updateHUD() {
   const boss = zombies.find((z) => !z.dead && z.c.boss);
   $('bossbar').style.display = boss ? 'block' : 'none';
-  if (boss) $('bossbar').querySelector('.bn').textContent = boss.c.name;
-  if (boss) $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%';
+  if (boss) $('bossbar').querySelector('.bn').textContent = boss.floatHp > 0 ? `${boss.c.name} · 花車` : boss.c.name;
+  if (boss) $('bossfill').style.width = Math.max(0, boss.floatHp > 0 ? boss.floatHp / boss.floatMax * 100 : boss.hp / boss.maxHp * 100) + '%';
   const w = weapons[wi];
   $('hpnum').textContent = Math.ceil(player.hp);
   $('hpfill').style.width = player.hp + '%';
@@ -4025,8 +4474,166 @@ function updateHUD() {
 function loadUnlocked() { try { return +localStorage.getItem('deadcity_unlocked') || 0; } catch { return 0; } }
 function saveUnlocked(n) { try { localStorage.setItem('deadcity_unlocked', String(n)); } catch {} }
 
+// ---- 國慶特別版 fireworks: shells rise from the plaza racks and around the city and burst overhead;
+// every 25 s a full volley goes up and the zombies that can see it stop and stare (煙火齊射)
+const FW_COLORS = [0xff3b2a, 0xffc93a, 0x48ff7a, 0x4aa8ff, 0xd060ff, 0xffffff, 0xff7a1a];
+let fwShells = [], fwBursts = [], fwQueue = [], fwVolleyT = 8, fwAmbientT = 2, fwStareCd = 0, fwLightI = 0, _sparkTex = null;
+const fwLights = [0, 1].map(() => { const l = new THREE.PointLight(0xffffff, 0, 260, 1); scene.add(l); return l; });
+function sparkTex() {
+  if (_sparkTex) return _sparkTex;
+  const [c, x] = makeCanvas(64), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,0.75)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
+  return (_sparkTex = new THREE.CanvasTexture(c));
+}
+function skySpot(volley) {
+  if (fwRacks.length && (volley || Math.random() < 0.4)) return pick(fwRacks).clone();
+  const a = rand(0, Math.PI * 2), r = rand(45, 95);
+  return new THREE.Vector3(player.pos.x + Math.cos(a) * r, 2, player.pos.z + Math.sin(a) * r);
+}
+function launchShell(from, big) {
+  const head = new THREE.Sprite(new THREE.SpriteMaterial({ map: sparkTex(), color: 0xffd8a0, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false }));
+  head.scale.setScalar(1.3); head.position.copy(from); scene.add(head);
+  const top = from.clone().add(new THREE.Vector3(rand(-8, 8), rand(38, 62), rand(-8, 8)));
+  fwShells.push({ head, from: from.clone(), top, t: 0, dur: rand(1.2, 1.7), big, color: pick(FW_COLORS) });
+  sfx('fwlaunch', clamp(1.2 - from.distanceTo(player.pos) / 120, 0.15, 1));
+}
+function burstFirework(p, color, n = 160, speed = 16, life = 2.2, low = false) {
+  const geo = new THREE.BufferGeometry(), pos = new Float32Array(n * 3), vel = [];
+  for (let i = 0; i < n; i++) { vel.push(new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).normalize().multiplyScalar(speed * rand(0.75, 1))); pos.set([p.x, p.y, p.z], i * 3); }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ map: sparkTex(), color, size: low ? 0.5 : 1.7, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false }));
+  pts.frustumCulled = false; scene.add(pts);
+  fwBursts.push({ pts, vel, t: 0, life });
+  const l = fwLights[fwLightI++ % fwLights.length]; l.color.set(color); l.position.copy(p); l.userData.k = low ? 30 : 140; l.intensity = l.userData.k;
+  sfx('fwboom', clamp(1.3 - p.distanceTo(player.pos) / 160, 0.15, 1.2));
+}
+function stareAtSky() {
+  if (fwStareCd > 0) return;
+  fwStareCd = 4;
+  const look = camera.getWorldDirection(new THREE.Vector3()).setY(0).normalize();
+  for (const z of zombies) {
+    if (z.dead || z.c.boss) continue;
+    const to = new THREE.Vector3(z.pos.x - player.pos.x, 0, z.pos.z - player.pos.z), d = to.length();
+    if (d > 30 || (d > 2 && to.divideScalar(d).dot(look) < 0.5)) continue;
+    z.hitT = Math.max(z.hitT, 1.0); // slowed right down, leaning back to look up
+  }
+}
+function updateFireworks(dt) {
+  fwStareCd -= dt;
+  if (LV.theme === 'festival') {
+    fwAmbientT -= dt; fwVolleyT -= dt;
+    if (fwAmbientT <= 0) { fwAmbientT = rand(2.5, 5); launchShell(skySpot(false), false); }
+    if (fwVolleyT <= 0) { fwVolleyT = 25; for (let k = 0; k < 5; k++) fwQueue.push(k * 0.22); }
+    fwQueue = fwQueue.filter((t) => { if (t - dt > 0) return true; launchShell(skySpot(true), true); return false; }).map((t) => t - dt);
+  }
+  fwShells = fwShells.filter((sh) => {
+    sh.t += dt; const k = Math.min(1, sh.t / sh.dur);
+    sh.head.position.lerpVectors(sh.from, sh.top, 1 - (1 - k) ** 2);
+    if (k < 1) return true;
+    scene.remove(sh.head); sh.head.material.dispose();
+    burstFirework(sh.top, sh.color, sh.big ? 220 : 140, sh.big ? 20 : 15);
+    if (sh.big) stareAtSky();
+    return false;
+  });
+  fwBursts = fwBursts.filter((b) => {
+    b.t += dt; const a = b.pts.geometry.attributes.position.array;
+    for (let i = 0; i < b.vel.length; i++) {
+      const v = b.vel[i]; v.multiplyScalar(1 - dt * 1.6); v.y -= 4 * dt;
+      a[i * 3] += v.x * dt; a[i * 3 + 1] += v.y * dt; a[i * 3 + 2] += v.z * dt;
+    }
+    b.pts.geometry.attributes.position.needsUpdate = true;
+    b.pts.material.opacity = Math.max(0, 1 - b.t / b.life);
+    if (b.t < b.life) return true;
+    scene.remove(b.pts); b.pts.geometry.dispose(); b.pts.material.dispose(); return false;
+  });
+  for (const l of fwLights) l.intensity = Math.max(0, l.intensity - dt * (l.userData.k || 100) * 1.4);
+}
+// ---- 國慶殭屍 hazards ----
+let gongWaves = [], strays = [], finale = null;
+function knockPlayer(from, power) {
+  const dx = player.pos.x - from.x, dz = player.pos.z - from.z, d = Math.hypot(dx, dz) || 1;
+  player.knock = new THREE.Vector3(dx / d * power, 0, dz / d * power);
+}
+function gongWave(z) {
+  sfx('gong', clamp(1.3 - z.pos.distanceTo(player.pos) / 40, 0.3, 1.2));
+  const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffc24a, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+  m.position.set(z.pos.x, 0.12, z.pos.z); scene.add(m);
+  burst(z.pos.clone().setY(0.3), UP, dustMat, 12, 4);
+  gongWaves.push({ m, x: z.pos.x, z: z.pos.z, r: 0.4, hit: false });
+}
+function lobFirework(from, target) { // the float boss's shells arc onto the player and burst in colour
+  const d = Math.hypot(target.x - from.x, target.z - from.z), T = clamp(d / 16, 0.9, 2.2);
+  const v = new THREE.Vector3((target.x - from.x) / T, (target.y - from.y + 0.5 * 9.8 * T * T) / T, (target.z - from.z) / T);
+  strays.push({ m: fwSprite(from, 0xffa040), v, life: 4, g: 9.8, r: 3, zd: 0, pd: 15, burn: 2, lob: true });
+  sfx('fwlaunch', 0.8);
+}
+function strayFirework(from) { // shot out of a 煙火殭屍's pack: it zips off in a random direction
+  const v = new THREE.Vector3(rand(-1, 1), rand(0.3, 1.2), rand(-1, 1)).normalize().multiplyScalar(rand(9, 14));
+  strays.push({ m: fwSprite(from, pick(FW_COLORS)), v, life: rand(0.5, 1.1), g: 4, r: 2.5, zd: 0, pd: 5, burn: 0 });
+  sfx('fwlaunch', 0.5);
+}
+function fwSprite(at, color) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: sparkTex(), color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+  sp.scale.setScalar(0.7); sp.position.copy(at); scene.add(sp); return sp;
+}
+function packBlast(z) { // a 煙火殭屍 goes up in a burst of fireworks, setting the crowd around it alight
+  const p = z.pos.clone().setY(1.3 * z.g.scale.y);
+  for (let k = 0; k < 3; k++) burstFirework(p.clone().add(new THREE.Vector3(0, k * 0.5, 0)), pick(FW_COLORS), 90, 8, 1.2, true);
+  blastAt(p, 4, 35, 20, z);
+  for (const o of zombies) if (!o.dead && o !== z && o.pos.distanceTo(z.pos) < 4) o.burnT = Math.max(o.burnT || 0, 3);
+}
+function wreckFloat(z) {
+  z.floatHp = 0;
+  const f = z.floatObj, p = f ? f.getWorldPosition(new THREE.Vector3()).setY(1.5) : z.pos.clone().setY(1.5);
+  if (f) {
+    const gone = new Set(); f.traverse((m) => { if (m.isMesh) gone.add(m); });
+    f.parent && f.parent.remove(f); zMeshes = zMeshes.filter((m) => !gone.has(m)); z.floatObj = null;
+  }
+  for (let k = 0; k < 5; k++) burstFirework(p.clone().add(new THREE.Vector3(rand(-2, 2), rand(0, 2), rand(-2, 2))), pick(FW_COLORS), 140, 12, 1.6, true);
+  blastAt(p, 6, 120, 25, z);
+  shake = 1; sfx('bossroar');
+  if (!z.dead) { z.speed *= 1.3; showMsg('花車被打爆了！', `${z.c.name}要直接衝過來了`, 2.5); }
+}
+function updateFestHazards(dt) {
+  gongWaves = gongWaves.filter((w) => {
+    const r0 = w.r; w.r += 9 * dt;
+    w.m.scale.setScalar(w.r); w.m.material.opacity = Math.max(0, 0.9 * (1 - w.r / 16));
+    const d = Math.hypot(player.pos.x - w.x, player.pos.z - w.z);
+    if (!w.hit && d > r0 - 0.6 && d <= w.r + 0.6) {
+      w.hit = true;
+      if (player.pos.y < 0.25) { hurtPlayer(18, 'blast'); knockPlayer(w, 18); player.slowT = Math.max(player.slowT || 0, 0.8); shake = Math.min(1, shake + 0.6); }
+    }
+    if (w.r < 16) return true;
+    scene.remove(w.m); w.m.material.dispose(); return false;
+  });
+  strays = strays.filter((s) => {
+    s.life -= dt; s.v.y -= s.g * dt; s.m.position.addScaledVector(s.v, dt);
+    if (Math.random() < 0.7) burst(s.m.position, UP, sparkMat, 1, 1.2);
+    const p = s.m.position;
+    if (s.life > 0 && p.y > 0.15 && !(p.y < 8 && blocked(p.x, p.z, 0))) return true;
+    scene.remove(s.m); s.m.material.dispose();
+    const at = p.clone().setY(Math.max(0.5, p.y));
+    burstFirework(at, pick(FW_COLORS), 70, 7, 1.0, true);
+    blastAt(at, s.r, s.zd, s.pd);
+    if (s.burn) for (const z of zombies) if (!z.dead && z.pos.distanceTo(at) < s.r) z.burnT = Math.max(z.burnT || 0, s.burn);
+    return false;
+  });
+  if (player.knock) {
+    player.pos.addScaledVector(player.knock, dt); resolve(player.pos, 0.4);
+    player.knock.multiplyScalar(Math.max(0, 1 - dt * 6)); if (player.knock.lengthSq() < 0.05) player.knock = null;
+  }
+  if (finale) { // the closing fireworks show over the plaza
+    finale.t += dt; finale.next -= dt;
+    if (finale.next <= 0) { finale.next = rand(0.15, 0.35); launchShell(skySpot(true), Math.random() < 0.5); }
+    if (finale.t > 9) { finale = null; levelComplete(); }
+  }
+}
 function clearDynamic() {
   evac = null;
+  gongWaves.forEach((w) => scene.remove(w.m)); strays.forEach((s) => scene.remove(s.m)); gongWaves = []; strays = []; finale = null; player.knock = null;
+  fwShells.forEach((sh) => scene.remove(sh.head)); fwBursts.forEach((b) => scene.remove(b.pts)); fwShells = []; fwBursts = []; fwQueue = [];
+  fwVolleyT = 8; fwAmbientT = 2; fwLights.forEach((l) => { l.intensity = 0; });
   zombies.forEach((z) => z.remove()); zombies = []; zMeshes = [];
   particles.forEach((p) => scene.remove(p.m)); particles = [];
   decals.forEach((d) => scene.remove(d)); decals = [];
@@ -4090,6 +4697,7 @@ function startWave() {
 
 function updateWaves(dt) {
   if (evac) { updateEvac(dt); return; }
+  if (finale) return;
   if (!waveActive) {
     interT -= dt;
     if (interT <= 0) startWave();
@@ -4102,7 +4710,12 @@ function updateWaves(dt) {
   }
   if (!queue.length && alive === 0) {
     waveActive = false;
-    if (waveIdx >= LV.waves.length - 1) { if (LV.evac && HELI) startEvac(); else levelComplete(); return; }
+    if (waveIdx >= LV.waves.length - 1) {
+      if (LV.evac && HELI) startEvac();
+      else if (LV.event) { finale = { t: 0, next: 0 }; showMsg('國慶快樂！', '煙火秀開始了', 5); sfx('wave'); }
+      else levelComplete();
+      return;
+    }
     waveIdx++; interT = 7;
     showMsg('本波已清除', '補給時間 — 撿起彈藥和醫療包', 3);
     const w = weapons[wi]; w.reserve += w.c.mag;
@@ -4117,9 +4730,10 @@ function levelComplete() {
   unlockPointer();
   const firstEvent = LV.event && !store.get('deadcity_event_cleared', false); // the first 國慶特別版 clear pays an extra $1,000
   if (LV.event) store.set('deadcity_event_cleared', true);
+  const gotLauncher = LV.event && grantWeapon('fireworks');
   const bonus = 150 + LV.num * 100 + (firstEvent ? 1000 : 0); addCash(bonus);
   const stats = `擊殺 ${kills} · 分數 ${score}<br>本關賺得 ${money(levelCash)}（含過關獎勵 ${money(bonus)}）${armorStatus()}`;
-  $('winStats').innerHTML = LV.event ? `國慶快樂！${firstEvent ? '首次通關另得 $1,000。' : ''}<br>${stats}`
+  $('winStats').innerHTML = LV.event ? `國慶快樂！${gotLauncher ? '<b class="gift">獲得限定武器：煙花發射器</b><br>到「武器裝備」把它放進欄位。<br>' : ''}${firstEvent ? '首次通關另得 $1,000。' : ''}<br>${stats}`
     : next >= 0 ? `${stats}<br>下一關已解鎖：第 ${LEVELS[next].num} 關 · ${LEVELS[next].name}`
     : LV.num === 10 ? `你守住了最後防線，撤離成功！<br>${stats}` : `${stats}<br>更多關卡製作中，敬請期待。`;
   $('btnNext').style.display = next >= 0 ? '' : 'none';
@@ -4410,7 +5024,8 @@ function renderShop() {
     const perShot = w.dmg * w.pellets, rpm = Math.round(60 / w.rate);
     const acc = 1 - Math.min(1, (w.hipSpread || w.spread) / 0.09);
     let act;
-    if (!have) {
+    if (!have && w.reward) act = `<span class="earn">${w.reward}</span>`;
+    else if (!have) {
       act = cash >= cost(w) ? `<button class="b primary" data-buy="${w.id}">購買 ${money(cost(w))}</button>`
         : `<button class="b" disabled>購買 ${money(cost(w))}</button><span>還差 ${money(cost(w) - cash)}</span>`;
     } else {
@@ -4419,7 +5034,7 @@ function renderShop() {
     const tags = [w.melee ? '免彈藥' : '', w.flame ? '持續燃燒' : '', w.chain ? `連鎖 ${w.chain}` : '', w.spin ? '需預熱' : '', w.pierce > 1 ? `貫穿 ${w.pierce}` : '', w.ap ? '穿甲' : '', w.explosive ? '範圍爆炸' : '', w.burn ? '點燃目標' : '', w.scope ? '瞄準鏡' : '', w.move && w.move < 1 ? '移動較慢' : ''].filter(Boolean).join(' · ');
     return `<div class="wc${slot >= 0 ? ' eq' : ''}">
       <div class="top"><div><div class="nm">${w.name}${w.limited ? `<span class="ltd">${w.limited}</span>` : ''}</div><div class="ct">${w.cat}${tags ? ' · ' + tags : ''}</div></div>
-        <div class="pr num">${have ? (slot >= 0 ? `欄位 ${slot + 1}` : '已擁有') : priceTag(w)}</div></div>
+        <div class="pr num">${have ? (slot >= 0 ? `欄位 ${slot + 1}` : '已擁有') : w.reward ? '限定獎勵' : priceTag(w)}</div></div>
       <div class="ds">${w.desc}</div>
       <div class="bars"><span>傷害</span>${bar(perShot / 260)}<span class="num">${perShot}</span>
         <span>射速</span>${bar(rpm / 900)}<span class="num">${rpm}</span>
@@ -4432,7 +5047,7 @@ $('wlist').addEventListener('click', (e) => {
   const buy = e.target.closest('[data-buy]'), eq = e.target.closest('[data-eq]');
   if (buy) {
     const w = WEAPON[buy.dataset.buy];
-    if (owned.includes(w.id) || cash < cost(w)) return;
+    if (owned.includes(w.id) || w.reward || cash < cost(w)) return;
     cash -= cost(w); owned.push(w.id);
     store.set('deadcity_cash', cash); store.set('deadcity_owned', owned);
     audio(); sfx('cash'); renderShop(); renderMenu();
@@ -4718,10 +5333,11 @@ function tryFire(click) {
       const killed = z.damage(dmg * falloff, zh.object.userData, dir, w.c.ap);
       if (z.lastFx === 'spark') { burst(zh.point, dir.clone().negate(), sparkMat, 5, 4); sfx('ping'); }
       else if (z.lastFx === 'shield') { burst(zh.point, dir.clone().negate(), shardMat, 3, 3); sfx('thud'); }
+      else if (z.lastFx === 'lion') { burst(zh.point, dir.clone().negate(), confettiMat, 4, 3); sfx('thud'); }
       else burst(zh.point, dir.clone().negate(), z.c.explode ? acidPartMat : bloodMat, zh.object.userData.head ? 14 : 7, 3);
       anyHit = true; anyKill = anyKill || killed;
       if (killed && zh.object.userData.head) { score += 50; addCash(5); }
-      if (z.lastFx === 'shield' || struck.size >= (w.c.pierce || 1)) break;
+      if (z.lastFx === 'shield' || z.lastFx === 'lion' || struck.size >= (w.c.pierce || 1)) break;
       dmg *= 0.8; // each zombie the round passes through slows it down
     }
     if (!struck.size && wh && wh.object.userData.barrel) { explodeBarrel(wh.object.userData.barrel); continue; }
@@ -4970,7 +5586,7 @@ function frame(dt, now) {
   pollPad(dt);
   if (state === 'playing') autoQuality(dt);
   if (state === 'playing') {
-    updatePlayer(dt); updateWeapon(dt); updateZombies(dt); updateHazards(dt); updateGrenades(dt); updateWaves(dt); updatePickups(dt);
+    updatePlayer(dt); updateWeapon(dt); updateZombies(dt); updateHazards(dt); updateGrenades(dt); updateWaves(dt); updatePickups(dt); updateFireworks(dt); updateFestHazards(dt);
     updateHUD();
   } else if (state === 'menu') {
     menuT += dt;
@@ -4995,7 +5611,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026100301'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026100501'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
@@ -5023,7 +5639,7 @@ $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 window.__game = { get state() { return state; }, player, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
-  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), EVENT_LEVEL, completeLevel: () => levelComplete(), setDate(d) { dateOverride = d ? new Date(d + 'T12:00:00') : null; renderMenu(); }, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
+  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), grantWeapon, gongWaves: () => gongWaves, spawnDragon, setWeapon(i) { wi = i; weapons.forEach((w, k) => { w.view.group.visible = k === i; }); }, EVENT_LEVEL, completeLevel: () => levelComplete(), setDate(d) { dateOverride = d ? new Date(d + 'T12:00:00') : null; renderMenu(); }, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
   spawnNear(type, d = 8) { const z = new Zombie(type, player.pos.x + rand(-2, 2), player.pos.z - d); zombies.push(z); return z; } };
 </script>

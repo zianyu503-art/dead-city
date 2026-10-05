@@ -25,6 +25,7 @@ PALETTE = {  # preview colours only; the game replaces these by name
     "silver": ((0.6, 0.62, 0.65), 0.25, 1.0), "olive": ((0.1, 0.12, 0.07), 0.7, 0.1), "brass": ((0.7, 0.5, 0.18), 0.3, 1.0),
     "lens": ((0.02, 0.05, 0.09), 0.05, 0.8), "coil": ((0.2, 0.55, 1.0), 0.3, 0.2), "fuel": ((0.35, 0.05, 0.03), 0.45, 0.4),
     "dot": ((1.0, 0.1, 0.05), 0.5, 0.0), "shellRed": ((0.45, 0.05, 0.03), 0.5, 0.2), "pilot": ((0.3, 0.6, 1.0), 0.5, 0.0),
+    "fwred": ((0.5, 0.03, 0.02), 0.45, 0.1), "fwgold": ((0.8, 0.55, 0.15), 0.3, 1.0), "fwpaper": ((0.6, 0.06, 0.03), 0.7, 0.0),
 }
 MAT = {}
 for n, (c, r, m) in PALETTE.items():
@@ -446,6 +447,33 @@ done("crossbow", [stock, Bx((0, 0.027, -0.2), (0.012, 0.008, 0.4), "metal", 0.1)
     *[Bx((0, 0.045, z), (0.018, 0.022, 0.014), "metal") for z in (-0.11, -0.05)],
     grip(0.085, -0.02, "poly", 0.3, 0.09, 0.03, 0.04)] + trigger(-0.028, 0.06))
 
+# =================================================================== 煙花發射器 (fireworks launcher, the 國慶特別版 reward)
+# six paper firework tubes in a gold-banded cluster; the cluster comes out whole on reload ("fireworks_mag")
+TUBES = [(x, y) for y in (0.012, 0.043) for x in (-0.031, 0.0, 0.031)]
+mag = []
+for x, y in TUBES:
+    mag += [C((x, y, -0.5), (x, y, -0.1), 0.0138, "fwpaper", verts=20), bore(-0.5005, y, 0.0105, x=x, back=0.03)]
+    for z in (-0.485, -0.3, -0.115):
+        mag.append(C((x, y, z - 0.007), (x, y, z + 0.007), 0.0146, "fwgold", verts=20))
+    mag.append(Tube([(x, y + 0.008, -0.1), (x + 0.01, y + 0.02, -0.08), (x + 0.004, y + 0.03, -0.06)], 0.0016, "fwred"))  # fuses
+done("fireworks_mag", mag)
+clamps = []
+for z in (-0.42, -0.2):  # gold clamps around the cluster
+    clamp = Bx((0, 0.0275, z), (0.106, 0.074, 0.022), "fwgold", 0.15)
+    clamps.append(cut(clamp, [Bx((0, 0.0275, z), (0.094, 0.062, 0.04), "fwgold", 0)]))
+done("fireworks", clamps + [
+    P([(-0.5, -0.014), (0.06, -0.014), (0.06, -0.03), (-0.48, -0.03)], 0.07, "metal", bev=0.003),            # base rail
+    P([(-0.1, -0.014), (-0.1, 0.07), (0.02, 0.07), (0.07, 0.045), (0.07, -0.03), (-0.1, -0.03)], 0.09, "fwred", bev=0.005),  # igniter housing
+    Bx((0, 0.075, -0.04), (0.03, 0.012, 0.05), "fwgold", 0.2), C((0, 0.082, -0.04), (0, 0.09, -0.04), 0.008, "dot", verts=14),  # striker button
+    Tor((0, 0.083, -0.46), 0.011, 0.0018, "fwgold", "z", 24), Bx((0, 0.068, -0.46), (0.004, 0.022, 0.004), "fwgold", 0),      # ring sight
+    Bx((0, 0.074, 0.03), (0.022, 0.012, 0.008), "metal"),                                                                         # rear notch
+    grip(0.07, -0.03, "poly", 0.3, 0.09, 0.03, 0.04), grip(-0.21, -0.03, "wood", 0.15, 0.075, 0.028, 0.034),
+    Tube([(0.04, -0.03, 0.06), (0.05, -0.08, 0.07), (0.045, -0.12, 0.06)], 0.004, "fwred"), Sph((0.045, -0.13, 0.06), 0.008, "fwgold")]  # lucky tassel
+    + trigger(-0.04, 0.03))
+# the projectile: a paper rocket with a gold nose, pointing +Z (three.js lookAt aims +Z at the target)
+done("fireworks_shell", [C((0, 0, -0.09), (0, 0, 0.07), 0.026, "fwpaper", verts=16), C((0, 0, 0.07), (0, 0, 0.13), 0.026, "fwgold", r1=0.002, verts=16),
+                         C((0, 0, -0.1), (0, 0, -0.09), 0.027, "fwgold", verts=16), C((0, 0, -0.1), (0, 0, -0.32), 0.004, "wood", verts=8)])
+
 # ---------------------------------------------------------------- export
 for ob in scene.objects:
     ob.select_set(ob in PARTS)
@@ -455,7 +483,7 @@ for o in PARTS:
 print("exported", OUT)
 
 if PREVIEW:
-    layout = ["pistol", "deagle", "mp5", "rifle", "ak", "shotgun", "dbarrel", "aa12", "awm", "m249", "minigun", "flamer", "tesla", "m79", "rpg", "crossbow"]
+    layout = ["pistol", "deagle", "mp5", "rifle", "ak", "shotgun", "dbarrel", "aa12", "awm", "m249", "minigun", "flamer", "tesla", "m79", "rpg", "crossbow", "fireworks"]
     for i, name in enumerate(layout):
         col, row = i % 4, i // 4
         off = Vector((col * 1.45 - 2.2, 0, -row * 0.62 + 0.93))
