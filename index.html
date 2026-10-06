@@ -60,6 +60,8 @@
 
   #health { position: absolute; left: 22px; bottom: 22px; width: 260px; text-shadow: 0 1px 3px #000; }
   #health .label { font-size: 12px; letter-spacing: 0.2em; color: var(--dim); }
+  #health.regen .label::after { content: " · 回復中"; color: #7aff9a; }
+  #health.regen #hpfill { background: linear-gradient(90deg, #b8261a, #e54a33 70%, #7aff9a); }
   #hpnum { font-size: 38px; line-height: 1; }
   #hpbar { height: 6px; background: rgba(255,255,255,0.12); margin-top: 6px; }
   #hpfill { height: 100%; background: linear-gradient(90deg, #b8261a, #e54a33); width: 100%; transition: width 0.15s; }
@@ -155,6 +157,8 @@
   #tJump { width: 62px; height: 62px; right: calc(max(34px, env(safe-area-inset-right, 0px)) + 110px); bottom: 90px; }
   #tReload { width: 54px; height: 54px; right: calc(max(34px, env(safe-area-inset-right, 0px)) + 40px); bottom: 220px; }
   #tSwitch { width: 54px; height: 54px; right: calc(max(34px, env(safe-area-inset-right, 0px)) - 10px); bottom: 26px; border-radius: 12px; width: 110px; }
+  #tCompass { width: 54px; height: 44px; left: calc(max(16px, env(safe-area-inset-left, 0px)) + 54px); top: 14px; border-radius: 10px; font-size: 13px; }
+  #tCompass.off { opacity: 0.45; text-decoration: line-through; }
   #tPause { width: 44px; height: 44px; left: max(16px, env(safe-area-inset-left, 0px)); top: 14px; border-radius: 10px; }
   .is-touch #ammo { bottom: auto; right: auto; top: 128px; left: max(16px, env(safe-area-inset-left, 0px)); text-align: left; }
   .is-touch #msg { top: 42%; }
@@ -306,7 +310,7 @@
   <div class="menubtns"><span class="wallet num" id="menuCash">$0</span><button class="b primary" id="btnShop">武器裝備<span class="salebadge">3折</span></button><button class="b" id="btnBestiary">感染者圖鑑</button><button class="b" id="quality">畫質：自動</button></div>
   <div class="controls">
     <span class="keyhelp"><b>W A S D</b> 移動　<b>Shift</b> 衝刺　<b>空白鍵</b> 跳躍　<b>滑鼠左鍵</b> 射擊　<b>右鍵</b> 瞄準<br>
-    <b>R</b> 換彈　<b>1 2 3</b> / 滾輪 切換武器　<b>Esc</b> 暫停　·　</span>爆頭傷害 ×2.5
+    <b>R</b> 換彈　<b>1 2 3</b> / 滾輪 切換武器　<b>C</b> 殭屍羅盤　<b>Esc</b> 暫停　·　</span>爆頭傷害 ×2.5
     <div class="padhelp">已連接手把：左右選擇關卡，A 開始。</div>
     <div class="touchnote">觸控模式：左半邊拖曳移動（推到底會衝刺），右半邊滑動轉視角，按住「射擊」可邊射邊轉。</div>
   </div>
@@ -342,6 +346,7 @@
   <div class="tb" id="tReload">換彈</div>
   <div class="tb" id="tSwitch">換槍</div>
   <div class="tb" id="tPause">❚❚</div>
+  <div class="tb" id="tCompass">羅盤</div>
 </div>
 <div id="rotate"><div class="ph"></div><div>橫放手機，畫面和操作空間比較大</div><button class="b" id="btnPortrait">直接直向玩</button></div>
 
@@ -2589,6 +2594,10 @@ function arm(parent, hx, hy, hz, ex, ey, ez) {
 }
 function fillArm(slot) {
   while (slot.children.length) slot.remove(slot.children[0]);
+  if (slot.scale.x < 0 && COMPASS) { // the zombie compass rides on the left (mirrored) wrist
+    const c = COMPASS.clone(); c.position.set(0, 0.03, 0.062); c.visible = compassOn; c.userData.compass = true;
+    c.traverse((o) => { o.frustumCulled = false; }); slot.add(c);
+  }
   if (ARM_GLB) { slot.add(ARM_GLB.clone()); return; }
   // stand-in until the model has loaded: dark sleeve and a simple glove
   const sl = new THREE.Mesh(new THREE.CylinderGeometry(0.047, 0.055, 0.44, 14), gunMats.sleeve);
@@ -2727,6 +2736,66 @@ function applyArmorLook() {
   sleeve.map = col ? null : SLEEVE.map; sleeve.bumpMap = col ? SLEEVE.map : null; sleeve.bumpScale = 2;
   sleeve.color.set(col || 0xffffff); sleeve.roughness = col ? a.gloss || 0.9 : SLEEVE.rough; sleeve.needsUpdate = true;
   if (cuff) cuff.color.copy(col ? new THREE.Color(col).multiplyScalar(0.55) : SLEEVE.cuffColor);
+}
+// ---- 殭屍羅盤: a radar watch on the left wrist. It turns around the wrist to face the camera and paints every
+// zombie onto its face, the player's forward always pointing up on screen however the arm is posed.
+// C (or the touch button) shows or hides it; the choice is remembered.
+let COMPASS = null, compassOn = store.get('deadcity_compass', true), compassDraw = 0;
+const radar = (() => { const [c, x] = makeCanvas(256); const t = new THREE.CanvasTexture(c); t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; return { c, x, t }; })();
+loadModel('compass', (scene) => {
+  const mats = { cmp_strap: std({ color: 0x141416, roughness: 0.75 }), cmp_metal: std({ color: 0x1c1e22, roughness: 0.35, metalness: 0.9 }),
+    cmp_bezel: std({ color: 0xb08a40, roughness: 0.3, metalness: 1 }), cmp_face: new THREE.MeshBasicMaterial({ map: radar.t }) };
+  scene.traverse((o) => { if (o.isMesh) o.material = mats[o.material.name] || mats.cmp_metal; });
+  COMPASS = scene;
+  forEachView((v) => v.group.traverse((o) => { if (o.userData.armSlot) fillArm(o); }));
+});
+function setCompass(on) {
+  compassOn = on; store.set('deadcity_compass', on);
+  forEachView((v) => v.group.traverse((o) => { if (o.userData.compass) o.visible = on; }));
+  $('tCompass') && $('tCompass').classList.toggle('off', !on);
+}
+const _cv = new THREE.Vector3(), _c0 = new THREE.Vector3(), _cu = new THREE.Vector3(), _cw = new THREE.Vector3();
+function updateCompass() {
+  const v = weapons[wi] && weapons[wi].view;
+  if (!compassOn || !v || state !== 'playing') return;
+  let comp = null; v.group.traverse((o) => { if (o.userData.compass) comp = o; });
+  if (!comp) return;
+  // turn the watch around the wrist so its face looks at the camera
+  const slot = comp.parent; v.group.updateMatrixWorld(true);
+  slot.worldToLocal(gunCam.getWorldPosition(_cv)).sub(comp.position);
+  comp.rotation.z = Math.atan2(-_cv.x, _cv.y);
+  comp.updateMatrixWorld(true);
+  if ((compassDraw = (compassDraw + 1) % 2)) return; // the dial is repainted every other frame
+  const face = comp.getObjectByName('compass_face') || comp;
+  // where the face's texture axes point on screen: canvas +x is the face's +X, canvas +y its -Z
+  const p0 = face.localToWorld(_c0.set(0, 0.06, 0)), asp = gunCam.aspect;
+  const sp = (p) => { const q = p.clone().project(gunCam); return [q.x * asp, q.y]; };
+  const o = sp(p0), u = sp(face.localToWorld(_cu.set(0.03, 0.06, 0))), w = sp(face.localToWorld(_cw.set(0, 0.06, -0.03)));
+  const ux = u[0] - o[0], uy = u[1] - o[1], wx = w[0] - o[0], wy = w[1] - o[1], det = ux * wy - uy * wx;
+  const { c, x } = radar, R = 118;
+  x.setTransform(1, 0, 0, 1, 0, 0);
+  x.fillStyle = '#04110a'; x.fillRect(0, 0, 256, 256);
+  if (Math.abs(det) < 1e-9) { radar.t.needsUpdate = true; return; }
+  // screen direction (sx right, sy up) → canvas offset: solve [u w]·[a b] = s
+  const toCanvas = (sx, sy) => [(sx * wy - sy * wx) / det, (ux * sy - uy * sx) / det];
+  const [ax, ay] = toCanvas(1, 0), [bx, by] = toCanvas(0, 1);
+  const k = 1 / Math.max(1e-6, Math.hypot(bx, by));
+  x.setTransform(ax * k, ay * k, bx * k, by * k, 128, 128); // now drawing in screen terms: +x right, +y up
+  x.strokeStyle = 'rgba(80,255,140,0.35)'; x.lineWidth = 2;
+  for (const r of [0.33, 0.66, 1]) { x.beginPath(); x.arc(0, 0, R * r, 0, Math.PI * 2); x.stroke(); }
+  x.beginPath(); x.moveTo(-R, 0); x.lineTo(R, 0); x.moveTo(0, -R); x.lineTo(0, R); x.stroke();
+  x.fillStyle = 'rgba(80,255,140,0.18)'; x.beginPath(); x.moveTo(0, 0); x.arc(0, 0, R, Math.PI / 2 - 0.45, Math.PI / 2 + 0.45); x.fill(); // the view cone
+  const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);
+  for (const z of zombies) {
+    if (z.dead || (z.ghost && z.ghost.opacity < 0.3)) continue; // a hidden 潛行者 stays hidden
+    const dx = z.pos.x - player.pos.x, dz = z.pos.z - player.pos.z, d = Math.hypot(dx, dz) || 1;
+    const fwd = (dx * fx + dz * fz) / d, side = (dx * rx + dz * rz) / d;
+    const r = R * Math.min(0.96, d / (d + 22)); // the whole map fits: near ones spread out, far ones crowd the rim
+    x.fillStyle = z.c.boss ? '#ffc040' : z.c.fest || z.c.ranged || z.c.gun || z.c.shock ? '#ff8a30' : '#ff3a2a';
+    x.beginPath(); x.arc(side * r, fwd * r, z.c.boss ? 15 : d < 10 ? 11 : 8, 0, Math.PI * 2); x.fill();
+  }
+  x.fillStyle = '#e8fff0'; x.beginPath(); x.moveTo(0, 14); x.lineTo(-8, -8); x.lineTo(8, -8); x.fill(); // you
+  radar.t.needsUpdate = true;
 }
 loadModel('arm', (scene) => {
   ARM_GLB = scene;
@@ -4426,6 +4495,7 @@ function hurtPlayer(dmg, kind = 'melee') {
   if (state !== 'playing') return;
   const a = armorOn();
   if (a) { const stopped = dmg * armorRes(a, kind); dmg -= stopped; wearArmorDown(a, stopped); }
+  player.calmT = 0; // any hit restarts the wait before health comes back
   player.hp = Math.max(0, player.hp - dmg);
   hurtAlpha = Math.min(1, hurtAlpha + 0.5 + dmg / 40); shake = Math.min(1, shake + (a && a.steady ? 0.2 : 0.5));
   const now = performance.now();
@@ -4664,7 +4734,7 @@ function startLevel(i) {
   }
   loadLevel(i);
   player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
-  player.yaw = 0; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0);
+  player.yaw = 0; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0); player.calmT = 0; player.regenT = 0;
   wi = 1; resetWeapons(); reloading = 0; switching = 0;
   kills = 0; score = 0; levelCash = 0; waveIdx = 0; queue = []; waveActive = false; interT = 3;
   showMsg(levelTitle(LV), `${TIMES[LV.time].label} — 撐過 ${LV.waves.length} 波感染者`, 3);
@@ -4816,6 +4886,7 @@ addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (state !== 'playing') return;
   if (e.code === 'KeyR') startReload();
+  if (e.code === 'KeyC' && !e.repeat) setCompass(!compassOn);
   if (e.code === 'Digit1') switchWeapon(0);
   if (e.code === 'Digit2') switchWeapon(1);
   if (e.code === 'Digit3') switchWeapon(2);
@@ -4900,6 +4971,7 @@ function lookBy(dx, dy) {
   btn('tJump', () => { touchJump = true; });
   btn('tReload', () => startReload());
   btn('tSwitch', () => switchWeapon((wi + 1) % weapons.length));
+  btn('tCompass', () => setCompass(!compassOn));
   btn('tPause', () => { releaseTouch(); state = 'paused'; $('pause').classList.add('show'); });
   // keep the aim button lit while aiming
   setInterval(() => $('tAim').classList.toggle('down', aiming && state === 'playing'), 150);
@@ -5359,6 +5431,12 @@ const _v = new THREE.Vector3();
 function updatePlayer(dt) {
   const sprint = (keys.ShiftLeft && keys.KeyW || joyWantsSprint) && !aiming;
   player.slowT = Math.max(0, (player.slowT || 0) - dt);
+  player.calmT = (player.calmT || 0) + dt; // 10 s without being hurt, then +2 health every second
+  if (player.calmT >= 10 && player.hp > 0 && player.hp < 100) {
+    player.regenT = (player.regenT || 0) + dt;
+    while (player.regenT >= 1) { player.regenT -= 1; player.hp = Math.min(100, player.hp + 2); }
+  } else player.regenT = 0;
+  $('health').classList.toggle('regen', player.calmT >= 10 && player.hp < 100);
   const speed = (aiming ? 2.8 : sprint ? 8.2 : 5.2) * (weapons[wi]?.c.move || 1) * (ARMOR[armorId]?.move || 1) * (player.slowT > 0 ? 0.5 : 1);
   const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);
   let wx = 0, wz = 0;
@@ -5582,6 +5660,7 @@ function updateSaber() {
 }
 function frame(dt, now) {
   if (hitStop > 0) { hitStop -= dt; dt *= 0.06; }
+  updateCompass();
   updateSlashMarks(dt);
   pollPad(dt);
   if (state === 'playing') autoQuality(dt);
@@ -5611,7 +5690,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026100501'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026100601'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
@@ -5639,7 +5718,7 @@ $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 window.__game = { get state() { return state; }, player, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
-  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), grantWeapon, gongWaves: () => gongWaves, spawnDragon, setWeapon(i) { wi = i; weapons.forEach((w, k) => { w.view.group.visible = k === i; }); }, EVENT_LEVEL, completeLevel: () => levelComplete(), setDate(d) { dateOverride = d ? new Date(d + 'T12:00:00') : null; renderMenu(); }, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
+  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), grantWeapon, gongWaves: () => gongWaves, setCompass, compassOn: () => compassOn, spawnDragon, setWeapon(i) { wi = i; weapons.forEach((w, k) => { w.view.group.visible = k === i; }); }, EVENT_LEVEL, completeLevel: () => levelComplete(), setDate(d) { dateOverride = d ? new Date(d + 'T12:00:00') : null; renderMenu(); }, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
   spawnNear(type, d = 8) { const z = new Zombie(type, player.pos.x + rand(-2, 2), player.pos.z - d); zombies.push(z); return z; } };
 </script>
