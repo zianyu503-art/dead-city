@@ -2751,7 +2751,7 @@ loadModel('compass', (scene) => {
 });
 function setCompass(on) {
   compassOn = on; store.set('deadcity_compass', on);
-  forEachView((v) => v.group.traverse((o) => { if (o.userData.compass) o.visible = on; }));
+  forEachView((v) => v.group.traverse((o) => { if (o.userData.compass || o.userData.compassArm) o.visible = on; }));
   $('tCompass') && $('tCompass').classList.toggle('off', !on);
 }
 const _cv = new THREE.Vector3(), _c0 = new THREE.Vector3(), _cu = new THREE.Vector3(), _cw = new THREE.Vector3();
@@ -3102,6 +3102,11 @@ function buildGun(id) {
     muzzle = new THREE.Vector3(0, 0.018, -0.71); hip = new THREE.Vector3(0.17, -0.17, -0.5); aim = new THREE.Vector3(0, -0.032, -0.34);
   }
   if (GUNS && GUNS[id]) useModelGun(g, id, extra);
+  // one-handed weapons have no left hand on screen, so a raised left arm comes in at the lower left to wear the compass
+  if (!g.children.some((o) => o.userData.armSlot && o.scale.x < 0)) {
+    arm(g, hip.x < 0.1 ? -0.26 : -0.3, 0.0, -0.06, -0.72, -0.2, 0.06); // forearm across the lower left, like checking a watch
+    const slot = g.children[g.children.length - 1]; slot.userData.compassArm = true; slot.visible = compassOn;
+  }
   g.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
   g.scale.setScalar(0.8); muzzle.multiplyScalar(0.8);
   const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.flash, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
@@ -5690,7 +5695,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026100601'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026100701'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
