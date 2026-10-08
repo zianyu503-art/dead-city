@@ -2873,9 +2873,10 @@ loadModel('compass', (scene) => {
 });
 function setCompass(on) {
   compassOn = on; store.set('deadcity_compass', on);
-  forEachView((v) => v.group.traverse((o) => { if (o.userData.compass || o.userData.compassArm) o.visible = on; }));
+  forEachView((v) => v.group.traverse((o) => { if (o.userData.compass || o.userData.compassArm) o.visible = on; if (o.userData.hiltHand) o.visible = !on; }));
   $('tCompass') && $('tCompass').classList.toggle('off', !on);
 }
+const _cmpOff = new THREE.Vector3();
 const _cv = new THREE.Vector3(), _c0 = new THREE.Vector3(), _cu = new THREE.Vector3(), _cw = new THREE.Vector3();
 function updateCompass() {
   const v = weapons[wi] && weapons[wi].view;
@@ -3224,10 +3225,17 @@ function buildGun(id) {
     muzzle = new THREE.Vector3(0, 0.018, -0.71); hip = new THREE.Vector3(0.17, -0.17, -0.5); aim = new THREE.Vector3(0, -0.032, -0.34);
   }
   if (GUNS && GUNS[id]) useModelGun(g, id, extra);
-  // one-handed weapons have no left hand on screen, so a raised left arm comes in at the lower left to wear the compass
-  if (!g.children.some((o) => o.userData.armSlot && o.scale.x < 0)) {
-    arm(g, hip.x < 0.1 ? -0.26 : -0.3, 0.0, -0.06, -0.72, -0.2, 0.06); // forearm across the lower left, like checking a watch
-    const slot = g.children[g.children.length - 1]; slot.userData.compassArm = true; slot.visible = compassOn;
+  // one-handed weapons have no left hand on screen, and a sword's left hand sits on the hilt out of sight, so a raised
+  // left arm comes in at the lower left to wear the compass (forearm across the view, like checking a watch).
+  // While the compass shows, a sword is held in the right hand alone; hide the compass and the left hand returns to the hilt
+  const sword = id === 'katana' || id === 'saber', hilt = g.children.find((o) => o.userData.armSlot && o.scale.x < 0);
+  if (!hilt || sword) {
+    const local = (x, y, z) => new THREE.Vector3(x, y, z).sub(hip).divideScalar(0.8); // the same spot on screen for every weapon
+    const hand = local(-0.09, -0.15, -0.388), elbow = local(-0.426, -0.31, -0.292);
+    const holder = new THREE.Group(); g.add(holder); extra.compassHolder = holder; // swords counter-rotate this through a swing
+    arm(holder, hand.x, hand.y, hand.z, elbow.x, elbow.y, elbow.z);
+    holder.userData.compassArm = true; holder.userData.keep = true; holder.visible = compassOn;
+    if (hilt && sword) { hilt.userData.hiltHand = true; hilt.visible = !compassOn; }
   }
   g.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
   g.scale.setScalar(0.8); muzzle.multiplyScalar(0.8);
@@ -5845,11 +5853,13 @@ function updateWeapon(dt) {
     const cut = swingT > 0 ? Math.min(1, k * 1.6) : 0;
     const idle = Math.sin(performance.now() / 700) * 0.015;  // slight breathing in the guard stance
     v.group.rotation.set(-cut * 0.85 + idle - sway.y * 2, cut * 1.05 + sway.x * 3, cut * 0.9);
-    if (v.pivot) { // keep the hands in place so the blade, not the forearms, sweeps across the view
-      const moved = v.pivot.clone().applyEuler(v.group.rotation).sub(v.pivot);
-      v.group.position.sub(moved);
-    }
+    const moved = v.pivot ? v.pivot.clone().applyEuler(v.group.rotation).sub(v.pivot) : new THREE.Vector3();
+    v.group.position.sub(moved); // keep the hands in place so the blade, not the forearms, sweeps across the view
     v.group.position.x -= arc * 0.08; v.group.position.z -= arc * 0.06;
+    if (v.compassHolder) { // the compass arm stays put at the lower left while the sword swings
+      const q = v.compassHolder.quaternion.setFromEuler(v.group.rotation).invert();
+      v.compassHolder.position.copy(moved).add(_cmpOff.set(arc * 0.08, 0, arc * 0.06)).applyQuaternion(q).divideScalar(0.8);
+    }
     if (v.ribbon) updateSwordTrail(v, swingT > 0 && k > 0.08 && k < 0.9);
   }
   weapons.forEach((o) => { if (o !== w && o.view.ribbon) o.view.ribbon.mesh.visible = false; });
@@ -6000,7 +6010,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026100703'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026100801'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
