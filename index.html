@@ -122,6 +122,7 @@
   .t-snow { background: linear-gradient(160deg, rgba(150,175,210,0.55), rgba(10,14,24,0.9)); }
   .t-dust { background: linear-gradient(160deg, rgba(170,130,80,0.6), rgba(25,18,10,0.9)); }
   .t-rain { background: linear-gradient(160deg, rgba(70,95,110,0.6), rgba(10,14,18,0.9)); }
+  .t-seastorm { background: linear-gradient(160deg, rgba(40,85,115,0.65), rgba(6,12,20,0.92)); }
   .t-fog { background: linear-gradient(160deg, rgba(130,140,140,0.55), rgba(20,20,20,0.85)); }
   .controls { margin-top: 26px; font-size: 12px; color: var(--dim); letter-spacing: 0.05em; text-align: center; line-height: 1.9; }
   .controls b { color: var(--fg); font-weight: 400; border: 1px solid var(--line); padding: 1px 6px; margin: 0 2px; }
@@ -406,6 +407,12 @@ const LEVELS = [
     hpMul: 1.85, speedMul: 1.3, waves: [{ walker: 20, runner: 12, parasite: 3 }, { runner: 14, flyer: 4, riot: 4, gunner: 3, parasite: 2 },
       { walker: 16, runner: 14, flyer: 6, shocker: 3, stalker: 3, parasite: 3 }, { runner: 18, armored: 5, flyer: 6, mutant: 2, splitter: 3, parasite: 4 },
       { virusmother: 1, runner: 14, flyer: 5, parasite: 3 }] },
+  // level 12: the transport plane lands on a carrier at sea, but the infection got aboard too (CONTEXT.md: 第十二關)
+  { num: 12, name: '航空母艦', theme: 'carrier', time: 'seastorm', outro: '海怪沉回海底，航空母艦駛向安全的海域。',
+    desc: '運輸機降落在海上的航空母艦，艦上也爆發了感染，海裡的屍群正沿著船舷爬上甲板。暴風雨中守住飛行甲板，擊退從海裡冒出來的巨型海怪。',
+    hpMul: 1.95, speedMul: 1.33, waves: [{ walker: 18, runner: 10, sailor: 3 }, { sailor: 3, drowned: 5, runner: 12, crab: 2 },
+      { sailor: 3, drowned: 6, crab: 4, jammer: 2, parasite: 2 }, { runner: 16, sailor: 4, crab: 5, jammer: 3, flyer: 4, drowned: 4 },
+      { kraken: 1, sailor: 3, drowned: 5, crab: 3, jammer: 2 }] },
   // 國慶特別版: an event level outside the numbered campaign, open only during 國慶期間 (see CONTEXT.md).
   // num only sets the clear bonus; it plays at level 5's difficulty
   { id: 'national-day', event: true, label: '國慶特別版', num: 5, name: '國慶夜・煙火大道', theme: 'festival', time: 'festival',
@@ -448,6 +455,8 @@ const TIMES = {
            sun: 0xffd6a0, sunI: 1.7, hemiSky: 0xd8b890, hemiGround: 0x4a3a28, hemiI: 0.8, exp: 0.7, envI: 0.4, night: false },
   rain:  { label: '暴雨', sky: true, bgFog: true, rain: true, elev: 30, azi: 200, turb: 20, ray: 0.5, mie: 0.02, mieG: 0.8, fog: 0x565e67, fogD: 0.02,
            sun: 0xc8d0dc, sunI: 0.7, hemiSky: 0x9aa6b4, hemiGround: 0x2c2c2c, hemiI: 0.85, exp: 0.78, envI: 0.35, night: false },
+  seastorm: { label: '海上風暴', sky: true, bgFog: true, rain: true, sea: true, elev: 24, azi: 215, turb: 18, ray: 0.6, mie: 0.02, mieG: 0.8, fog: 0x4a5866, fogD: 0.011,
+           sun: 0xc4d0dc, sunI: 0.85, hemiSky: 0x8c9cae, hemiGround: 0x22282e, hemiI: 0.85, exp: 0.8, envI: 0.35, night: false },
   fog:   { label: '濃霧', sky: true, bgFog: true, elev: 25, azi: 180, turb: 20, ray: 0.6, mie: 0.02, mieG: 0.8, fog: 0x8c9599, fogD: 0.03,
            sun: 0xdde4ea, sunI: 1.0, hemiSky: 0xa9b4bb, hemiGround: 0x3c3b38, hemiI: 1.0, exp: 0.7, envI: 0.5, night: false },
 };
@@ -512,6 +521,17 @@ const ZTYPES = {
               desc: '背上長出肉翼的突變體，在三、四公尺高的空中飛來，接近後俯衝自爆。要往上瞄；在空中打死它，會在原地炸開，炸傷下方的殭屍。' },
   virusmother: { name: '病毒母體', color: '#8a2a4a', hp: 5000, speed: 0.45, dmg: 40, scale: 1, rate: 2.2, cash: 1500, score: 8000, boss: true, mother: true, reach: 5.2,
               desc: '一切感染的源頭。身上三個發光的病毒核心保護著本體，核心沒全部打爆前，打本體只有四分之一傷害。觸手會從地下鑽出拍擊紅圈，還會噴出孢子孵出寄生蟲。' },
+  // ---- 第十二關 (CONTEXT.md); costumes from tools/blender/naval_zombies.py, the kraken from tools/blender/carrier.py ----
+  sailor:   { name: '水兵殭屍', color: '#e8eef4', hp: 150, speed: 2.6, dmg: 12, scale: 1, rate: 1.0, cash: 20, score: 200, swarm: 4, naval: true,
+              desc: '戴著水兵帽、穿著救生衣的艦上水兵。比一般殭屍耐打、動作也快，一次四隻成群衝上來。' },
+  crab:     { name: '深海巨蟹殭屍', color: '#c0401a', hp: 260, speed: 1.5, dmg: 28, scale: 1.08, rate: 1.5, cash: 55, score: 500, naval: true, reach: 1.7,
+              desc: '在海底泡了太久，背上長滿藤壺，右手長成巨螯，一夾就是重傷。胸前的蟹殼從正面擋得住子彈，要繞到背後打，或用爆炸和火焰。' },
+  drowned:  { name: '溺死者', color: '#5a8a8a', hp: 110, speed: 1.4, dmg: 8, scale: 1, rate: 1.2, cash: 30, score: 300, ranged: true, water: true, naval: true,
+              desc: '從海裡爬上來的水腐屍，頭上掛著海草。會從遠處吐出一大口海水，落地變成一灘水，踩進去會變慢、腳下打滑。' },
+  jammer:   { name: '電子戰殭屍', color: '#6aa84a', hp: 140, speed: 1.6, dmg: 10, scale: 1, rate: 1.2, cash: 50, score: 450, jam: true, naval: true,
+              desc: '背著電子干擾器的通訊兵。靠近到 15 公尺內，殭屍羅盤會變成雜訊、準星亂跳、子彈散布變大。打倒它就恢復，優先擊殺。' },
+  kraken:   { name: '巨型海怪', color: '#8a2a6a', hp: 6000, speed: 0, dmg: 35, scale: 1, rate: 99, cash: 2000, score: 10000, boss: true, kraken: true,
+              desc: '從左舷外海面冒出的巨大海怪，只露出頭和一隻發光的眼睛。眼睛是弱點，打頭的其他地方只有兩成傷害。甲板上出現紅圈是觸手要砸下來，出現紅色長帶是觸手要橫掃甲板，跳起來可以躲過；還會朝你吐酸。' },
   brute:    { name: '巨型感染者', color: '#9a3a2a', hp: 650, speed: 1.3, dmg: 30, scale: 1.45, rate: 1.6, cash: 60, score: 500,
               desc: '體型巨大、血量極高，一拳就能打掉你三成生命。' },
 };
@@ -2032,9 +2052,10 @@ function buildLevel() {
   }
   levelGroup = new THREE.Group(); scene.add(levelGroup);
   colliders = []; worldMeshes = []; lampPositions = []; POLICE_CARS.length = 0; BARRELS.length = 0; FIRE_SPOTS.length = 0; barrelQueue = [];
-  festBanners = []; fwRacks = []; CARGO = null;
+  festBanners = []; fwRacks = []; CARGO = null; DECK_EDGES = null; SEA = null; RADAR = null;
   makeMaterials();
   const g = levelGroup, theme = LV.theme;
+  if (theme === 'carrier') { buildCarrier(g); return; } // no city at all: one ship in the open sea
 
   // ground (roads)
   const ground = mesh(new THREE.PlaneGeometry(900, 900), M.asphalt, g, 0, 0, 0, false);
@@ -2361,7 +2382,7 @@ function updateRain(dt) {
   if (dust) return;
   thunderT -= dt;
   if (thunderT <= 0) {
-    thunderT = rand(12, 26); lightning = 1;
+    thunderT = TM.sea ? rand(5, 11) : rand(12, 26); lightning = 1; // the storm at sea flashes more often
     if (actx) { const t = actx.currentTime + rand(0.4, 1.4); sNoise(t, 3, 400, 30, 1.1); sTone(t, 2, 55, 28, 0.5, 'sawtooth'); }
   }
   if (lightning > 0) {
@@ -2430,6 +2451,7 @@ function applyTime() {
 //  Collision
 // ============================================================
 function resolve(p, r) {
+  if (DECK_EDGES) clampDeck(p, r); // at sea the deck's rim is a wall
   for (const b of colliders) {
     if (p.x < b.x0 - r || p.x > b.x1 + r || p.z < b.z0 - r || p.z > b.z1 + r) continue;
     const cx = clamp(p.x, b.x0, b.x1), cz = clamp(p.z, b.z0, b.z1);
@@ -2867,6 +2889,10 @@ function airportBlock(g, bi, bj, cx, cz, inside) {
   if (Math.random() < 0.7) { const bx = cx - dx * 9 - Math.sin(rot) * 8, bz = cz - dz * 9 - Math.cos(rot) * 8; apPut(g, 'baggage_train', bx, 0.16, bz, rot); axisCollider(bx, bz, rot, 0, 1.8, 10); }
   if (Math.random() < 0.4) addTanker(g, cx - dx * 13 + Math.sin(rot) * 6, cz - dz * 13 + Math.cos(rot) * 6, rot);
 }
+// 第十二關: the carrier, its deck gear and the kraken (tools/blender/carrier.py); the naval costumes (tools/blender/naval_zombies.py)
+let CV = null, NZ = null;
+loadModel('carrier', (scene) => { CV = {}; scene.children.forEach((o) => { CV[o.name] = o; }); });
+loadModel('navalzombie', (scene) => { NZ = {}; scene.children.forEach((o) => { NZ[o.name] = o; }); });
 let FZ = null; // 國慶殭屍 costumes (tools/blender/fest_zombies.py), by name
 loadModel('festzombie', (scene) => {
   const m = festMats();
@@ -2941,6 +2967,10 @@ function updateCompass() {
   const { c, x } = radar, R = 118;
   x.setTransform(1, 0, 0, 1, 0, 0);
   x.fillStyle = '#04110a'; x.fillRect(0, 0, 256, 256);
+  if (jamming) { // 干擾: the dial shows nothing but static
+    for (let k = 0; k < 260; k++) { const v = randi(40, 230); x.fillStyle = `rgb(${(v * 0.45) | 0},${v},${(v * 0.6) | 0})`; x.fillRect(randi(0, 252), randi(0, 252), randi(2, 10), randi(1, 4)); }
+    radar.t.needsUpdate = true; return;
+  }
   if (Math.abs(det) < 1e-9) { radar.t.needsUpdate = true; return; }
   // screen direction (sx right, sy up) → canvas offset: solve [u w]·[a b] = s
   const toCanvas = (sx, sy) => [(sx * wy - sy * wx) / det, (ux * sy - uy * sx) / det];
@@ -3476,7 +3506,7 @@ class Zombie {
     const g = this.g = new THREE.Group();
     const sw = c.scale * (c.boss ? 1 : rand(0.93, 1.07)); g.scale.set(sw, sw * (c.boss ? 1 : rand(0.95, 1.07)), sw); // varied height and build
     const look = c.look || type; // the float boss wears the 屍王's body
-    const skin = type === 'stalker' ? zm.stalkerSkin : look === 'behemoth' ? zm.bossSkin[0] : pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' ? zm.paleSkin : type === 'mutant' ? zm.fleshSkin : type === 'splitter' ? zm.splitSkin : zm.skins);
+    const skin = type === 'stalker' ? zm.stalkerSkin : look === 'behemoth' ? zm.bossSkin[0] : pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' || type === 'drowned' ? zm.paleSkin : type === 'mutant' ? zm.fleshSkin : type === 'splitter' ? zm.splitSkin : zm.skins);
     const cop = type === 'riot' || type === 'gunner';
     let cloth = cop ? pick(zm.police) : pick(zm.cloth), pants = cop ? zm.policePants : pick(zm.pants);
     if (type === 'medic') { cloth = pick(zm.scrubs); pants = cloth; }
@@ -3488,10 +3518,12 @@ class Zombie {
     this.revealT = 0;
     if (type === 'mutant') { cloth = skin; pants = zm.gown; } // bare, swollen torso
     if (type === 'flamer') { cloth = zm.camo; pants = zm.camo; }
+    if (type === 'sailor') { cloth = pick(zm.police); pants = zm.policePants; } // navy blues under the life vest
+    if (type === 'jammer') { cloth = zm.camo; pants = zm.camo; }
     this.tankHp = type === 'flamer' ? 50 : 0; this.flameTick = 0; this.flaming = false;
     this.healCd = rand(2, 4); this.leapCd = rand(1.5, 3); this.crouch = 0; this.leapT = 0; this.airY = 0;
     this.shieldHp = c.shield ? c.shield * LV.hpMul : 0; this.shieldMax = this.shieldHp; this.gunT = rand(1.5, 3); this.aimT = 0;
-    const eyeMat = look === 'behemoth' ? zm.bossEye : type === 'shocker' ? zm.coil : type === 'stalker' ? zm.paleEye : type === 'spitter' ? zm.acid : type === 'screamer' ? zm.whiteEye : type === 'mutant' ? zm.yellowEye : zm.eye;
+    const eyeMat = look === 'behemoth' ? zm.bossEye : type === 'shocker' ? zm.coil : type === 'stalker' ? zm.paleEye : type === 'spitter' ? zm.acid : type === 'screamer' || type === 'drowned' ? zm.whiteEye : type === 'mutant' ? zm.yellowEye : zm.eye;
     const body = this.body = new THREE.Group(); g.add(body);
     const add = (geo, mat, parent, px, py, pz, part = 'body') => {
       const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.castShadow = true;
@@ -3508,9 +3540,9 @@ class Zombie {
       g.position.copy(this.pos); scene.add(g); zMeshes.push(...this.meshes);
       return;
     }
-    if (c.bug || c.flyer || c.mother) {
+    if (c.bug || c.flyer || c.mother || c.kraken) {
       this.headPivot = new THREE.Group(); body.add(this.headPivot); // nothing to behead
-      if (c.bug) this.buildBug(); else if (c.flyer) this.buildFlyer(); else this.buildMother();
+      if (c.bug) this.buildBug(); else if (c.flyer) this.buildFlyer(); else if (c.kraken) this.buildKraken(); else this.buildMother();
       g.position.copy(this.pos); scene.add(g); zMeshes.push(...this.meshes);
       return;
     }
@@ -3542,7 +3574,7 @@ class Zombie {
     const hp = this.headPivot = new THREE.Group(); hp.position.set(0, 1.72, 0.03); body.add(hp);
     const headS = type === 'spitter' ? 1.22 : type === 'bloater' ? 1.12 : 1;
     const jw = this.jaw = new THREE.Group(); jw.position.set(0, 0.07, 0.03); hp.add(jw);
-    const hairless = ['armored', 'bloater', 'flamer', 'medic', 'stalker', 'splitter', 'behemoth', 'liondance', 'floatboss'].includes(type);
+    const hairless = ['armored', 'bloater', 'flamer', 'medic', 'stalker', 'splitter', 'behemoth', 'liondance', 'floatboss', 'sailor', 'drowned'].includes(type);
     if (ZP) { // sculpted skull with brow, sockets, cheekbones, nose and ears; hinged jaw with teeth
       add(ZP.head, skin, hp, 0, 0, 0, 'head').scale.setScalar(headS);
       add(ZP.mouth, zm.mouth, hp, 0, 0, 0, 'head').scale.setScalar(headS);
@@ -3724,6 +3756,7 @@ class Zombie {
       this.laser.visible = false; this.laser.frustumCulled = false; scene.add(this.laser);
     }
     if (c.fest) this.dressFest(type);
+    if (c.naval) this.dressNaval(type);
     if (type === 'crawler') { body.position.set(0, 0, -0.95); add(G.hand, pants, body, 0.1, 0.93, 0).scale.set(1.3, 1, 1.3); }
     this.lean = { behemoth: 0.22, shocker: 0.08, runner: 0.32, brute: 0.18, crawler: 1.36, bloater: -0.08, screamer: 0.12, armored: 0.1, riot: 0.06, gunner: 0.05, medic: 0.1, mutant: 0.42, gong: 0.05, dragon: 0.25 }[look] ?? rand(0.08, 0.2);
     this.limp = type === 'walker' && Math.random() < 0.4 ? rand(0.2, 0.5) : 0;
@@ -3798,10 +3831,55 @@ class Zombie {
   }
   // a costume piece from fest_zombies.py, attached to a joint and shootable as `part`
   festPart(name, parent, part = 'body') {
-    if (!FZ || !FZ[name]) return null;
-    const o = FZ[name].clone();
+    const src = [FZ, NZ, CV].find((d) => d && d[name]);
+    if (!src) return null;
+    const o = src[name].clone();
     o.traverse((m) => { if (!m.isMesh) return; m.castShadow = true; m.userData = { z: this, part, head: part === 'head', mesh: m }; this.meshes.push(m); });
     parent.add(o); return o;
+  }
+  dressNaval(type) {
+    const hp = this.headPivot, body = this.body;
+    if (type === 'sailor') { this.festPart('sailor_cap', hp, 'head'); this.festPart('life_vest', body); }
+    if (type === 'crab') { // the 蟹殼 covers the chest; the right hand has grown into a claw
+      this.festPart('crab_shell', body, 'shell'); this.festPart('barnacles', body);
+      this.arms[1].scale.set(1.25, 1.1, 1.25); this.hands[1].children.forEach((m) => { m.visible = false; });
+      this.festPart('crab_claw', this.hands[1]);
+    }
+    if (type === 'drowned') this.festPart('seaweed', hp, 'head');
+    if (type === 'jammer') { this.festPart('jammer_pack', body); this.festPart('headset', hp, 'head'); }
+  }
+  // 巨型海怪: the head rises out of the sea off the port side; `pos` is the eye, the head sits behind it
+  buildKraken() {
+    const k = this.body; k.position.set(-12, -14, 0); k.scale.setScalar(2); k.rotation.y = Math.PI / 2;
+    this.festPart('kraken_head', k, 'hide');
+    const eye = this.eyeG = new THREE.Group(); eye.position.set(0, 8.5, 6.6); k.add(eye);
+    this.festPart('kraken_eye', eye, 'eye');
+    this.slamCd = 5.5; this.sweepCd = 11; this.lobCd = 8; this.riseT = 0; this.radius = 3; this.lean = 0; this.limp = 0;
+    this.g.visible = false;
+    showMsg('巨型海怪從左舷冒出來了！', '瞄準牠發光的眼睛', 4); sfx('bossroar');
+  }
+  updateKraken(dt) {
+    this.knockV = null; this.phase += dt;
+    this.riseT = Math.min(1, this.riseT + dt / 4);
+    const e = 1 - Math.pow(1 - this.riseT, 3);
+    if (this.riseT < 1 && Math.random() < dt * 30) burst(new THREE.Vector3(this.pos.x - rand(4, 18), -15, this.pos.z + rand(-10, 10)), UP, seaSprayMat, 4, 9);
+    this.g.visible = true;
+    this.g.position.set(this.pos.x, -28 * (1 - e) + Math.sin(this.phase * 0.7) * 0.6 + (SEA ? SEA.position.y + 16 : 0), this.pos.z);
+    this.body.rotation.z = Math.sin(this.phase * 0.5) * 0.04; this.body.rotation.x = Math.sin(this.phase * 0.37) * 0.03;
+    this.g.updateMatrixWorld(true); this.eyeG.lookAt(camera.position); // the eye follows you
+    if (this.riseT < 1 || player.hp <= 0) return;
+    this.slamCd -= dt; this.sweepCd -= dt; this.lobCd -= dt;
+    if (this.sweepCd <= 0) { this.sweepCd = 9; krakenSweep(player.pos.z); this.slamCd = Math.max(this.slamCd, 2.2); }
+    if (this.slamCd <= 0) { this.slamCd = 4; krakenSlam(player.pos.clone().addScaledVector(player.vel, 0.4).setY(0)); }
+    if (this.lobCd <= 0) {
+      this.lobCd = 6; const from = this.eyeG.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(3, -2, 0)); // spat from under the eye
+      for (let k = 0; k < 3; k++) { const at = player.pos.clone().add(new THREE.Vector3(rand(-4, 4), 0, rand(-4, 4))); clampDeck(at, 0.5); lobAcid(from, at); }
+    }
+  }
+  // 爬上甲板: start below the rim on the outside of the hull and haul up onto the deck
+  startClimb(edge, delay) {
+    this.climbN = edge; this.climbT = 1.2 + delay; this.g.position.y = -2.6;
+    this.g.rotation.y = Math.atan2(-edge.nx, -edge.nz);
   }
   dressFest(type) {
     const c = this.c, hp = this.headPivot, body = this.body;
@@ -4012,6 +4090,8 @@ class Zombie {
       return false;
     }
     if (ud.part === 'head') mul = 2.5;
+    else if (ud.part === 'shell') { mul = 0.1; this.lastFx = 'spark'; } // bullets glance off the 蟹殼
+    if (this.c.kraken) mul = ud.part === 'eye' ? 2 : 0.2;
     if (this.floatHp > 0) mul *= 0.25; // the float shields the boss
     if (this.cores && this.cores.some((q) => q.hp > 0)) mul *= 0.25; // so do the virus cores
     if (this.frozenT > 0) mul *= 2; // ice cracks easily
@@ -4022,7 +4102,7 @@ class Zombie {
     this.hp -= dmg * mul;
     if (this.ghost) this.revealT = 2.5;
     this.hitT = this.type === 'brute' || this.type === 'armored' ? 0.06 : 0.15;
-    if (this.type !== 'brute' && dir) { this.pos.x += dir.x * 0.12; this.pos.z += dir.z * 0.12; }
+    if (this.type !== 'brute' && !this.c.kraken && dir) { this.pos.x += dir.x * 0.12; this.pos.z += dir.z * 0.12; }
     if (this.hp <= 0) { this.die(dir || new THREE.Vector3(0, 0, 1)); return true; }
     return false;
   }
@@ -4085,6 +4165,7 @@ class Zombie {
   die(dir) {
     if (this.dead) return;
     this.dead = true; this.deadT = 0; this.fallDir = Math.random() < 0.7 ? -1 : 1;
+    if (this.climbT > 0) { this.climbT = 0; this.g.position.set(this.pos.x, 0, this.pos.z); } // shot off the rim mid-climb: falls onto the deck
     if (this.laser) this.laser.visible = false;
     zMeshes = zMeshes.filter((m) => m.userData.z !== this);
     kills++; score += this.c.score; addCash(this.c.cash);
@@ -4101,6 +4182,7 @@ class Zombie {
       for (const o of zombies) if (!o.dead && o !== this && o.pos.distanceTo(this.pos) < 4.5) { o.hitT = 1.4; burst(o.pos.clone().setY(1.2), UP, sparkMat, 6, 3); }
       addBolt(this.pos.clone().setY(1.2), this.pos.clone().setY(3)); sfx('zap', 0.8);
     }
+    if (this.c.kraken) { showMsg(`${this.c.name}沉下去了！`, `獎勵 ${money(this.c.cash)}`, 3); shake = 1; sfx('bossroar'); return; } // nothing left on the deck
     if (this.c.boss) { showMsg(`${this.c.name}倒下了！`, `獎勵 ${money(this.c.cash)}`, 3); shake = 1; sfx('slam', 1.5); spawnPickup('med', this.pos); }
     this.pool = makePool(this.pos.x + dir.x * 0.8, this.pos.z + dir.z * 0.8, TEX.blood, this.c.scale * rand(0.8, 1.2));
     const r = Math.random();
@@ -4161,6 +4243,7 @@ class Zombie {
       const k = Math.min(1, this.deadT / 0.55);
       if (this.type === 'dog' || this.c.bug) { g.rotation.z = this.fallDir * (Math.PI / 2) * (k * k); g.position.y = 0; }
       else if (this.c.mother) { g.position.y = -3 * k; this.body.scale.setScalar(1 - 0.3 * k); }
+      else if (this.c.kraken) { g.position.y = -this.deadT * 5; this.body.rotation.z = this.deadT * 0.05; } // sinks back to the bottom
       else if (this.type === 'broodmother') { g.rotation.z = this.fallDir * 0.35 * k; g.position.y = -0.5 * k; }
       else if (this.type === 'crawler') this.body.rotation.x += (1.55 - this.body.rotation.x) * Math.min(1, dt * 5);
       else { g.rotation.x = this.fallDir * (Math.PI / 2) * (k * k); g.position.y = Math.sin(k * Math.PI) * 0.15; }
@@ -4177,6 +4260,16 @@ class Zombie {
       if (Math.random() < dt * 16) emitFire(this.pos.clone().setY(rand(0.4, 1.6) * this.g.scale.y).add(new THREE.Vector3(rand(-0.2, 0.2), 0, rand(-0.2, 0.2))), UP, rand(1, 2));
       if (this.burnTick <= 0) { this.burnTick = 0.25; if (this.damage(5, { part: 'body' }, null)) return true; }
     }
+    if (this.climbT > 0) { // 爬上甲板
+      this.climbT -= dt;
+      const k = clamp(1 - this.climbT / 1.2, 0, 1), e = 1 - (1 - k) * (1 - k), n = this.climbN;
+      g.position.set(this.pos.x + n.nx * (1 - e) * 2, -2.6 * (1 - e), this.pos.z + n.nz * (1 - e) * 2);
+      g.rotation.y = Math.atan2(-n.nx, -n.nz);
+      this.arms.forEach((a, i) => { a.rotation.x = -2.8 + e * 1.6 + Math.sin(k * 10 + i * 3) * 0.25; });
+      this.body.rotation.x = 0.6 * (1 - e);
+      if (this.climbT <= 0) { this.climbT = 0; burst(this.pos.clone().setY(0.3), UP, seaSprayMat, 8, 3); }
+      return true;
+    }
     if (this.frozenT > 0) { this.frozenT -= dt; if (this.frozenT <= 0) this.thaw(); return true; } // a block of ice
     if (this.chillT > 0) this.chillT -= dt; else this.chill = Math.max(0, (this.chill || 0) - dt);
     if (this.knockV) {
@@ -4185,6 +4278,7 @@ class Zombie {
     }
     if (this.stunT > 0) this.stunT -= dt;
     const dx = player.pos.x - this.pos.x, dz = player.pos.z - this.pos.z, dist = Math.hypot(dx, dz);
+    if (this.c.kraken) { this.updateKraken(dt); return true; }
     let mx = dx / (dist || 1), mz = dz / (dist || 1);
     for (const o of zombies) {
       if (o === this || o.dead) continue;
@@ -4696,8 +4790,9 @@ function spawnSpit(z) {
   const target = camera.position.clone().addScaledVector(player.vel, 0.5); target.y -= 0.3;
   const d = Math.hypot(target.x - from.x, target.z - from.z), T = clamp(d / 15, 0.4, 1.4);
   const v = new THREE.Vector3((target.x - from.x) / T, (target.y - from.y + 0.5 * 9.8 * T * T) / T, (target.z - from.z) / T);
-  const m = new THREE.Mesh(spitGeo, zombieMats().acid); m.position.copy(from); scene.add(m);
-  spits.push({ m, v, life: 3 });
+  const water = !!z.c.water;
+  const m = new THREE.Mesh(spitGeo, water ? slickMat : zombieMats().acid); m.position.copy(from); if (water) m.scale.setScalar(1.6); scene.add(m);
+  spits.push({ m, v, life: 3, water });
   sfx('spit', clamp(1.2 - d / 30, 0.3, 1));
 }
 function updateHazards(dt) {
@@ -4706,10 +4801,14 @@ function updateHazards(dt) {
   const eye = camera.position;
   spits = spits.filter((p) => {
     p.life -= dt; p.v.y -= 9.8 * dt; p.m.position.addScaledVector(p.v, dt);
-    if (Math.random() < 0.5) burst(p.m.position, UP, acidPartMat, 1, 0.5);
+    if (Math.random() < 0.5) burst(p.m.position, UP, p.water ? seaSprayMat : acidPartMat, 1, 0.5);
     const done = (fx) => { scene.remove(p.m); return false; };
+    if (p.water) { // sea water: knocks the wind out of you and leaves a 水灘
+      if (p.m.position.distanceTo(eye) < 0.8) { hurtPlayer(ZTYPES.drowned.dmg); player.slowT = Math.max(player.slowT || 0, 1.2); sfx('splash'); return done(); }
+      if (p.m.position.y <= 0.05) { makeSlick(p.m.position.x, p.m.position.z); burst(p.m.position, UP, seaSprayMat, 10, 3); sfx('splash', 0.6); return done(); }
+    }
     if (p.m.position.distanceTo(eye) < 0.75) { hurtPlayer(ZTYPES.spitter.dmg + 4, 'acid'); acidFlash = 1; sfx('splash'); return done(); }
-    if (p.m.position.y <= 0.05) { makePool(p.m.position.x, p.m.position.z, TEX.acid, 1.5, true); burst(p.m.position, UP, acidPartMat, 8, 2.5); sfx('splash', 0.6); return done(); }
+    if (p.m.position.y <= 0.05) { if (onDeck(p.m.position.x, p.m.position.z)) makePool(p.m.position.x, p.m.position.z, TEX.acid, 1.5, true); burst(p.m.position, UP, acidPartMat, 8, 2.5); sfx('splash', 0.6); return done(); }
     if (p.m.position.y < 10 && blocked(p.m.position.x, p.m.position.z, 0)) { burst(p.m.position, UP, acidPartMat, 8, 2.5); return done(); }
     if (p.life <= 0) return done();
     return true;
@@ -4745,6 +4844,7 @@ function updateHazards(dt) {
 let acidFlash = 0;
 
 function spawnZombie(type) {
+  if (DECK_EDGES) return spawnOnDeck(type);
   for (let tries = 0; tries < 40; tries++) {
     const rc = pick(ROAD_CENTERS), t = rand(-HALF + 4, HALF - 4), off = rand(-4, 4);
     const [x, z] = Math.random() < 0.5 ? [rc + off, t] : [t, rc + off];
@@ -4752,15 +4852,20 @@ function spawnZombie(type) {
     const d = Math.hypot(x - player.pos.x, z - player.pos.z);
     if (d < 32 || d > 95 || blocked(x, z, 0.5)) continue;
     if (ZTYPES[type].dragon) { spawnDragon(x, z); return true; }
-    if (ZTYPES[type].swarm) { spawnSwarm(x, z, ZTYPES[type].swarm); return true; }
+    if (ZTYPES[type].swarm) { spawnSwarm(x, z, ZTYPES[type].swarm, type); return true; }
     zombies.push(new Zombie(type, x, z));
     return true;
   }
   return false;
 }
 
-function spawnSwarm(x, z, n) {
-  for (let k = 0; k < n; k++) { const b = new Zombie('parasite', x + rand(-1.5, 1.5), z + rand(-1.5, 1.5)); b.speed *= rand(0.85, 1.15); addZombie(b); }
+// a pack of one type; climbing up the ship's side (`edge`) they come over the rim side by side, one after another
+function spawnSwarm(x, z, n, type = 'parasite', edge = null) {
+  for (let k = 0; k < n; k++) {
+    const off = (k - (n - 1) / 2) * 1.4;
+    const b = edge ? new Zombie(type, x + edge.tx * off, z + edge.tz * off) : new Zombie(type, x + rand(-1.5, 1.5), z + rand(-1.5, 1.5));
+    b.speed *= rand(0.85, 1.15); if (edge) b.startClimb(edge, k * 0.3); addZombie(b);
+  }
 }
 function spawnDragon(x, z) {
   const ax = x - player.pos.x, az = z - player.pos.z, al = Math.hypot(ax, az) || 1;
@@ -4881,8 +4986,9 @@ function updateHUD() {
   const alive = zombies.filter((z) => !z.dead).length;
   $('remain').textContent = `剩餘感染者 ${queue.length + alive}`;
   $('kills').textContent = kills; $('pts').textContent = score; $('cash').textContent = money(cash);
-  const sp = 10 + spreadK * 40 + (aimT > 0.5 ? -6 : 0);
+  const sp = 10 + spreadK * 40 + (aimT > 0.5 ? -6 : 0) + (jamming ? rand(10, 22) : 0);
   const ch = $('crosshair').children;
+  $('crosshair').style.transform = jamming ? `translate(${rand(-7, 7)}px, ${rand(-7, 7)}px)` : ''; // 干擾 makes the crosshair jump
   ch[0].style.top = `${-sp - 9}px`; ch[1].style.top = `${sp}px`; ch[2].style.left = `${-sp - 9}px`; ch[3].style.left = `${sp}px`;
   $('crosshair').style.opacity = aimT > 0.6 ? 0.15 : 1;
 }
@@ -5082,6 +5188,215 @@ function updateAirportHazards(dt) {
     if (near < 2.6) { board = null; levelComplete(); }
   }
 }
+// ============================================================
+//  第十二關: the aircraft carrier
+// ============================================================
+// the flight deck's outline (DECK in tools/blender/carrier.py); everything that walks stays inside it
+const DECK = [[-34, -128], [34, -128], [38, -112], [38, 92], [30, 116], [16, 128], [-16, 128], [-30, 116], [-40, 92], [-42, 30], [-42, -20], [-38, -112]];
+let DECK_EDGES = null, SEA = null, RADAR = null;
+const seaT = { value: 0 };
+function makeDeckEdges() {
+  return DECK.map((a, i) => {
+    const b = DECK[(i + 1) % DECK.length], dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
+    let nx = dz / len, nz = -dx / len;
+    if (nx * (a[0] + 2) + nz * a[1] < 0) { nx = -nx; nz = -nz; } // point the normal out of the ship
+    return { ax: a[0], az: a[1], nx, nz, tx: dx / len, tz: dz / len, len };
+  });
+}
+// how far inside the deck a point is (the deck is convex, so the nearest edge line decides)
+function deckDepth(x, z) { let d = Infinity; for (const e of DECK_EDGES) d = Math.min(d, -((x - e.ax) * e.nx + (z - e.az) * e.nz)); return d; }
+function onDeck(x, z, m = 0) { return !DECK_EDGES || deckDepth(x, z) >= m; }
+function clampDeck(p, r) {
+  for (const e of DECK_EDGES) { const d = (p.x - e.ax) * e.nx + (p.z - e.az) * e.nz + r + 0.5; if (d > 0) { p.x -= e.nx * d; p.z -= e.nz * d; } }
+}
+function cvPut(g, name, x, y, z, rot = 0, shoot = true) {
+  if (!CV || !CV[name]) return null;
+  const o = CV[name].clone(); o.position.set(x, y, z); o.rotation.y = rot;
+  o.traverse((c) => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; if (shoot) worldMeshes.push(c); } });
+  g.add(o); return o;
+}
+function cvMany(g, name, items, shoot = true) {
+  if (!CV || !CV[name] || !items.length) return;
+  CV[name].traverse((c) => {
+    if (!c.isMesh) return;
+    const im = new THREE.InstancedMesh(c.geometry, c.material, items.length);
+    items.forEach(([x, y, z, rot = 0], k) => { _fq.setFromAxisAngle(_UPY, rot); im.setMatrixAt(k, _fm4.compose(_fv.set(x, y, z), _fq, _fsc.set(1, 1, 1))); });
+    im.castShadow = im.receiveShadow = true; im.frustumCulled = false; g.add(im); if (shoot) worldMeshes.push(im);
+  });
+}
+// a long thing turned at an angle blocks along its own axis, in a row of small boxes
+function axisRow(x, z, rot, len, w) { for (let k = -len / 2; k <= len / 2 + 0.01; k += w) addCollider(x + Math.sin(rot) * k, z + Math.cos(rot) * k, w, w); }
+function buildCarrier(g) {
+  DECK_EDGES = makeDeckEdges();
+  // the storm sea: waves rolled in the vertex shader, the whole surface heaving up and down
+  const seaMat = std({ color: 0x0a1c26, roughness: 0.16, metalness: 0.25 });
+  seaMat.onBeforeCompile = (sh) => {
+    sh.uniforms.uT = seaT;
+    const wave = `float sx = position.x, sy = position.y;
+      float a1 = sx * 0.05 + uT * 0.9, a2 = sy * 0.07 - uT * 1.3, a3 = (sx + sy) * 0.13 + uT * 2.1, a4 = sx * 0.31 - sy * 0.23 + uT * 2.7;`;
+    sh.vertexShader = 'uniform float uT;\n' + sh.vertexShader
+      .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
+      ${wave}
+      objectNormal = normalize(vec3(-(cos(a1) * 0.06 + cos(a3) * 0.0455 + cos(a4) * 0.0775), -(cos(a2) * 0.056 + cos(a3) * 0.0455 - cos(a4) * 0.0575), 1.0));`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+      transformed.z += sin(a1) * 1.2 + sin(a2) * 0.8 + sin(a3) * 0.35 + sin(a4) * 0.25;`);
+  };
+  SEA = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400, 110, 110), seaMat);
+  SEA.rotation.x = -Math.PI / 2; SEA.position.y = -16; SEA.frustumCulled = false; g.add(SEA);
+  const hull = cvPut(g, 'carrier_hull', 0, 0, 0);
+  if (hull) hull.traverse((c) => { if (c.isMesh) c.castShadow = false; });
+  cvPut(g, 'deck_lines', 0, 0, 0, 0, false);
+  cvPut(g, 'island', 33, 0, 8); addCollider(33, 8, 8.4, 40.4);
+  RADAR = cvPut(g, 'radar', 33, 26.3, 7, 0, false);
+  // fighters parked nose-in along the starboard side and up at the bow
+  const jets = [];
+  for (const z of [-34, -52, -70, -88]) jets.push([25, 0, z, -Math.PI / 2 - 0.55]);
+  for (const z of [44, 62, 80]) jets.push([-27, 0, z, Math.PI / 2 + 0.5]);
+  jets.push([4, 0, 104, Math.PI + 0.2]);
+  cvMany(g, 'jet', jets);
+  for (const [x, , z, r] of jets) { axisRow(x, z, r, 14, 2.4); }
+  const tugs = [[14, 0, -44, 0.4], [-14, 0, 36, 2.1], [12, 0, 66, -1.1], [-20, 0, -78, 0.9]];
+  cvMany(g, 'tug', tugs); tugs.forEach(([x, , z]) => addCollider(x, z, 2.6, 2.6));
+  const carts = [[16, 0, -62, 0.2], [-22, 0, -8, 1.4], [6, 0, 24, -0.4], [-6, 0, -100, 0.9], [22, 0, 40, 1.8]];
+  cvMany(g, 'bomb_cart', carts); carts.forEach(([x, , z]) => addCollider(x, z, 2.2, 2.2));
+  const crates = [];
+  for (const [x, z, n] of [[-32, -60, 3], [29, 38, 2], [-24, 100, 3], [2, -116, 2], [-34, 8, 2], [20, -10, 2], [-10, 70, 2]]) {
+    for (let k = 0; k < n; k++) { const cx = x + (k % 2) * 2.5, cz = z + Math.floor(k / 2) * 1.8; crates.push([cx, 0, cz, rand(-0.1, 0.1)]); addCollider(cx, cz, 2.5, 1.7); }
+  }
+  cvMany(g, 'crate', crates);
+  // safety nets lean out over the sea all the way round
+  const nets = [];
+  for (const e of DECK_EDGES) {
+    const n = Math.max(1, Math.round(e.len / 5.2)), rot = Math.atan2(-e.nz, e.nx), step = e.len / n;
+    for (let k = 0; k < n; k++) { const d = (k + 0.5) * step; nets.push([e.ax + e.tx * d, 0, e.az + e.tz * d, rot]); }
+  }
+  cvMany(g, 'deck_net', nets, false);
+  for (const [x, z] of [[18, -54], [-30, 52], [-28, 70], [10, 90], [-16, -86], [26, 2]]) addBarrel(g, x, z); // fuel drums by the jets
+}
+// spawning on the ship: anywhere on the deck, or 爬上甲板 up the side from the sea
+function deckEdgePoint() {
+  let r = rand(0, DECK_EDGES.reduce((a, e) => a + e.len, 0));
+  for (const e of DECK_EDGES) { if (r <= e.len) return { e, d: r }; r -= e.len; }
+  return { e: DECK_EDGES[0], d: 1 };
+}
+function spawnOnDeck(type) {
+  const c = ZTYPES[type];
+  if (c.kraken) { zombies.push(new Zombie(type, -50, 0)); return true; }
+  for (let tries = 0; tries < 40; tries++) {
+    let x, z, climb = null;
+    if (!c.flyer && Math.random() < 0.5) {
+      const { e, d } = deckEdgePoint();
+      x = e.ax + e.tx * d - e.nx * 1.6; z = e.az + e.tz * d - e.nz * 1.6; climb = e;
+    } else { x = rand(-40, 36); z = rand(-124, 124); }
+    if (!onDeck(x, z, 1.2)) continue;
+    const dP = Math.hypot(x - player.pos.x, z - player.pos.z);
+    if (dP < (climb ? 16 : 28) || dP > 110 || blocked(x, z, 0.6)) continue;
+    if (c.swarm) { spawnSwarm(x, z, c.swarm, type, climb); return true; }
+    const zb = new Zombie(type, x, z); if (climb) zb.startClimb(climb, 0);
+    zombies.push(zb);
+    return true;
+  }
+  return false;
+}
+// ---- 溺死者's 水灘, the 電子戰殭屍's 干擾 and the kraken's tentacles ----
+let slicks = [], kSlams = [], kSweeps = [], jamming = false;
+const slickMat = new THREE.MeshStandardMaterial({ color: 0x1a3644, roughness: 0.04, metalness: 0.5, transparent: true, opacity: 0.78, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+const seaSprayMat = new THREE.MeshBasicMaterial({ color: 0xa8c6d6, transparent: true, opacity: 0.65 });
+const bandGeo = new THREE.PlaneGeometry(1, 1); bandGeo.rotateX(-Math.PI / 2);
+function makeSlick(x, z) {
+  if (!onDeck(x, z, 0)) return;
+  const m = new THREE.Mesh(G.pool, slickMat.clone()); m.rotation.x = -Math.PI / 2; m.rotation.z = rand(0, 6);
+  m.position.set(x, 0.025, z); m.scale.setScalar(2.3); scene.add(m);
+  slicks.push({ m, x, z, r: 2.0, life: 10 });
+}
+function tentacle(s) { // a clone of the kraken's tentacle in its own group, ready to pose
+  const t = new THREE.Group();
+  if (CV && CV.kraken_tentacle) { const m = CV.kraken_tentacle.clone(); m.traverse((o) => { if (o.isMesh) o.castShadow = true; }); m.scale.setScalar(s); t.add(m); }
+  scene.add(t); return t;
+}
+const _kq = new THREE.Matrix4();
+// 觸手拍擊: a tentacle rears up beside the hull nearest the red ring and whips its tip down on it
+function krakenSlam(at) {
+  clampDeck(at, 1);
+  let best = null;
+  for (const e of DECK_EDGES) { // the nearest point on the deck's rim
+    const t = clamp((at.x - e.ax) * e.tx + (at.z - e.az) * e.tz, 0, e.len), px = e.ax + e.tx * t, pz = e.az + e.tz * t, d = Math.hypot(at.x - px, at.z - pz);
+    if (!best || d < best.d) best = { d, x: px + e.nx * 2.5, z: pz + e.nz * 2.5 };
+  }
+  const D = Math.hypot(at.x - best.x, at.z - best.z), H = 6, s = Math.hypot(D, H) / 21.27;
+  const marker = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
+  marker.position.set(at.x, 0.12, at.z); marker.scale.setScalar(4); scene.add(marker);
+  const t = tentacle(s); t.rotation.order = 'YXZ'; t.rotation.y = Math.atan2(at.x - best.x, at.z - best.z);
+  t.position.set(best.x, -6 - 22 * s, best.z);
+  kSlams.push({ at, t, marker, s, hitA: Math.atan2(D, H) - 0.516, k: 0, hit: false });
+  sfx('growl', 0.9);
+}
+// 觸手橫掃: a red band across the deck, then a tentacle slides along it from the port side
+function krakenSweep(z) {
+  z = clamp(z, -110, 110);
+  const marker = new THREE.Mesh(bandGeo, new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.5, depthWrite: false }));
+  marker.position.set(-2, 0.1, z); marker.scale.set(84, 1, 4.4); scene.add(marker);
+  const t = tentacle(1); t.children.forEach((m) => m.scale.set(1, 4.6, 0.45)); // long and low enough to jump over
+  t.quaternion.setFromRotationMatrix(_kq.makeBasis(new THREE.Vector3(0, 0, 1), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0))); // lies along +x, the tip curling up
+  t.position.set(-140, -0.4, z); t.visible = false;
+  kSweeps.push({ z, t, marker, k: 0, hit: false });
+  showMsg('', '觸手要橫掃甲板了！跳起來！', 1.6); sfx('growl', 1.1);
+}
+function updateCarrierHazards(dt) {
+  jamming = false;
+  if (SEA) {
+    seaT.value += dt; SEA.position.y = -16 + Math.sin(seaT.value * 0.45) * 0.9;
+    if (RADAR) RADAR.rotation.y += dt * 1.4;
+    for (const z of zombies) if (!z.dead && z.c.jam && Math.hypot(z.pos.x - player.pos.x, z.pos.z - player.pos.z) < 15) { jamming = true; break; }
+    if (jamming && !player.jammed) showMsg('', '電子干擾！羅盤和準星失靈', 1.6);
+    player.jammed = jamming;
+  }
+  player.slickT = Math.max(0, (player.slickT || 0) - dt);
+  slicks = slicks.filter((q) => {
+    q.life -= dt;
+    if (q.life < 2) q.m.material.opacity = 0.78 * Math.max(0, q.life / 2);
+    if (q.life <= 0) { scene.remove(q.m); q.m.material.dispose(); return false; }
+    if (player.pos.y < 0.3 && Math.hypot(player.pos.x - q.x, player.pos.z - q.z) < q.r) { player.slowT = Math.max(player.slowT || 0, 0.3); player.slickT = 0.3; }
+    return true;
+  });
+  kSlams = kSlams.filter((q) => {
+    q.k += dt;
+    const { t, s } = q;
+    if (q.k < 0.6) { t.position.y = -6 - 22 * s * (1 - q.k / 0.6); t.rotation.x = -0.3; }          // rises out of the sea beside the hull
+    else if (q.k < 1.0) { t.position.y = -6; t.rotation.x = -0.3 - (q.k - 0.6) * 0.3 + Math.sin(q.k * 30) * 0.03; } // rears back
+    else if (q.k < 1.2) t.rotation.x = -0.42 + (q.hitA + 0.42) * ((q.k - 1.0) / 0.2);             // whips down onto the ring
+    else if (q.k > 2.2) { t.rotation.x = q.hitA * Math.max(0, 1 - (q.k - 2.2)); t.position.y = -6 - (q.k - 2.2) * 18 * s; } // slides back into the sea
+    if (q.k >= 1.2 && !q.hit) {
+      q.hit = true; scene.remove(q.marker); q.marker.material.dispose(); t.rotation.x = q.hitA;
+      burst(q.at.clone().setY(0.3), UP, seaSprayMat, 14, 5); sfx('slam', clamp(1.3 - q.at.distanceTo(player.pos) / 40, 0.3, 1.3));
+      const d = Math.hypot(player.pos.x - q.at.x, player.pos.z - q.at.z);
+      shake = Math.min(1, shake + clamp(1 - d / 20, 0, 0.8));
+      if (d < 4 && player.pos.y < 1) hurtPlayer(35, 'melee');
+      for (const z of zombies) if (!z.dead && !z.c.boss && Math.hypot(z.pos.x - q.at.x, z.pos.z - q.at.z) < 4) z.damage(60, { part: 'body' }, null);
+    }
+    if (q.k < 3.4) return true;
+    scene.remove(t); return false;
+  });
+  kSweeps = kSweeps.filter((q) => {
+    q.k += dt;
+    q.marker.material.opacity = 0.35 + Math.sin(q.k * 14) * 0.2;
+    if (q.k >= 1.5) {
+      const f = Math.min(1, (q.k - 1.5) / 0.7), tipPrev = q.tip ?? -48;
+      q.t.visible = true; q.t.position.x = -140 + f * 93; // the tip runs from the port rim across to starboard
+      q.tip = q.t.position.x + 4.6 * 18.5;
+      if (!q.hit && player.pos.x > tipPrev - 1 && player.pos.x <= q.tip && Math.abs(player.pos.z - q.z) < 2.6) {
+        q.hit = true;
+        if (player.pos.y < 0.5) { hurtPlayer(30, 'melee'); player.knock = new THREE.Vector3(9, 0, Math.sign(player.pos.z - q.z || 1) * 7); shake = 1; sfx('slam', 1.2); }
+      }
+      for (const z of zombies) if (!z.dead && !z.c.boss && Math.abs(z.pos.z - q.z) < 2.4 && z.pos.x > tipPrev - 1 && z.pos.x <= q.tip) z.damage(40, { part: 'body' }, new THREE.Vector3(1, 0, 0));
+      if (f >= 1 && !q.done) { q.done = true; scene.remove(q.marker); q.marker.material.dispose(); }
+    }
+    if (q.k > 2.6) q.t.position.x -= dt * 120; // pulled back into the sea
+    if (q.k < 3.4) return true;
+    if (!q.done) scene.remove(q.marker);
+    scene.remove(q.t); return false;
+  });
+}
 function updateFestHazards(dt) {
   gongWaves = gongWaves.filter((w) => {
     const r0 = w.r; w.r += 9 * dt;
@@ -5122,6 +5437,8 @@ function clearDynamic() {
   slams.forEach((q) => { scene.remove(q.marker); if (q.t) scene.remove(q.t); }); spores.forEach((q) => scene.remove(q.m)); slams = []; spores = []; board = null;
   frosts.forEach((q) => scene.remove(q.sp)); orbs.forEach((q) => scene.remove(q.m)); holes.forEach((q) => { scene.remove(q.m); scene.remove(q.light); }); nades.forEach((q) => scene.remove(q.m));
   frosts = []; orbs = []; holes = []; nades = []; railCharge = 0; pendingSmash = null;
+  slicks.forEach((q) => scene.remove(q.m)); kSlams.forEach((q) => { scene.remove(q.t); scene.remove(q.marker); }); kSweeps.forEach((q) => { scene.remove(q.t); scene.remove(q.marker); });
+  slicks = []; kSlams = []; kSweeps = []; jamming = false; player.slickT = 0; player.jammed = false;
   fwShells.forEach((sh) => scene.remove(sh.head)); fwBursts.forEach((b) => scene.remove(b.pts)); fwShells = []; fwBursts = []; fwQueue = [];
   fwVolleyT = 8; fwAmbientT = 2; fwLights.forEach((l) => { l.intensity = 0; });
   zombies.forEach((z) => z.remove()); zombies = []; zMeshes = [];
@@ -5153,8 +5470,8 @@ function startLevel(i) {
     return;
   }
   loadLevel(i);
-  player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
-  player.yaw = 0; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0); player.calmT = 0; player.regenT = 0;
+  if (DECK_EDGES) player.pos.set(-4, 0, -10); else player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
+  player.yaw = DECK_EDGES ? Math.PI : 0; player.slickT = 0; player.jammed = false; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0); player.calmT = 0; player.regenT = 0;
   wi = 1; resetWeapons(); reloading = 0; switching = 0;
   kills = 0; score = 0; levelCash = 0; waveIdx = 0; queue = []; waveActive = false; interT = 3;
   showMsg(levelTitle(LV), `${TIMES[LV.time].label} — 撐過 ${LV.waves.length} 波感染者`, 3);
@@ -5173,6 +5490,7 @@ function startWave() {
   queue = [];
   for (const [t, n] of Object.entries(w)) for (let k = 0; k < n; k++) queue.push(t);
   queue.sort(() => Math.random() - 0.5);
+  if (queue.includes('kraken')) { queue.splice(queue.indexOf('kraken'), 1); queue.unshift('kraken'); } // the kraken rises first, the rest climb aboard
   waveActive = true; spawnT = 0.5;
   let seen = [];
   try { seen = JSON.parse(localStorage.getItem('deadcity_seen') || '[]'); } catch {}
@@ -5225,7 +5543,8 @@ function levelComplete() {
   const bonus = 150 + LV.num * 100 + (firstEvent ? 1000 : 0); addCash(bonus);
   const stats = `擊殺 ${kills} · 分數 ${score}<br>本關賺得 ${money(levelCash)}（含過關獎勵 ${money(bonus)}）${armorStatus()}`;
   $('winStats').innerHTML = LV.event ? `國慶快樂！${gotLauncher ? '<b class="gift">獲得限定武器：煙花發射器</b><br>到「武器裝備」把它放進欄位。<br>' : ''}${firstEvent ? '首次通關另得 $1,000。' : ''}<br>${stats}`
-    : next >= 0 ? `${stats}<br>下一關已解鎖：第 ${LEVELS[next].num} 關 · ${LEVELS[next].name}`
+    : next >= 0 ? `${LV.board ? '你搭上最後一班運輸機，飛離了死城。<br>' : ''}${stats}<br>下一關已解鎖：第 ${LEVELS[next].num} 關 · ${LEVELS[next].name}`
+    : LV.outro ? `${LV.outro}<br>${stats}<br>更多關卡製作中，敬請期待。`
     : LV.board ? `你搭上最後一班運輸機，飛離了死城。<br>${stats}` : LV.num === 10 ? `你守住了最後防線，撤離成功！<br>${stats}` : `${stats}<br>更多關卡製作中，敬請期待。`;
   $('btnNext').style.display = next >= 0 ? '' : 'none';
   $('win').classList.add('show');
@@ -6008,7 +6327,7 @@ function tryFire(click) {
   const fwd = camera.getWorldDirection(new THREE.Vector3());
   const moveSpread = Math.hypot(player.vel.x, player.vel.z) / 8;
   const baseSpread = !aiming && w.c.hipSpread ? w.c.hipSpread : w.c.spread;
-  const spread = baseSpread * (aiming ? (w.c.scope ? 0.2 : 0.35) : 1) * (1 + spreadK + moveSpread);
+  const spread = baseSpread * (aiming ? (w.c.scope ? 0.2 : 0.35) : 1) * (1 + spreadK + moveSpread) * (jamming ? 1.6 : 1);
   if (w.c.flame) { sprayFlame(w, origin, fwd); return; }
   if (w.c.chain) { teslaShot(w, origin, fwd); return; }
   if (w.c.explosive) {
@@ -6083,7 +6402,7 @@ function updatePlayer(dt) {
     if (jm < 0.15 && !(keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD)) { wx = wz = 0; }
   }
   const wl = Math.hypot(wx, wz); if (wl > 1) { wx /= wl; wz /= wl; }
-  const acc = player.onGround ? 12 : 3;
+  const acc = player.onGround ? (player.slickT > 0 ? 1.4 : 12) : 3; // on a 水灘 your feet slide
   joyWantsSprint = joySprint;
   if (touchJump) { keys.Space = true; }
   player.vel.x += (wx * speed - player.vel.x) * Math.min(1, acc * dt);
@@ -6099,7 +6418,7 @@ function updatePlayer(dt) {
   const bobY = Math.sin(player.bob * 2) * 0.035 * Math.min(1, hs / 5);
   shake = Math.max(0, shake - dt * 3);
   camera.position.set(player.pos.x, player.pos.y + 1.7 + bobY, player.pos.z);
-  camera.rotation.set(player.pitch + rand(-1, 1) * shake * 0.01, player.yaw + rand(-1, 1) * shake * 0.01, 0);
+  camera.rotation.set(player.pitch + rand(-1, 1) * shake * 0.01, player.yaw + rand(-1, 1) * shake * 0.01, TM.sea ? Math.sin(seaT.value * 0.45) * 0.008 : 0); // the deck rolls in the swell
   aimT += ((aiming && reloading <= 0 ? 1 : 0) - aimT) * Math.min(1, dt * 12);
   camera.fov = (camera.aspect < 1 ? 95 : 75) - aimT * (weapons[wi].c.zoom ?? 15); camera.updateProjectionMatrix();
   const scoped = weapons[wi].c.scope && aimT > 0.8;
@@ -6321,7 +6640,7 @@ function frame(dt, now) {
   pollPad(dt);
   if (state === 'playing') autoQuality(dt);
   if (state === 'playing') {
-    updatePlayer(dt); updateWeapon(dt); updateZombies(dt); updateHazards(dt); updateGrenades(dt); updateWaves(dt); updatePickups(dt); updateFireworks(dt); updateFestHazards(dt); updateAirportHazards(dt); updateWeaponFx(dt);
+    updatePlayer(dt); updateWeapon(dt); updateZombies(dt); updateHazards(dt); updateGrenades(dt); updateWaves(dt); updatePickups(dt); updateFireworks(dt); updateFestHazards(dt); updateAirportHazards(dt); updateCarrierHazards(dt); updateWeaponFx(dt);
     updateHUD();
   } else if (state === 'menu') {
     menuT += dt;
@@ -6346,7 +6665,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026101001'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026101101'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
