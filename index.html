@@ -122,6 +122,34 @@
   .t-snow { background: linear-gradient(160deg, rgba(150,175,210,0.55), rgba(10,14,24,0.9)); }
   .t-dust { background: linear-gradient(160deg, rgba(170,130,80,0.6), rgba(25,18,10,0.9)); }
   .t-rain { background: linear-gradient(160deg, rgba(70,95,110,0.6), rgba(10,14,18,0.9)); }
+  .card.arena { border-color: #c8a060; background: linear-gradient(160deg, rgba(150,105,55,0.62), rgba(40,25,14,0.88)); }
+  .card.arena .n { color: #f0c890; opacity: 0.95; font-family: inherit; font-weight: 900; letter-spacing: 0.1em; }
+  .card.arena .tm { color: #f0c890; }
+  .amodes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 6px 0 18px; }
+  .amode { display: flex; flex-direction: column; gap: 4px; padding: 14px 12px; text-align: left; white-space: normal; }
+  .amode small { color: var(--dim); font-size: 12px; font-weight: 400; letter-spacing: 0; }
+  .apanel { width: min(760px, 94vw); max-height: 92vh; overflow-y: auto; padding: 22px 22px 18px; text-align: left; }
+  .apanel h2 { font-size: 26px; text-align: center; }
+  .astatus { text-align: center; color: var(--dim); margin: 6px 0 12px; }
+  .astatus .red { color: #ff6a50; } .astatus .blue { color: #6aa8ff; }
+  .agrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 6px; margin-bottom: 12px; }
+  .atype { display: flex; align-items: center; gap: 6px; padding: 7px 8px; font: inherit; font-size: 13px; color: var(--fg); background: rgba(255,255,255,0.05);
+    border: 1px solid var(--line); cursor: pointer; text-align: left; }
+  .atype i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .atype.on { border-color: #f0c890; background: rgba(240,200,140,0.18); }
+  .atype .boss { color: #ffb040; font-size: 11px; }
+  .arow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
+  .arow > span { color: var(--dim); min-width: 3em; }
+  .arow .b { padding: 8px 14px; }
+  .arow .b.on { border-color: #f0c890; background: rgba(240,200,140,0.22); }
+  .arow .b.red.on { border-color: #ff6a50; background: rgba(255,90,60,0.25); }
+  .arow .b.blue.on { border-color: #6aa8ff; background: rgba(90,150,255,0.25); }
+  .arow select { font: inherit; font-size: 13px; color: var(--fg); background: rgba(0,0,0,0.5); border: 1px solid var(--line); padding: 6px; max-width: 30%; }
+  body.watch #crosshair, body.watch #health, body.watch #ammo, body.watch #hitmark { display: none; }
+  body.watch #tFire, body.watch #tAim, body.watch #tReload, body.watch #tSwitch { display: none; }
+  #tArena { display: none; width: 64px; height: 44px; left: calc(max(16px, env(safe-area-inset-left, 0px)) + 118px); top: 14px; border-radius: 10px; font-size: 13px;
+    border-color: rgba(240,200,140,0.8); }
+  body.inarena #tArena { display: flex; }
   .t-seastorm { background: linear-gradient(160deg, rgba(40,85,115,0.65), rgba(6,12,20,0.92)); }
   .t-fog { background: linear-gradient(160deg, rgba(130,140,140,0.55), rgba(20,20,20,0.85)); }
   .controls { margin-top: 26px; font-size: 12px; color: var(--dim); letter-spacing: 0.05em; text-align: center; line-height: 1.9; }
@@ -332,6 +360,25 @@
 <div id="dead" class="overlay"><div class="panel"><h2 style="color:var(--accent)">你已陣亡</h2><p id="deadStats"></p>
   <div class="btns"><button class="b primary" id="btnRetry">重新挑戰</button><button class="b shopbtn">武器裝備</button><button class="b" id="btnQuit2">返回選單</button></div></div></div>
 
+<div id="arenaSetup" class="overlay"><div class="panel"><h2>競技場</h2><p>選一種玩法。競技場是沙盒模式，不會給金錢。</p>
+  <div class="amodes">
+    <button class="b amode" data-m="team"><b>觀戰・兩隊對戰</b><small>召喚紅隊和藍隊，飛在空中看牠們互打</small></button>
+    <button class="b amode" data-m="ffa"><b>觀戰・大亂鬥</b><small>沒有隊伍，每隻殭屍都打離自己最近的那隻</small></button>
+    <button class="b amode" data-m="solo"><b>親自上陣・單挑</b><small>所有召喚出來的殭屍都衝著你來</small></button>
+    <button class="b amode" data-m="join"><b>親自上陣・加入藍隊</b><small>和藍隊殭屍並肩，一起打紅隊</small></button>
+  </div>
+  <div class="btns"><button class="b" id="btnArenaBack">返回</button></div></div></div>
+
+<div id="arenaPanel" class="overlay"><div class="panel apanel"><h2>召喚面板</h2>
+  <div class="astatus" id="aStatus"></div>
+  <div class="agrid" id="aTypes"></div>
+  <div class="arow" id="aTeamRow"><span>隊伍</span><button class="b ateam red" data-t="red">紅隊（北門）</button><button class="b ateam blue" data-t="blue">藍隊（南門）</button></div>
+  <div class="arow"><span>數量</span><button class="b acount" data-n="1">1</button><button class="b acount" data-n="3">3</button><button class="b acount" data-n="5">5</button><button class="b acount" data-n="10">10</button>
+    <button class="b primary" id="btnSummon">召喚</button></div>
+  <div class="arow"><span>戰鬥</span><button class="b" id="btnLive">開戰</button><button class="b" id="btnClear">清場</button></div>
+  <div class="arow" id="aKitRow"><span>武器</span><select id="aKit0"></select><select id="aKit1"></select><select id="aKit2"></select></div>
+  <div class="btns"><button class="b primary" id="btnArenaGo">返回戰場</button><button class="b" id="btnArenaQuit">離開競技場</button></div></div></div>
+
 <div id="redeem" class="overlay"><div class="panel"><h2>兌換碼</h2><p>輸入在城市裡找到的兌換碼，領取禮物。<br>每個兌換碼只能兌換一次。</p>
   <input id="redeemInput" maxlength="20" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="XXXXX-XXXXX">
   <div id="redeemMsg"></div>
@@ -362,6 +409,7 @@
   <div class="tb" id="tSwitch">換槍</div>
   <div class="tb" id="tPause">❚❚</div>
   <div class="tb" id="tCompass">羅盤</div>
+  <div class="tb" id="tArena">召喚</div>
 </div>
 <div id="rotate"><div class="ph"></div><div>橫放手機，畫面和操作空間比較大</div><button class="b" id="btnPortrait">直接直向玩</button></div>
 
@@ -430,13 +478,17 @@ const LEVELS = [
     hpMul: 1.35, speedMul: 1.15, waves: [{ walker: 12, runner: 4, firecracker: 4 }, { walker: 10, runner: 6, firecracker: 4, fireworker: 3 },
       { walker: 10, runner: 6, liondance: 4, fireworker: 2 }, { walker: 10, runner: 6, gong: 3, liondance: 3, firecracker: 3 },
       { dragon: 2, runner: 8, gong: 2, fireworker: 3 }, { floatboss: 1, runner: 10, firecracker: 4, liondance: 2 }] },
+  // 競技場: a sandbox outside the campaign (CONTEXT.md); no waves, the 召喚面板 fills it
+  { id: 'arena', arena: true, label: '競技場', num: 0, name: '羅馬競技場', theme: 'arena', time: 'dusk',
+    desc: '廢棄的羅馬競技場。召喚任何殭屍，飛在空中看牠們互打，或拿任何武器親自上陣。',
+    hpMul: 1, speedMul: 1, waves: [] },
 ];
 LEVELS.forEach((l, i) => { l.num ??= i + 1; });
-const inCampaign = (l) => !l.hidden && !l.event;
-const nextVisible = (i) => { if (LEVELS[i].event) return -1; for (let k = i + 1; k < LEVELS.length; k++) if (inCampaign(LEVELS[k])) return k; return -1; };
+const inCampaign = (l) => !l.hidden && !l.event && !l.arena;
+const nextVisible = (i) => { if (LEVELS[i].event || LEVELS[i].arena) return -1; for (let k = i + 1; k < LEVELS.length; k++) if (inCampaign(LEVELS[k])) return k; return -1; };
 const LAST_VISIBLE = LEVELS.reduce((m, l, i) => (inCampaign(l) ? i : m), 0);
-const EVENT_LEVEL = LEVELS.findIndex((l) => l.event);
-const levelTitle = (l) => (l.event ? `${l.label} · ${l.name}` : `第 ${l.num} 關 · ${l.name}`);
+const EVENT_LEVEL = LEVELS.findIndex((l) => l.event), ARENA_LEVEL = LEVELS.findIndex((l) => l.arena);
+const levelTitle = (l) => (l.event || l.arena ? `${l.label} · ${l.name}` : `第 ${l.num} 關 · ${l.name}`);
 // 國慶期間 is 10/1–10/15 every year, on the player's own clock (docs/adr/0001); ?date=YYYY-MM-DD fakes the date for testing
 let dateOverride = null;
 function today() {
@@ -2066,10 +2118,11 @@ function buildLevel() {
   }
   levelGroup = new THREE.Group(); scene.add(levelGroup);
   colliders = []; worldMeshes = []; lampPositions = []; POLICE_CARS.length = 0; BARRELS.length = 0; FIRE_SPOTS.length = 0; barrelQueue = [];
-  festBanners = []; fwRacks = []; CARGO = null; DECK_EDGES = null; SEA = null; RADAR = null;
+  festBanners = []; fwRacks = []; CARGO = null; DECK_EDGES = null; SEA = null; RADAR = null; ARENA_RING = 0; BRAZIERS = [];
   makeMaterials();
   const g = levelGroup, theme = LV.theme;
   if (theme === 'carrier') { buildCarrier(g); return; } // no city at all: one ship in the open sea
+  if (theme === 'arena') { buildArena(g); return; }
 
   // ground (roads)
   const ground = mesh(new THREE.PlaneGeometry(900, 900), M.asphalt, g, 0, 0, 0, false);
@@ -2471,6 +2524,7 @@ function applyTime() {
 // ============================================================
 function resolve(p, r) {
   if (DECK_EDGES) clampDeck(p, r); // at sea the deck's rim is a wall
+  if (ARENA_RING) { const d = Math.hypot(p.x, p.z), m = ARENA_RING - r; if (d > m) { p.x *= m / d; p.z *= m / d; } } // so is the arena's
   for (const b of colliders) {
     if (p.x < b.x0 - r || p.x > b.x1 + r || p.z < b.z0 - r || p.z > b.z1 + r) continue;
     const cx = clamp(p.x, b.x0, b.x1), cz = clamp(p.z, b.z0, b.z1);
@@ -3416,7 +3470,8 @@ let menuT = 0;
 
 function resetWeapons() {
   weapons.forEach((w) => gunRoot.remove(w.view.group));
-  weapons = loadout.map((id) => WEAPON[id]).map((c) => ({ c, ammo: c.mag, reserve: c.reserve, view: buildGun(c.id) }));
+  const kit = ARENA && ARENA.kit ? ARENA.kit : loadout; // in the arena any weapon, owned or not, with endless ammo
+  weapons = kit.map((id) => WEAPON[id]).map((c) => ({ c, ammo: c.mag, reserve: ARENA ? Infinity : c.reserve, view: buildGun(c.id) }));
   $('slots').innerHTML = weapons.map((w, i) => `<span>${i + 1} ${w.c.name}</span>`).join('');
   weapons.forEach((w, i) => { gunRoot.add(w.view.group); w.view.group.visible = i === wi; });
 }
@@ -3886,29 +3941,31 @@ class Zombie {
   // 巨型海怪: the head rises out of the sea off the port side; `pos` is the eye, the head sits behind it
   buildKraken() {
     const k = this.body; k.position.set(-12, -14, 0); k.scale.setScalar(2); k.rotation.y = Math.PI / 2;
+    if (ARENA) { k.position.set(-7.3, -7.7, 0); k.scale.setScalar(1.1); } // smaller, its head filling the middle of the sand
     this.festPart('kraken_head', k, 'hide');
     const eye = this.eyeG = new THREE.Group(); eye.position.set(0, 8.5, 6.6); k.add(eye);
     this.festPart('kraken_eye', eye, 'eye');
     this.slamCd = 5.5; this.sweepCd = 11; this.lobCd = 8; this.riseT = 0; this.radius = 3; this.lean = 0; this.limp = 0;
     this.g.visible = false;
-    showMsg('巨型海怪從左舷冒出來了！', '瞄準牠發光的眼睛', 4); sfx('bossroar');
+    if (!ARENA) showMsg('巨型海怪從左舷冒出來了！', '瞄準牠發光的眼睛', 4);
+    sfx('bossroar');
   }
-  updateKraken(dt) {
+  updateKraken(dt, T = player) {
     this.knockV = null; this.phase += dt;
     this.riseT = Math.min(1, this.riseT + dt / 4);
     const e = 1 - Math.pow(1 - this.riseT, 3);
-    if (this.riseT < 1 && Math.random() < dt * 30) burst(new THREE.Vector3(this.pos.x - rand(4, 18), -15, this.pos.z + rand(-10, 10)), UP, seaSprayMat, 4, 9);
+    if (this.riseT < 1 && Math.random() < dt * 30) burst(ARENA ? new THREE.Vector3(rand(-8, 8), 0.3, rand(-8, 8)) : new THREE.Vector3(this.pos.x - rand(4, 18), -15, this.pos.z + rand(-10, 10)), UP, ARENA ? dustMat : seaSprayMat, 4, 9);
     this.g.visible = true;
     this.g.position.set(this.pos.x, -28 * (1 - e) + Math.sin(this.phase * 0.7) * 0.6 + (SEA ? SEA.position.y + 16 : 0), this.pos.z);
     this.body.rotation.z = Math.sin(this.phase * 0.5) * 0.04; this.body.rotation.x = Math.sin(this.phase * 0.37) * 0.03;
     this.g.updateMatrixWorld(true); this.eyeG.lookAt(camera.position); // the eye follows you
-    if (this.riseT < 1 || player.hp <= 0) return;
+    if (this.riseT < 1 || !T || (T === player && player.hp <= 0)) return;
     this.slamCd -= dt; this.sweepCd -= dt; this.lobCd -= dt;
-    if (this.sweepCd <= 0) { this.sweepCd = 9; krakenSweep(player.pos.z); this.slamCd = Math.max(this.slamCd, 2.2); }
-    if (this.slamCd <= 0) { this.slamCd = 4; krakenSlam(player.pos.clone().addScaledVector(player.vel, 0.4).setY(0)); }
+    if (this.sweepCd <= 0 && DECK_EDGES) { this.sweepCd = 9; krakenSweep(T.pos.z); this.slamCd = Math.max(this.slamCd, 2.2); }
+    if (this.slamCd <= 0) { this.slamCd = 4; krakenSlam(T.pos.clone().addScaledVector(this.tVel(T), 0.4).setY(0), this); }
     if (this.lobCd <= 0) {
-      this.lobCd = 6; const from = this.eyeG.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(3, -2, 0)); // spat from under the eye
-      for (let k = 0; k < 3; k++) { const at = player.pos.clone().add(new THREE.Vector3(rand(-4, 4), 0, rand(-4, 4))); clampDeck(at, 0.5); lobAcid(from, at); }
+      this.lobCd = 6; const from = this.eyeG.getWorldPosition(new THREE.Vector3()).add(ARENA ? new THREE.Vector3(0, 0.6, 0) : new THREE.Vector3(3, -2, 0)); // spat from under the eye
+      for (let k = 0; k < 3; k++) { const at = T.pos.clone().add(new THREE.Vector3(rand(-4, 4), 0, rand(-4, 4))); if (DECK_EDGES) clampDeck(at, 0.5); lobAcid(from, at.setY(0)); }
     }
   }
   // 爬上甲板: start below the rim on the outside of the hull and haul up onto the deck
@@ -4152,17 +4209,17 @@ class Zombie {
   }
   fireGun(dist) {
     const muzzle = this.gunTip.getWorldPosition(new THREE.Vector3());
-    const mv = Math.hypot(player.vel.x, player.vel.z);
+    const T = this.T, tv = this.tVel(T), mv = Math.hypot(tv.x, tv.z);
     const chance = clamp(0.7 - dist * 0.022 - mv * 0.07, 0.1, 0.62);
-    const hit = this.los && Math.random() < chance;
-    const target = camera.position.clone();
+    const hit = this.los && T && Math.random() < chance;
+    const target = T ? this.tAim(T) : camera.position.clone();
     if (!hit) target.add(new THREE.Vector3(rand(-1, 1), rand(-0.6, 0.8), rand(-1, 1)).normalize().multiplyScalar(rand(0.8, 1.8)));
     const end = muzzle.clone().add(target.clone().sub(muzzle).multiplyScalar(hit ? 1 : 3));
     addTracer(muzzle, end);
     this.flash.visible = true; this.flashT = 0.06; this.flash.material.rotation = rand(0, 6);
     sfx('copshot', clamp(1.2 - dist / 40, 0.25, 1));
-    if (hit) hurtPlayer(this.c.dmg, 'bullet');
-    else if (dist < 30) sfx('whiz');
+    if (hit) this.hurtT(T, this.c.dmg, 'bullet');
+    else if (dist < 30 && T === player) sfx('whiz');
   }
   updateArcs() {
     const on = this.charge > 0 || Math.random() < 0.25;
@@ -4182,11 +4239,12 @@ class Zombie {
   }
   fireBolt(dist) {
     const from = this.hands[1].getWorldPosition(new THREE.Vector3());
-    const hit = this.canSee() && dist < 16;
-    const to = hit ? camera.position.clone().add(new THREE.Vector3(0, -0.35, 0)) : from.clone().add(new THREE.Vector3(Math.sin(this.g.rotation.y), 0.1, Math.cos(this.g.rotation.y)).multiplyScalar(dist));
+    const T = this.T, hit = T && this.canSee(T.pos) && dist < 16;
+    const to = hit ? this.tAim(T).add(new THREE.Vector3(0, -0.35, 0)) : from.clone().add(new THREE.Vector3(Math.sin(this.g.rotation.y), 0.1, Math.cos(this.g.rotation.y)).multiplyScalar(dist));
     addBolt(from, to);
     sfx('zap', clamp(1.3 - dist / 30, 0.3, 1.2));
-    if (hit) { hurtPlayer(this.c.dmg, 'shock'); shockFlash = 1; player.slowT = armorOn()?.steady ? 0.6 : 1.3; }
+    if (hit && T === player) { hurtPlayer(this.c.dmg, 'shock'); shockFlash = 1; player.slowT = armorOn()?.steady ? 0.6 : 1.3; }
+    else if (hit) { this.hurtT(T, this.c.dmg, 'shock'); T.hitT = 1.3; }
   }
   dropHelmet() {
     const ids = new Set(this.helmet);
@@ -4203,7 +4261,8 @@ class Zombie {
     if (this.climbT > 0) { this.climbT = 0; this.g.position.set(this.pos.x, 0, this.pos.z); } // shot off the rim mid-climb: falls onto the deck
     if (this.laser) this.laser.visible = false;
     zMeshes = zMeshes.filter((m) => m.userData.z !== this);
-    kills++; score += this.c.score; addCash(this.c.cash);
+    kills++; score += this.c.score; if (!ARENA) addCash(this.c.cash); // the arena pays nothing
+    if (this.teamRing) this.teamRing.visible = false;
     if (this.segment) { scene.remove(this.segment); burst(this.segment.position, UP, confettiMat, 12, 3); this.segment = null; }
     if (this.tail) { scene.remove(this.tail); this.tail = null; }
     if (this.dancer) breakDance(this);
@@ -4232,7 +4291,7 @@ class Zombie {
       const a = k / this.c.split * Math.PI * 2 + rand(0, 1);
       let x = this.pos.x + Math.cos(a) * 0.9, z = this.pos.z + Math.sin(a) * 0.9;
       if (blocked(x, z, 0.3)) { x = this.pos.x; z = this.pos.z; }
-      const child = new Zombie('spawn', x, z); child.rage = 1.5; addZombie(child);
+      const child = new Zombie('spawn', x, z); child.rage = 1.5; addZombie(child); if (this.team) setTeam(child, this.team);
     }
     let seen = [];
     try { seen = JSON.parse(localStorage.getItem('deadcity_seen') || '[]'); } catch {}
@@ -4262,15 +4321,24 @@ class Zombie {
     this.g.visible = false; this.deadT = 10.9;
     if (Math.random() < 0.4) spawnPickup('ammo', this.pos);
   }
-  canSee() {
+  canSee(tp = player.pos) {
     // cheap line-of-sight test along the ground against building footprints
     const n = 10;
     for (let i = 1; i < n; i++) {
       const t = i / n;
-      if (blocksSight(this.pos.x + (player.pos.x - this.pos.x) * t, this.pos.z + (player.pos.z - this.pos.z) * t)) return false;
+      if (blocksSight(this.pos.x + (tp.x - this.pos.x) * t, this.pos.z + (tp.z - this.pos.z) * t)) return false;
     }
     return true;
   }
+  // hitting whatever this zombie is fighting: the player, or (in the 競技場) another zombie
+  hurtT(T, dmg, kind) {
+    if (!T) return;
+    if (T === player) { hurtPlayer(dmg, kind); return; }
+    T.damage(dmg, { part: 'body' }, T.pos.clone().sub(this.pos).setY(0).normalize());
+  }
+  tLow(T, h = 1) { return T === player ? player.pos.y < h : (T.airY || 0) < h; }
+  tVel(T) { return T === player ? player.vel : ZERO3; }
+  tAim(T) { return T === player ? camera.position.clone() : T.pos.clone().setY((T.airY || 0) + 1.3 * T.g.scale.y); }
   update(dt) {
     const g = this.g;
     if (this.dead) {
@@ -4312,8 +4380,16 @@ class Zombie {
       this.knockV.multiplyScalar(Math.max(0, 1 - dt * 6)); if (this.knockV.lengthSq() < 0.05) this.knockV = null;
     }
     if (this.stunT > 0) this.stunT -= dt;
-    const dx = player.pos.x - this.pos.x, dz = player.pos.z - this.pos.z, dist = Math.hypot(dx, dz);
-    if (this.c.kraken) { this.updateKraken(dt); return true; }
+    let T = player; // 競技場: the target may be another zombie, or nobody yet
+    if (ARENA) {
+      this.tgtCd = (this.tgtCd || 0) - dt;
+      if (this.tgtCd <= 0 || !this.foe || (this.foe === player ? player.hp <= 0 : this.foe.dead) || !ARENA.live) { this.tgtCd = 0.5; this.foe = arenaFoe(this); }
+      T = this.foe;
+    }
+    this.T = T;
+    const idle = !T, tp = idle ? this.pos : T.pos;
+    const dx = idle ? Math.sin(g.rotation.y) : tp.x - this.pos.x, dz = idle ? Math.cos(g.rotation.y) : tp.z - this.pos.z, dist = idle ? 999 : Math.hypot(dx, dz);
+    if (this.c.kraken) { this.updateKraken(dt, T); return true; }
     let mx = dx / (dist || 1), mz = dz / (dist || 1);
     for (const o of zombies) {
       if (o === this || o.dead) continue;
@@ -4335,10 +4411,10 @@ class Zombie {
     this.hitT = Math.max(0, this.hitT - dt);
     this.rage = Math.max(0, this.rage - dt);
     this.losT -= dt;
-    if (this.losT <= 0) { this.losT = 0.4; this.los = dist < 40 && this.canSee(); }
+    if (this.losT <= 0) { this.losT = 0.4; this.los = dist < 40 && this.canSee(tp); }
 
     // ---- special behaviours ----
-    let hold = this.stunT > 0; // stand still this frame (a stunned zombie stays put)
+    let hold = this.stunT > 0 || idle; // stand still this frame (a stunned zombie stays put; so does one with nobody to fight)
     if (this.c.ranged) {
       this.spitT -= dt;
       if (dist < 17 && dist > 4 && this.los) {
@@ -4374,7 +4450,7 @@ class Zombie {
           this.flameTick = 0.25;
           sfx('flame', clamp(1.2 - dist / 25, 0.2, 1));
           let fa = Math.atan2(dx, dz) - this.g.rotation.y; fa = Math.atan2(Math.sin(fa), Math.cos(fa));
-          if (dist < 8.2 && Math.abs(fa) < 0.5) { hurtPlayer(this.c.dmg, 'fire'); fireFlash = Math.min(1, fireFlash + 0.5); }
+          if (dist < 8.2 && Math.abs(fa) < 0.5) { this.hurtT(T, this.c.dmg, 'fire'); if (T === player) fireFlash = Math.min(1, fireFlash + 0.5); else if (T) T.burnT = Math.max(T.burnT || 0, 2); }
         }
       }
     }
@@ -4382,7 +4458,7 @@ class Zombie {
       this.healCd -= dt;
       if (dist < 11 && this.los) hold = true; // stays behind the horde
       if (this.healCd <= 0) {
-        const hurt = zombies.filter((o) => !o.dead && o !== this && o.hp < o.maxHp && o.pos.distanceTo(this.pos) < 9);
+        const hurt = zombies.filter((o) => !o.dead && o !== this && o.hp < o.maxHp && o.pos.distanceTo(this.pos) < 9 && !(ARENA && ARENA.teams && o.team !== this.team));
         if (hurt.length) {
           this.healCd = 5;
           hurt.forEach((o) => { o.hp = Math.min(o.maxHp, o.hp + o.maxHp * 0.4); burst(o.pos.clone().setY(1.2), UP, healMat, 6, 1.5); });
@@ -4401,17 +4477,17 @@ class Zombie {
         if (this.leapT <= 0) {
           this.airY = 0; resolve(this.pos, this.radius);
           burst(this.pos.clone().setY(0.2), UP, dustMat, 18, 4);
-          const dl = Math.hypot(player.pos.x - this.pos.x, player.pos.z - this.pos.z);
-          sfx('slam', clamp(1.2 - dl / 30, 0.3, 1.2));
-          if (dl < 2.6 && player.pos.y < 1) { hurtPlayer(this.c.dmg + 8); shake = 1; }
-          else shake = Math.min(1, shake + clamp(0.6 - dl / 30, 0, 0.6));
+          const dl = T ? Math.hypot(T.pos.x - this.pos.x, T.pos.z - this.pos.z) : 99, dP = Math.hypot(player.pos.x - this.pos.x, player.pos.z - this.pos.z);
+          sfx('slam', clamp(1.2 - dP / 30, 0.3, 1.2));
+          if (dl < 2.6 && this.tLow(T)) { this.hurtT(T, this.c.dmg + 8); if (T === player) shake = 1; }
+          else shake = Math.min(1, shake + clamp(0.6 - dP / 30, 0, 0.6));
           this.atkT = 1.6;
         }
       } else if (this.crouch > 0) {
         this.crouch -= dt; hold = true;
         if (this.crouch <= 0) {
           this.leapFrom = this.pos.clone();
-          const aim = player.pos.clone().addScaledVector(player.vel, 0.45); aim.y = 0;
+          const aim = (T ? T.pos : this.pos).clone().addScaledVector(this.tVel(T), 0.45); aim.y = 0;
           const off = aim.clone().sub(this.pos); off.setLength(clamp(off.length() - 1.3, 0, 16)); // land just in front of the player
           this.leapTo = this.pos.clone().add(off); this.leapDur = 0.75; this.leapT = this.leapDur;
           sfx('roar', clamp(1.3 - dist / 30, 0.3, 1.2));
@@ -4445,11 +4521,11 @@ class Zombie {
       if (this.fwCd <= 0 && dist < 45 && this.los) {
         this.fwCd = 4;
         const from = this.floatObj ? this.floatObj.getWorldPosition(new THREE.Vector3()).setY(3) : this.pos.clone().setY(3);
-        for (let k = 0; k < 3; k++) lobFirework(from, player.pos.clone().add(new THREE.Vector3(rand(-3, 3), 0, rand(-3, 3))));
+        for (let k = 0; k < 3; k++) lobFirework(from, tp.clone().add(new THREE.Vector3(rand(-3, 3), 0, rand(-3, 3))));
       }
       if (this.ramT > 0) {
         this.ramT -= dt;
-        if (dist < 5.6 && player.pos.y < 1) { hurtPlayer(30, 'blast'); knockPlayer(this.pos, 16); shake = 1; this.ramT = 0; }
+        if (dist < 5.6 && this.tLow(T)) { this.hurtT(T, 30, 'blast'); if (T === player) { knockPlayer(this.pos, 16); shake = 1; } this.ramT = 0; }
       } else if (this.ramCd <= 0 && dist > 6 && dist < 26 && this.los) {
         this.ramT = 1.5; this.ramCd = 10; sfx('bossroar'); showMsg('', '花車衝過來了！快閃開', 1.6);
       }
@@ -4473,14 +4549,14 @@ class Zombie {
         if (zombies.filter((q) => !q.dead).length < QUALITY[qLevel].maxZ + 4) sacsLeft.forEach((q) => {
           const at = q.m.getWorldPosition(new THREE.Vector3());
           burst(at, UP, acidPartMat, 10, 3);
-          const child = new Zombie('spawn', at.x + rand(-0.8, 0.8), at.z + rand(-0.8, 0.8)); child.rage = 2; addZombie(child);
+          const child = new Zombie('spawn', at.x + rand(-0.8, 0.8), at.z + rand(-0.8, 0.8)); child.rage = 2; addZombie(child); if (this.team) setTeam(child, this.team);
         });
         sfx('splat');
       }
       if (this.mortarT <= 0 && dist > 6 && dist < 45 && this.los) { // arcing acid barrage around the player
         this.mortarT = rand(4, 5.5);
         const from = this.pos.clone().setY(2.1);
-        for (let k = 0; k < 3; k++) lobAcid(from, player.pos.clone().add(new THREE.Vector3(rand(-3, 3), 0, rand(-3, 3))).setY(k ? 0 : 1.4));
+        for (let k = 0; k < 3; k++) lobAcid(from, tp.clone().add(new THREE.Vector3(rand(-3, 3), 0, rand(-3, 3))).setY(k ? 0 : 1.4));
       }
     }
     if (this.type === 'behemoth') {
@@ -4507,7 +4583,7 @@ class Zombie {
       if (this.aimT > 0) {
         this.aimT -= dt; hold = true;
         const a = this.gunTip.getWorldPosition(new THREE.Vector3());
-        const b = camera.position.clone().add(new THREE.Vector3(0, -0.25, 0));
+        const b = T === player ? camera.position.clone().add(new THREE.Vector3(0, -0.25, 0)) : this.tAim(T);
         this.laser.geometry.setFromPoints([a, b]); this.laser.visible = this.los;
         if (this.aimT <= 0) { this.laser.visible = false; this.gunT = rand(1.3, 2.3); this.fireGun(dist); }
       } else this.laser.visible = false;
@@ -4516,14 +4592,14 @@ class Zombie {
       this.diving = dist < 7;
       const ty = this.diving ? 1.2 : 3.6 + Math.sin(this.phase * 0.08) * 0.4;
       this.airY += (ty - this.airY) * Math.min(1, dt * (this.diving ? 3 : 1.2));
-      if (dist < 1.7 && this.airY < 2.3 && player.hp > 0) { this.hp = 0; this.die(new THREE.Vector3(mx, 0, mz)); return true; }
+      if (dist < 1.7 && this.airY < 2.3 && !idle) { this.hp = 0; this.die(new THREE.Vector3(mx, 0, mz)); return true; }
     }
     if (this.c.mother) {
       this.slamCd -= dt; this.sporeCd -= dt;
-      if (this.slamCd <= 0 && dist < 42) { this.slamCd = 5; tentacleSlam(this, player.pos.clone().addScaledVector(player.vel, 0.5).setY(0)); }
+      if (this.slamCd <= 0 && dist < 42) { this.slamCd = 5; tentacleSlam(this, tp.clone().addScaledVector(this.tVel(T), 0.5).setY(0)); }
       if (this.sporeCd <= 0 && dist < 48) {
         this.sporeCd = 8; const from = this.pos.clone().setY(4.5);
-        for (let k = 0; k < 2; k++) lobSpore(from, player.pos.clone().add(new THREE.Vector3(rand(-5, 5), 0, rand(-5, 5))).setY(0));
+        for (let k = 0; k < 2; k++) lobSpore(from, tp.clone().add(new THREE.Vector3(rand(-5, 5), 0, rand(-5, 5))).setY(0), this.team || null);
       }
     }
     if (this.c.explode && !this.c.flyer) {
@@ -4553,7 +4629,7 @@ class Zombie {
       moving = true;
     }
     this.atkT -= dt;
-    if (this.c.dmg > 0 && dist <= (this.dancer ? 1.4 : reach) + 0.3 && this.atkT <= 0 && player.hp > 0 && !this.screaming && !(this.floatHp > 0) && !(this.stunT > 0)) {
+    if (this.c.dmg > 0 && dist <= (this.dancer ? 1.4 : reach) + 0.3 && this.atkT <= 0 && !idle && !this.screaming && !(this.floatHp > 0) && !(this.stunT > 0)) {
       this.atkT = this.c.rate; this.atkAnim = 0.001;
     }
     if (this.atkAnim > 0) {
@@ -4562,8 +4638,9 @@ class Zombie {
         this.atkHit = true;
         if (this.type === 'behemoth' || this.c.stomp) { // ground-shaking stomp
           const p = this.pos.clone(); burst(p.clone().setY(0.2), UP, dustMat, 30, 6); stompRing(p); sfx('slam', 1.4);
-          shake = 1; if (dist <= reach + 1.8 && player.pos.y < 1) { hurtPlayer(this.c.dmg); player.slowT = 0.8; }
-        } else if (dist <= reach + 0.5) hurtPlayer(this.c.dmg);
+          shake = 1; if (dist <= reach + 1.8 && this.tLow(T)) { this.hurtT(T, this.c.dmg); if (T === player) player.slowT = 0.8; }
+          if (ARENA) for (const o of zombies) if (o !== this && o !== T && !o.dead && !(ARENA.teams && o.team === this.team) && Math.hypot(o.pos.x - this.pos.x, o.pos.z - this.pos.z) < reach + 1.8) o.damage(this.c.dmg * 0.5, { part: 'body' }, null);
+        } else if (dist <= reach + 0.5) this.hurtT(T, this.c.dmg);
       }
       if (this.atkAnim >= 1) { this.atkAnim = 0; this.atkHit = false; }
     }
@@ -4719,7 +4796,7 @@ function stompRing(p) {
 }
 function throwRock(z) {
   const from = z.hands[1].getWorldPosition(new THREE.Vector3());
-  const target = player.pos.clone().addScaledVector(player.vel, 0.6); target.y = 0;
+  const foe = z.T && z.T !== player ? z.T : null, target = foe ? foe.pos.clone() : player.pos.clone().addScaledVector(player.vel, 0.6); target.y = 0;
   const d = Math.hypot(target.x - from.x, target.z - from.z), T = clamp(d / 17, 0.8, 2.2);
   const v = new THREE.Vector3((target.x - from.x) / T, (target.y - from.y + 0.5 * 9.8 * T * T) / T, (target.z - from.z) / T);
   const m = new THREE.Mesh(G.box, rockMat); m.scale.set(0.9, 0.7, 0.8); m.position.copy(from); m.castShadow = true; scene.add(m);
@@ -4822,12 +4899,12 @@ function lobAcid(from, target) {
 }
 function spawnSpit(z) {
   const from = z.headPivot.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.1, 0));
-  const target = camera.position.clone().addScaledVector(player.vel, 0.5); target.y -= 0.3;
+  const target = z.T && z.T !== player ? z.tAim(z.T) : camera.position.clone().addScaledVector(player.vel, 0.5); if (!z.T || z.T === player) target.y -= 0.3;
   const d = Math.hypot(target.x - from.x, target.z - from.z), T = clamp(d / 15, 0.4, 1.4);
   const v = new THREE.Vector3((target.x - from.x) / T, (target.y - from.y + 0.5 * 9.8 * T * T) / T, (target.z - from.z) / T);
   const water = !!z.c.water;
   const m = new THREE.Mesh(spitGeo, water ? slickMat : zombieMats().acid); m.position.copy(from); if (water) m.scale.setScalar(1.6); scene.add(m);
-  spits.push({ m, v, life: 3, water });
+  spits.push({ m, v, life: 3, water, owner: z });
   sfx('spit', clamp(1.2 - d / 30, 0.3, 1));
 }
 function updateHazards(dt) {
@@ -4838,6 +4915,11 @@ function updateHazards(dt) {
     p.life -= dt; p.v.y -= 9.8 * dt; p.m.position.addScaledVector(p.v, dt);
     if (Math.random() < 0.5) burst(p.m.position, UP, p.water ? seaSprayMat : acidPartMat, 1, 0.5);
     const done = (fx) => { scene.remove(p.m); return false; };
+    if (ARENA && p.owner) { // 競技場: spit lands on zombies too
+      const q = p.m.position, hz = zombies.find((o) => !o.dead && o !== p.owner && !(ARENA.teams && o.team === p.owner.team)
+        && Math.hypot(o.pos.x - q.x, o.pos.z - q.z) < o.radius + 0.45 && q.y > (o.airY || 0) - 0.2 && q.y < (o.airY || 0) + 2.1 * o.g.scale.y);
+      if (hz) { hz.damage(p.water ? ZTYPES.drowned.dmg : ZTYPES.spitter.dmg + 4, { part: 'body' }, p.v.clone().setY(0).normalize()); burst(q, UP, p.water ? seaSprayMat : acidPartMat, 8, 2.5); sfx('splash', 0.5); return done(); }
+    }
     if (p.water) { // sea water: knocks the wind out of you and leaves a 水灘
       if (p.m.position.distanceTo(eye) < 0.8) { hurtPlayer(ZTYPES.drowned.dmg); player.slowT = Math.max(player.slowT || 0, 1.2); sfx('splash'); return done(); }
       if (p.m.position.y <= 0.05) { makeSlick(p.m.position.x, p.m.position.z); burst(p.m.position, UP, seaSprayMat, 10, 3); sfx('splash', 0.6); return done(); }
@@ -4896,11 +4978,13 @@ function spawnZombie(type) {
 
 // a pack of one type; climbing up the ship's side (`edge`) they come over the rim side by side, one after another
 function spawnSwarm(x, z, n, type = 'parasite', edge = null) {
+  const made = [];
   for (let k = 0; k < n; k++) {
     const off = (k - (n - 1) / 2) * 1.4;
     const b = edge ? new Zombie(type, x + edge.tx * off, z + edge.tz * off) : new Zombie(type, x + rand(-1.5, 1.5), z + rand(-1.5, 1.5));
-    b.speed *= rand(0.85, 1.15); if (edge) b.startClimb(edge, k * 0.3); addZombie(b);
+    b.speed *= rand(0.85, 1.15); if (edge) b.startClimb(edge, k * 0.3); addZombie(b); made.push(b);
   }
+  return made;
 }
 function spawnDragon(x, z) {
   const ax = x - player.pos.x, az = z - player.pos.z, al = Math.hypot(ax, az) || 1;
@@ -5030,7 +5114,7 @@ let hurtAlpha = 0;
 let lastHurtSfx = 0;
 // kind: melee, bullet, fire, acid, shock or blast — the worn armour decides how much of it gets through
 function hurtPlayer(dmg, kind = 'melee') {
-  if (state !== 'playing') return;
+  if (state !== 'playing' || (ARENA && ARENA.spectate)) return; // a spectator is out of reach
   const a = armorOn();
   if (a) { const stopped = dmg * armorRes(a, kind); dmg -= stopped; wearArmorDown(a, stopped); }
   player.calmT = 0; // any hit restarts the wait before health comes back
@@ -5063,13 +5147,14 @@ function updateHUD() {
   $('hpfill').style.width = player.hp + '%';
   $('wname').textContent = w.c.name;
   $('ammonum').innerHTML = w.c.beam ? `<span class="heat${w.lockT > 0 ? ' hot' : ''}"><i style="width:${Math.round((w.heat || 0) * 100)}%"></i></span><small>熱度</small>`
-    : w.c.melee ? '∞' : `${w.ammo} <small>/ ${w.reserve}</small>`;
+    : w.c.melee ? '∞' : `${w.ammo} <small>/ ${Number.isFinite(w.reserve) ? w.reserve : '∞'}</small>`;
   $('reloadtip').textContent = w.c.beam ? (w.lockT > 0 ? '過熱，散熱中…' : '') : railCharge > 0 ? '蓄能中…' : reloading > 0 ? '換彈中…' : (w.ammo === 0 ? (w.reserve ? '按 R 換彈' : '沒有彈藥') : '');
   [...$('slots').children].forEach((s, i) => s.classList.toggle('on', i === wi));
   $('lvname').textContent = levelTitle(LV);
   $('wave').textContent = interT > 0 && !waveActive ? `下一波 ${Math.ceil(interT)}` : `第 ${waveIdx + 1} / ${LV.waves.length} 波`;
   const alive = zombies.filter((z) => !z.dead).length;
   $('remain').textContent = `剩餘感染者 ${queue.length + alive}`;
+  if (ARENA) { $('wave').textContent = `${ARENA.label}${ARENA.live ? '' : ' · 尚未開戰'}`; $('remain').textContent = `${arenaCounts()} · 按 B 召喚`; }
   $('kills').textContent = kills; $('pts').textContent = score; $('cash').textContent = money(cash);
   const sp = 10 + spreadK * 40 + (aimT > 0.5 ? -6 : 0) + (jamming ? rand(10, 22) : 0);
   const ch = $('crosshair').children;
@@ -5219,13 +5304,13 @@ function tentacleSlam(mother, at) { // a red ring warns where a tentacle will bu
   slams.push({ at, t, marker, k: 0, hit: false });
   sfx('growl', 0.9);
 }
-function lobSpore(from, target) {
+function lobSpore(from, target, team = null) {
   const d = Math.hypot(target.x - from.x, target.z - from.z), T = clamp(d / 14, 0.9, 2.4);
   const v = new THREE.Vector3((target.x - from.x) / T, (target.y - from.y + 0.5 * 9.8 * T * T) / T, (target.z - from.z) / T);
   let m;
   if (AZ && AZ.spore_pod) { m = AZ.spore_pod.clone(); const mats = azMats(); m.traverse((o) => { if (o.isMesh) o.material = mats[o.userData.matName] || mats.flesh; }); }
   else m = new THREE.Mesh(spitGeo, acidPartMat);
-  m.position.copy(from); scene.add(m); spores.push({ m, v, life: 4 }); sfx('spit', 1);
+  m.position.copy(from); scene.add(m); spores.push({ m, v, life: 4, team }); sfx('spit', 1);
 }
 function startBoarding() {
   board = { t: 0, spawnT: 1.5, roarT: 0 };
@@ -5256,7 +5341,7 @@ function updateAirportHazards(dt) {
     if (p.m.position.y > 0.2 && p.life > 0) return true;
     scene.remove(p.m);
     burst(p.m.position.clone().setY(0.3), UP, acidPartMat, 16, 3); sfx('splat', 0.7);
-    if (zombies.filter((z) => !z.dead).length < QUALITY[qLevel].maxZ + 8) spawnSwarm(p.m.position.x, p.m.position.z, 4);
+    if (zombies.filter((z) => !z.dead).length < QUALITY[qLevel].maxZ + 8) spawnSwarm(p.m.position.x, p.m.position.z, 4).forEach((b) => { if (p.team) setTeam(b, p.team); });
     return false;
   });
   if (CARGO) { // propellers: idle before boarding, roaring once the engines start
@@ -5401,10 +5486,13 @@ function tentacle(s) { // a clone of the kraken's tentacle in its own group, rea
 }
 const _kq = new THREE.Matrix4();
 // 觸手拍擊: a tentacle rears up beside the hull nearest the red ring and whips its tip down on it
-function krakenSlam(at) {
-  clampDeck(at, 1);
+function krakenSlam(at, kraken = null) {
   let best = null;
-  for (const e of DECK_EDGES) { // the nearest point on the deck's rim
+  if (!DECK_EDGES && kraken) { // 競技場: the tentacle bursts out of the sand just in front of the kraken
+    const d = at.clone().sub(kraken.pos).setY(0); if (d.lengthSq() < 1) d.set(0, 0, 1); d.normalize();
+    best = { x: kraken.pos.x + d.x * 3, z: kraken.pos.z + d.z * 3 };
+  } else clampDeck(at, 1);
+  if (!best) for (const e of DECK_EDGES) { // the nearest point on the deck's rim
     const t = clamp((at.x - e.ax) * e.tx + (at.z - e.az) * e.tz, 0, e.len), px = e.ax + e.tx * t, pz = e.az + e.tz * t, d = Math.hypot(at.x - px, at.z - pz);
     if (!best || d < best.d) best = { d, x: px + e.nx * 2.5, z: pz + e.nz * 2.5 };
   }
@@ -5482,6 +5570,157 @@ function updateCarrierHazards(dt) {
     scene.remove(q.t); return false;
   });
 }
+// ============================================================
+//  競技場 (CONTEXT.md; .scratch/arena/spec.md)
+// ============================================================
+const ARENA_R = 32;
+const ARENA_MODES = {
+  team: { label: '觀戰・兩隊對戰', spectate: true, teams: true },
+  ffa: { label: '觀戰・大亂鬥', spectate: true, teams: false },
+  solo: { label: '親自上陣・單挑', spectate: false, teams: false },
+  join: { label: '親自上陣・加入藍隊', spectate: false, teams: true },
+};
+let ARENA = null, AR = null, ARENA_RING = 0, BRAZIERS = [];
+let arenaMode = 'team', arenaKit = null, arenaPick = 'walker', arenaTeam = 'red', arenaCount = 1;
+loadModel('arena', (scene) => { AR = {}; scene.children.forEach((o) => { AR[o.name] = o; }); });
+const TEAM_COLOR = { red: 0xff3a2a, blue: 0x3a8cff };
+const teamRingGeo = new THREE.RingGeometry(0.42, 0.56, 28); teamRingGeo.rotateX(-Math.PI / 2);
+const teamRingMat = Object.fromEntries(Object.entries(TEAM_COLOR).map(([t, c]) => [t, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.9, depthWrite: false })]));
+const ZERO3 = new THREE.Vector3();
+function buildArena(g) {
+  ARENA_RING = ARENA_R - 0.4;
+  const put = (name, x, y, z, rot = 0, shoot = true) => {
+    if (!AR || !AR[name]) return null;
+    const o = AR[name].clone(); o.position.set(x, y, z); o.rotation.y = rot;
+    o.traverse((c) => { if (c.isMesh) { c.castShadow = c.receiveShadow = true; if (shoot) worldMeshes.push(c); } });
+    g.add(o); return o;
+  };
+  const bowl = put('arena_bowl', 0, 0, 0);
+  if (bowl) bowl.traverse((c) => { if (c.isMesh) c.castShadow = false; });
+  put('arena_gate', 0, 0, -ARENA_R - 0.4, 0); put('arena_gate', 0, 0, ARENA_R + 0.4, Math.PI);
+  for (const [team, sz] of [['red', -1], ['blue', 1]]) for (const sx of [-1, 1]) { // team banners beside each gate
+    const b = put('arena_banner', sx * 6.2, 3.9, sz * (ARENA_R - 0.08), sz < 0 ? 0 : Math.PI, false);
+    if (b) b.traverse((c) => { if (c.isMesh && c.material.name === 'banner') { c.material = c.material.clone(); c.material.color.set(team === 'red' ? 0x8a1410 : 0x14308a); } });
+  }
+  for (const [x, z, r] of [[10, 8, 0.4], [-11, 7, 2.1], [9, -10, 3.6], [-8, -9, 5.0]]) { put('arena_ruin', x, 0, z, r); addCollider(x, z, 2.6, 2.6); }
+  for (let k = 0; k < 8; k++) { // braziers along the podium, flames added each frame
+    const a = (k + 0.5) / 8 * Math.PI * 2, x = Math.sin(a) * (ARENA_R + 0.7), z = -Math.cos(a) * (ARENA_R + 0.7);
+    put('arena_brazier', x, 4.55, z, a, false); BRAZIERS.push(new THREE.Vector3(x, 5.9, z));
+  }
+}
+// ---- a zombie's target: the player, another zombie, or nobody (it stands and waits) ----
+function arenaFoe(z) {
+  if (!ARENA.live) return null;
+  if (ARENA.mode === 'solo') return player.hp > 0 ? player : null;
+  let best = null, bd = Infinity;
+  for (const o of zombies) {
+    if (o === z || o.dead || o.climbT > 0 || (ARENA.teams && o.team === z.team)) continue;
+    const d = (o.pos.x - z.pos.x) ** 2 + (o.pos.z - z.pos.z) ** 2;
+    if (d < bd) { bd = d; best = o; }
+  }
+  if (ARENA.mode === 'join' && z.team === 'red' && player.hp > 0 && (player.pos.x - z.pos.x) ** 2 + (player.pos.z - z.pos.z) ** 2 < bd) best = player;
+  return best;
+}
+function setTeam(z, team) {
+  z.team = team;
+  if (!ARENA || !ARENA.teams || !team || z.c.kraken) return;
+  const m = new THREE.Mesh(teamRingGeo, teamRingMat[team]); m.position.y = 0.05 / z.g.scale.y; m.renderOrder = 2;
+  m.scale.setScalar(Math.max(1, z.radius / 0.35) / z.g.scale.x); z.g.add(m); z.teamRing = m;
+}
+function arenaSummon(type, team, n) {
+  const c = ZTYPES[type];
+  if (zombies.filter((o) => !o.dead).length >= 90) { showMsg('', '場上的殭屍太多了，先清場或等牠們打完', 2); return; }
+  if (c.kraken) {
+    if (zombies.some((o) => o.c.kraken && !o.dead)) { showMsg('', '競技場裡已經有一隻巨型海怪了', 1.6); return; }
+    const a = rand(0, Math.PI * 2), fx = Math.sin(a), fz = Math.cos(a), kz = new Zombie(type, fx * 7.3, fz * 7.3); // the head fills the middle, the eye looks out
+    kz.g.rotation.y = Math.atan2(-fz, fx); zombies.push(kz); setTeam(kz, ARENA.teams ? team : null);
+    return;
+  }
+  for (let k = 0; k < n; k++) {
+    const before = zombies.length;
+    let x = 0, z = 0;
+    for (let t = 0; t < 30; t++) {
+      if (ARENA.teams) { const sz = team === 'red' ? -1 : 1; x = rand(-10, 10); z = sz * rand(ARENA_R - 13, ARENA_R - 3); }
+      else { const a = rand(0, Math.PI * 2), r = rand(10, ARENA_R - 3); x = Math.sin(a) * r; z = Math.cos(a) * r; }
+      if (!blocked(x, z, 0.8) && (ARENA.spectate || Math.hypot(x - player.pos.x, z - player.pos.z) > 10)) break;
+    }
+    if (c.dragon) spawnDragon(x, z);
+    else if (c.swarm) spawnSwarm(x, z, c.swarm, type);
+    else zombies.push(new Zombie(type, x, z));
+    for (let i = before; i < zombies.length; i++) { setTeam(zombies[i], ARENA.teams ? team : null); zombies[i].g.rotation.y = Math.atan2(-zombies[i].pos.x, -zombies[i].pos.z); }
+  }
+  sfx('wave', 0.5);
+}
+function arenaCounts() {
+  const alive = zombies.filter((o) => !o.dead);
+  if (!ARENA.teams) return `場上殭屍 ${alive.length}`;
+  const red = alive.filter((o) => o.team === 'red').length, blue = alive.filter((o) => o.team === 'blue').length;
+  return `紅隊 ${red} · 藍隊 ${blue}`;
+}
+function updateArena(dt) {
+  if (!ARENA) return;
+  for (const b of BRAZIERS) if (Math.random() < dt * 9) emitFire(b.clone().add(new THREE.Vector3(rand(-0.3, 0.3), 0, rand(-0.3, 0.3))), UP, rand(0.8, 1.6));
+  if (!ARENA.live) return;
+  const alive = zombies.filter((o) => !o.dead);
+  if (ARENA.teams) { // a side wins when the other one is wiped out
+    const red = alive.filter((o) => o.team === 'red').length, blue = alive.filter((o) => o.team === 'blue').length + (ARENA.mode === 'join' && player.hp > 0 ? 1 : 0);
+    if (red && blue) ARENA.contested = true;
+    else if (ARENA.contested && (red || blue)) { ARENA.contested = false; showMsg(red ? '紅隊獲勝！' : '藍隊獲勝！', '按 B 打開召喚面板再來一場', 4); sfx('wave'); }
+  } else if (ARENA.spectate) { // 大亂鬥: the last one standing
+    if (alive.length > 1) ARENA.contested = true;
+    else if (ARENA.contested && alive.length === 1) { ARENA.contested = false; showMsg(`${alive[0].c.name}活到了最後！`, '按 B 打開召喚面板再來一場', 4); sfx('wave'); }
+  }
+}
+// ---- the spectator's free-flying camera ----
+const flyPos = new THREE.Vector3(), _ff = new THREE.Vector3(), _fr = new THREE.Vector3(), _fm = new THREE.Vector3();
+let touchUpHeld = false;
+function updateFlyCam(dt) {
+  const fast = keys.ShiftLeft || keys.ShiftRight || joyWantsSprint, sp = (fast ? 28 : 11) * dt, cp = Math.cos(player.pitch);
+  _ff.set(-Math.sin(player.yaw) * cp, Math.sin(player.pitch), -Math.cos(player.yaw) * cp); _fr.set(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+  _fm.set(0, 0, 0);
+  if (keys.KeyW) _fm.add(_ff); if (keys.KeyS) _fm.sub(_ff); if (keys.KeyD) _fm.add(_fr); if (keys.KeyA) _fm.sub(_fr);
+  const stick = joy.id !== null ? joy : pad.active ? pad : null;
+  if (stick && Math.hypot(stick.x, stick.y) > 0.15) { _fm.addScaledVector(_ff, -stick.y); _fm.addScaledVector(_fr, stick.x); }
+  if (keys.Space || touchUpHeld) _fm.y += 1;
+  if (keys.KeyQ || keys.ControlLeft) _fm.y -= 1;
+  touchJump = false;
+  if (_fm.lengthSq() > 1) _fm.normalize();
+  flyPos.addScaledVector(_fm, sp);
+  const hr = Math.hypot(flyPos.x, flyPos.z); if (hr > 70) { flyPos.x *= 70 / hr; flyPos.z *= 70 / hr; }
+  flyPos.y = clamp(flyPos.y, 0.6, 45);
+  player.pos.copy(flyPos); player.vel.set(0, 0, 0);
+  camera.position.copy(flyPos); camera.rotation.set(player.pitch, player.yaw, 0);
+  camera.fov = camera.aspect < 1 ? 95 : 75; camera.updateProjectionMatrix();
+}
+// ---- screens: the mode picker and the 召喚面板 ----
+function openArenaSetup() {
+  audio(); document.querySelectorAll('.overlay').forEach((o) => o.classList.remove('show'));
+  $('arenaSetup').classList.add('show');
+}
+function renderArenaPanel() {
+  $('aStatus').innerHTML = `${ARENA.label} · ${ARENA.live ? '戰鬥中' : '尚未開戰'} · ${arenaCounts().replace(/紅隊 (\d+)/, '<span class="red">紅隊 $1</span>').replace(/藍隊 (\d+)/, '<span class="blue">藍隊 $1</span>')}`;
+  $('aTypes').innerHTML = Object.entries(ZTYPES).map(([k, z]) => `<button class="atype${k === arenaPick ? ' on' : ''}" data-k="${k}"><i style="background:${z.color}"></i>${z.name}${z.boss ? ' <span class="boss">Boss</span>' : ''}</button>`).join('');
+  $('aTeamRow').style.display = ARENA.teams && ARENA.mode !== 'join' ? '' : ARENA.mode === 'join' ? '' : 'none';
+  document.querySelectorAll('.ateam').forEach((b) => b.classList.toggle('on', b.dataset.t === arenaTeam));
+  document.querySelectorAll('.acount').forEach((b) => b.classList.toggle('on', +b.dataset.n === arenaCount));
+  $('btnLive').textContent = ARENA.live ? '停戰' : '開戰'; $('btnLive').classList.toggle('primary', !ARENA.live);
+  $('aKitRow').style.display = ARENA.spectate ? 'none' : '';
+  if (!ARENA.spectate) for (let i = 0; i < 3; i++) {
+    const sel = $('aKit' + i);
+    sel.innerHTML = WEAPONS.map((w) => `<option value="${w.id}"${w.id === ARENA.kit[i] ? ' selected' : ''}>${w.name}${owned.includes(w.id) ? '' : '（未擁有）'}</option>`).join('');
+  }
+}
+function openArenaPanel() {
+  if (!ARENA) return;
+  state = 'arenapanel'; releaseTouch(); mouseDown = false; aiming = false;
+  unlockPointer(); $('arenaPanel').classList.add('show'); renderArenaPanel();
+}
+function closeArenaPanel() {
+  $('arenaPanel').classList.remove('show');
+  if (!ARENA.spectate && ARENA.kitDirty) { ARENA.kitDirty = false; wi = Math.min(wi, 2); resetWeapons(); }
+  state = 'playing';
+  if (inputMode !== 'touch' && !padActive) lockPointer();
+}
 function updateFestHazards(dt) {
   gongWaves = gongWaves.filter((w) => {
     const r0 = w.r; w.r += 9 * dt;
@@ -5555,12 +5794,17 @@ function startLevel(i) {
     modelsReady.then(() => { $('loading').style.display = 'none'; startLevel(i); });
     return;
   }
+  ARENA = LEVELS[i].arena ? { mode: arenaMode, ...ARENA_MODES[arenaMode], live: !ARENA_MODES[arenaMode].spectate, contested: false, kit: [...(arenaKit || loadout)] } : null;
   loadLevel(i);
-  if (DECK_EDGES) player.pos.set(-4, 0, -10); else player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
+  if (DECK_EDGES) player.pos.set(-4, 0, -10); else if (ARENA) player.pos.set(0, 0, 14); else player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
   player.yaw = DECK_EDGES ? Math.PI : 0; player.slickT = 0; player.jammed = false; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0); player.calmT = 0; player.regenT = 0;
   wi = 1; resetWeapons(); reloading = 0; switching = 0;
   kills = 0; score = 0; levelCash = 0; waveIdx = 0; queue = []; waveActive = false; interT = 3;
-  showMsg(levelTitle(LV), `${TIMES[LV.time].label} — 撐過 ${LV.waves.length} 波感染者`, 3);
+  if (ARENA) {
+    showMsg(levelTitle(LV), `${ARENA.label} — 按 B 打開召喚面板`, 3); waveActive = false; interT = 0;
+    if (ARENA.spectate) { flyPos.set(0, 13, 30); player.pitch = -0.32; player.pos.copy(flyPos); }
+  } else showMsg(levelTitle(LV), `${TIMES[LV.time].label} — 撐過 ${LV.waves.length} 波感染者`, 3);
+  document.body.classList.toggle('inarena', !!ARENA); document.body.classList.toggle('watch', !!(ARENA && ARENA.spectate));
   document.querySelectorAll('.overlay').forEach((o) => o.classList.remove('show'));
   $('hud').style.display = 'block';
   state = 'playing';
@@ -5568,7 +5812,8 @@ function startLevel(i) {
   if (inputMode === 'touch') {
     usingLock = false;
     try { document.documentElement.requestFullscreen?.().then(() => screen.orientation?.lock?.('landscape')).catch(() => {}); } catch {}
-  } else if (!padActive) lockPointer();
+  } else if (!padActive && !ARENA) lockPointer();
+  if (ARENA) openArenaPanel(); // start by filling the arena
 }
 
 function startWave() {
@@ -5590,6 +5835,7 @@ function startWave() {
 }
 
 function updateWaves(dt) {
+  if (ARENA) return; // the arena is filled by hand
   if (evac) { updateEvac(dt); return; }
   if (finale || board) return;
   if (!waveActive) {
@@ -5640,11 +5886,12 @@ function gameOver() {
   $('scope').style.display = 'none';
   state = 'dead'; releaseTouch();
   unlockPointer();
-  $('deadStats').innerHTML = `${LV.event ? LV.label : `第 ${LV.num} 關`} · 第 ${waveIdx + 1} 波<br>擊殺 ${kills} · 分數 ${score}<br>賺到的 ${money(levelCash)} 已經存下來了${armorStatus()}`;
+  $('deadStats').innerHTML = ARENA ? `${LV.label} · ${ARENA.label}<br>擊殺 ${kills} · 分數 ${score}` : `${LV.event ? LV.label : `第 ${LV.num} 關`} · 第 ${waveIdx + 1} 波<br>擊殺 ${kills} · 分數 ${score}<br>賺到的 ${money(levelCash)} 已經存下來了${armorStatus()}`;
   $('dead').classList.add('show');
 }
 function toMenu() {
   if (rainAudio) { try { rainAudio.stop(); } catch {} rainAudio = null; }
+  if (ARENA) { ARENA = null; document.body.classList.remove('inarena', 'watch'); wi = Math.min(wi, 2); resetWeapons(); loadLevel(0); } // back to the city behind the menu
   state = 'menu'; releaseTouch(); $('touch').classList.remove('on');
   document.querySelectorAll('.overlay').forEach((o) => o.classList.remove('show'));
   $('menu').classList.add('show'); $('hud').style.display = 'none';
@@ -5657,6 +5904,11 @@ function renderMenu() {
   const un = loadUnlocked();
   $('menuCash').textContent = money(cash);
   $('levels').innerHTML = '';
+  if (ARENA_LEVEL >= 0) {
+    const b = document.createElement('button'); b.className = 'card arena';
+    b.innerHTML = `<div class="n">競技</div><div class="nm">${LEVELS[ARENA_LEVEL].name}</div><div class="tm">沙盒模式 · 不給金錢</div><div class="ds">${LEVELS[ARENA_LEVEL].desc}</div>`;
+    b.onclick = openArenaSetup; $('levels').appendChild(b);
+  }
   if (EVENT_LEVEL >= 0) {
     const l = LEVELS[EVENT_LEVEL], left = eventDaysLeft(), b = document.createElement('button');
     b.className = 'card event' + (left ? '' : ' locked');
@@ -5712,7 +5964,8 @@ addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (state !== 'playing') return;
   if (e.code === 'KeyR') startReload();
-  if (e.code === 'KeyC' && !e.repeat) setCompass(!compassOn);
+  if (e.code === 'KeyC' && !e.repeat && !(ARENA && ARENA.spectate)) setCompass(!compassOn);
+  if (e.code === 'KeyB' && ARENA && !e.repeat) openArenaPanel();
   if (e.code === 'Digit1') switchWeapon(0);
   if (e.code === 'Digit2') switchWeapon(1);
   if (e.code === 'Digit3') switchWeapon(2);
@@ -5794,7 +6047,8 @@ function lookBy(dx, dy) {
   btn('tFire', (t) => { audio(); mouseDown = true; fireLookId = t.identifier; lookLast[t.identifier] = [t.clientX, t.clientY]; tryFire(true); },
     () => { mouseDown = false; fireLookId = null; });
   btn('tAim', () => { aiming = !aiming; $('tAim').classList.toggle('on', aiming); });
-  btn('tJump', () => { touchJump = true; });
+  btn('tJump', () => { touchJump = true; touchUpHeld = true; }, () => { touchUpHeld = false; });
+  btn('tArena', () => openArenaPanel());
   btn('tReload', () => startReload());
   btn('tSwitch', () => switchWeapon((wi + 1) % weapons.length));
   btn('tCompass', () => setCompass(!compassOn));
@@ -6032,6 +6286,17 @@ function renderBestiary() {
 }
 $('btnBestiary').onclick = () => { renderBestiary(); $('bestiary').classList.add('show'); };
 $('btnCloseBestiary').onclick = () => $('bestiary').classList.remove('show');
+document.querySelectorAll('.amode').forEach((b) => { b.onclick = () => { arenaMode = b.dataset.m; $('arenaSetup').classList.remove('show'); startLevel(ARENA_LEVEL); }; });
+$('btnArenaBack').onclick = () => { $('arenaSetup').classList.remove('show'); $('menu').classList.add('show'); };
+$('aTypes').onclick = (e) => { const b = e.target.closest('.atype'); if (b) { arenaPick = b.dataset.k; renderArenaPanel(); } };
+document.querySelectorAll('.ateam').forEach((b) => { b.onclick = () => { arenaTeam = b.dataset.t; renderArenaPanel(); }; });
+document.querySelectorAll('.acount').forEach((b) => { b.onclick = () => { arenaCount = +b.dataset.n; renderArenaPanel(); }; });
+$('btnSummon').onclick = () => { arenaSummon(arenaPick, ARENA.mode === 'join' || ARENA.teams ? arenaTeam : null, arenaCount); renderArenaPanel(); };
+$('btnLive').onclick = () => { ARENA.live = !ARENA.live; ARENA.contested = false; zombies.forEach((z) => { z.foe = null; z.tgtCd = 0; }); renderArenaPanel(); };
+$('btnClear').onclick = () => { zombies.forEach((z) => z.remove()); zombies = []; zMeshes = []; ARENA.contested = false; renderArenaPanel(); };
+for (let i = 0; i < 3; i++) $('aKit' + i).onchange = (e) => { ARENA.kit[i] = e.target.value; arenaKit = [...ARENA.kit]; ARENA.kitDirty = true; };
+$('btnArenaGo').onclick = closeArenaPanel;
+$('btnArenaQuit').onclick = () => toMenu();
 $('btnRedeem').onclick = () => {
   $('redeemInput').value = ''; $('redeemMsg').textContent = ''; $('redeemMsg').className = '';
   $('redeem').classList.add('show'); setTimeout(() => $('redeemInput').focus(), 50);
@@ -6428,6 +6693,7 @@ function startReload() {
 const ray = new THREE.Raycaster(); ray.far = 250;
 const tmpM = new THREE.Matrix4();
 function tryFire(click) {
+  if (ARENA && ARENA.spectate) return;
   const w = weapons[wi];
   if (fireCd > 0 || reloading > 0 || switching > 0) return;
   if (!w.c.auto && !click) return;
@@ -6778,7 +7044,8 @@ function frame(dt, now) {
   pollPad(dt);
   if (state === 'playing') autoQuality(dt);
   if (state === 'playing') {
-    updatePlayer(dt); updateWeapon(dt); updateZombies(dt); updateHazards(dt); updateGrenades(dt); updateWaves(dt); updatePickups(dt); updateFireworks(dt); updateFestHazards(dt); updateAirportHazards(dt); updateCarrierHazards(dt); updateWeaponFx(dt);
+    if (ARENA && ARENA.spectate) updateFlyCam(dt); else { updatePlayer(dt); updateWeapon(dt); }
+    updateArena(dt); updateZombies(dt); updateHazards(dt); updateGrenades(dt); updateWaves(dt); updatePickups(dt); updateFireworks(dt); updateFestHazards(dt); updateAirportHazards(dt); updateCarrierHazards(dt); updateWeaponFx(dt);
     updateHUD();
   } else if (state === 'menu') {
     menuT += dt;
@@ -6788,7 +7055,7 @@ function frame(dt, now) {
     camera.lookAt(camera.position.x, 7, camera.position.z - 40);
     gunRoot.visible = false;
   }
-  gunRoot.visible = state !== 'menu';
+  gunRoot.visible = state !== 'menu' && !(ARENA && ARENA.spectate);
   updateParticles(dt); updateLighting(dt); updateRain(dt); updateSaber();
   if (msgTimer > 0) { msgTimer -= dt; if (msgTimer <= 0) $('msg').style.opacity = 0; }
   if (cashPopT > 0) { cashPopT -= dt; if (cashPopT <= 0) $('cashpop').style.opacity = 0; }
@@ -6803,7 +7070,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026101402'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026101403'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
