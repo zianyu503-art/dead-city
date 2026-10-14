@@ -556,6 +556,31 @@ done("laser", [body, C((0, 0.015, -0.42), (0, 0.015, -0.35), 0.024, "metal", ver
     grip(0.1, -0.04, "poly", 0.3, 0.09, 0.03, 0.04),
     P([(0.2, 0.03), (0.38, 0.01), (0.39, -0.07), (0.22, -0.05)], 0.045, "white", bev=0.006)] + trigger(-0.045, 0.05))
 
+# =================================================================== 圓鋸發射器 (the 兌換碼 reward), and its blade
+def saw_disc(c, r, t, teeth):
+    """A flat saw blade lying in the XZ plane: steel disc, angled teeth round the rim, orange hub."""
+    x, y, z = c
+    out = [C((x, y - t / 2, z), (x, y + t / 2, z), r, "silver", verts=40), C((x, y - t, z), (x, y + t, z), r * 0.22, "sawOrange", verts=20)]
+    for k in range(teeth):
+        a = k / teeth * math.tau
+        p0 = (x + math.cos(a) * r * 0.97, y, z + math.sin(a) * r * 0.97)
+        p1 = (x + math.cos(a + 0.12) * r * 1.13, y, z + math.sin(a + 0.12) * r * 1.13)
+        out.append(C(p0, p1, r * 0.07, "silver", r1=0.0, verts=4))
+    return out
+body = P([(-0.2, -0.04), (-0.2, 0.045), (-0.16, 0.06), (0.15, 0.06), (0.18, 0.035), (0.18, -0.05)], 0.075, "metal", bev=0.007)
+done("sawlauncher", [body,
+    *saw_disc((0, 0.005, -0.33), 0.1, 0.006, 20),                                                                   # the loaded blade, out in the open
+    Tor((0, 0.03, -0.33), 0.118, 0.01, "sawOrange", "y", 40),                                                       # guard ring over it
+    *[Bx((s * 0.045, 0.02, -0.235), (0.012, 0.03, 0.09), "sawOrange") for s in (-1, 1)],
+    Bx((0, 0.0, -0.21), (0.03, 0.02, 0.05), "metal"),
+    C((0, 0.06, -0.07), (0, 0.14, -0.07), 0.07, "metal", verts=32),                                                 # drum of stacked blades
+    *[C((0, y, -0.07), (0, y + 0.006, -0.07), 0.074, "silver", verts=32) for y in (0.072, 0.088, 0.104, 0.12)],
+    C((0, 0.14, -0.07), (0, 0.15, -0.07), 0.05, "sawOrange", verts=24),
+    Bx((0, 0.05, -0.15), (0.01, 0.025, 0.012), "sawOrange"),                                                         # front sight post
+    grip(0.1, -0.04, "poly", 0.3, 0.09, 0.03, 0.042),
+    P([(0.18, 0.04), (0.35, 0.03), (0.36, -0.07), (0.2, -0.05)], 0.05, "poly", bev=0.004)] + trigger(-0.05, 0.05))
+done("saw_blade", saw_disc((0, 0, 0), 0.18, 0.008, 24))
+
 # =================================================================== frag grenade (centred on its origin)
 done("grenade", [Sph((0, 0, 0), 0.034, "olive", (1, 1.15, 1), 18), *[Tor((0, 0, 0), 0.034, 0.003, "olive", "y", 24)],
     C((0, 0.036, 0), (0, 0.05, 0), 0.012, "metal", verts=12), Bx((0.012, 0.03, 0), (0.006, 0.05, 0.012), "metal", 0.1),
@@ -570,7 +595,7 @@ for o in PARTS:
 print("exported", OUT)
 
 if PREVIEW:
-    layout = ["pistol", "deagle", "mp5", "rifle", "ak", "shotgun", "dbarrel", "aa12", "awm", "m249", "minigun", "flamer", "tesla", "m79", "rpg", "crossbow", "fireworks", "chainsaw", "freezegun", "blackhole", "uzi", "railgun", "laser"]
+    layout = ["pistol", "deagle", "mp5", "rifle", "ak", "shotgun", "dbarrel", "aa12", "awm", "m249", "minigun", "flamer", "tesla", "m79", "rpg", "crossbow", "fireworks", "chainsaw", "freezegun", "blackhole", "uzi", "railgun", "laser", "sawlauncher"]
     for i, name in enumerate(layout):
         col, row = i % 6, i // 6
         off = Vector((col * 1.15 - 2.9, 0, -row * 0.62 + 0.62))

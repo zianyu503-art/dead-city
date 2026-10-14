@@ -1,4 +1,6 @@
-# The 兌換碼牆 of 死城突圍: an old cinder-block garden wall in 黃昏住宅區 with a 兌換碼 sprayed on it.
+# The 兌換碼牆 of 死城突圍: walls with a 兌換碼 sprayed on them —
+#   code_wall      an old cinder-block garden wall in 黃昏住宅區 (the $10,000 code)
+#   code_wall_port a grimy concrete wall in the 夜間港區 container yard, glow-in-the-dark paint (the 圓鋸發射器 code)
 #
 #   blender -b -P tools/blender/graffiti.py -- assets/models/graffiti.glb [preview.png]
 #
@@ -12,7 +14,9 @@ argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 OUT = argv[0] if argv else "graffiti.glb"
 PREVIEW = argv[1] if len(argv) > 1 else None
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-CODE = json.load(open(os.path.join(ROOT, ".secrets", "redeem-codes.json")))[0]["code"]
+CODES = json.load(open(os.path.join(ROOT, ".secrets", "redeem-codes.json")))
+CODE = CODES[0]["code"]
+PORT_CODE = next(c["code"] for c in CODES if c.get("weapon") == "sawlauncher")
 random.seed(42)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
@@ -22,14 +26,15 @@ PALETTE = {
     "block": ((0.42, 0.41, 0.38), 0.95, 0.0), "block_dark": ((0.3, 0.29, 0.27), 0.95, 0.0), "block_moss": ((0.27, 0.31, 0.2), 0.95, 0.0),
     "mortar": ((0.22, 0.21, 0.2), 1.0, 0.0), "cap": ((0.5, 0.49, 0.46), 0.9, 0.0),
     "paint_yellow": ((0.95, 0.78, 0.08), 0.6, 0.0), "paint_red": ((0.6, 0.04, 0.03), 0.6, 0.0), "paint_black": ((0.03, 0.03, 0.03), 0.6, 0.0),
-    "paint_white": ((0.85, 0.85, 0.82), 0.6, 0.0),
+    "paint_white": ((0.85, 0.85, 0.82), 0.6, 0.0), "concrete": ((0.11, 0.11, 0.105), 0.95, 0.0), "concrete_dark": ((0.075, 0.075, 0.07), 0.95, 0.0),
+    "rust": ((0.32, 0.12, 0.05), 0.8, 0.3), "paint_glow": ((0.2, 1.0, 0.75), 0.5, 0.0),
 }
 MAT = {}
 for n, (c, r, mt) in PALETTE.items():
     m = bpy.data.materials.new(n); m.use_nodes = True; b = m.node_tree.nodes["Principled BSDF"]
     b.inputs["Base Color"].default_value = (*c, 1); b.inputs["Roughness"].default_value = r; b.inputs["Metallic"].default_value = mt
-    if n == "paint_yellow":  # a touch of glow so it stays readable at dusk
-        b.inputs["Emission Color"].default_value = (*c, 1); b.inputs["Emission Strength"].default_value = 0.35
+    if n in ("paint_yellow", "paint_glow"):  # a touch of glow keeps it readable at dusk; the port's paint glows in the dark
+        b.inputs["Emission Color"].default_value = (*c, 1); b.inputs["Emission Strength"].default_value = 0.35 if n == "paint_yellow" else 0.7
     MAT[n] = m
 
 
@@ -138,6 +143,34 @@ join(parts, "code_wall_paint")
 
 # one object for the game: blocks and paint together
 wall = join([PARTS.pop(), PARTS.pop()], "code_wall")
+
+# ===================================================================== 夜間港區: cast concrete panels between steel posts, rust streaks, glowing paint
+PL, PH = 4.4, 2.2
+parts = []
+for k in range(2):  # two panels with a seam
+    x = -PL / 4 + k * PL / 2
+    parts.append(box((x, PH / 2, 0), (PL / 2 - 0.03, PH, 0.25), "concrete" if k else "concrete_dark"))
+for x in (-PL / 2 - 0.08, 0, PL / 2 + 0.08):  # steel posts
+    parts.append(box((x, (PH + 0.2) / 2, 0), (0.16, PH + 0.2, 0.32), "rust"))
+for k in range(7):  # rust streaks bleeding down from the posts and the top
+    x = random.uniform(-2.0, 2.0)
+    parts.append(box((x, PH - 0.35, 0.128), (random.uniform(0.03, 0.08), random.uniform(0.4, 0.8), 0.004), "rust"))
+Z = 0.125 + 0.008
+parts.append(paint([(-2.0, 1.8), (-1.75, 1.5), (-1.5, 1.85), (-1.2, 1.45)], Z, "paint_red", 0.02))
+parts.append(paint([(1.3, 1.9), (1.9, 1.3)], Z, "paint_white", 0.018)); parts.append(paint([(1.3, 1.3), (1.9, 1.9)], Z, "paint_white", 0.018))
+parts.append(paint([(-1.9, 0.5), (-1.4, 0.75), (-0.9, 0.45)], Z, "paint_black", 0.02))
+gx, gy = 1.5, 0.75  # the same little gift box
+parts.append(paint([(gx - 0.14, gy - 0.12), (gx + 0.14, gy - 0.12), (gx + 0.14, gy + 0.1), (gx - 0.14, gy + 0.1), (gx - 0.14, gy - 0.12)], Z, "paint_glow", 0.008))
+parts.append(paint([(gx, gy - 0.12), (gx, gy + 0.1)], Z, "paint_glow", 0.008))
+parts.append(paint([(gx, gy + 0.1), (gx - 0.08, gy + 0.18), (gx - 0.02, gy + 0.1), (gx + 0.06, gy + 0.18), (gx, gy + 0.1)], Z, "paint_glow", 0.007))
+bpy.ops.object.text_add(location=B(0.1, 0.95, Z))
+t = bpy.context.object; t.data.body = PORT_CODE; t.data.size = 0.18; t.data.extrude = 0.003
+t.data.align_x = "CENTER"; t.data.align_y = "CENTER"; t.data.space_character = 1.08
+t.rotation_euler = (math.pi / 2, 0, 0); t.rotation_euler.rotate_axis("Z", math.radians(-2))
+activate(t); bpy.ops.object.convert(target="MESH")
+code = settle(bpy.context.object, "paint_glow"); code.name = "paint2"; code.data.name = "paint2"
+parts.append(code)
+join(parts, "code_wall_port")
 
 for ob in scene.objects:
     ob.select_set(ob in PARTS)

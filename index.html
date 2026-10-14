@@ -587,6 +587,10 @@ const WEAPONS = [
   { id: 'fireworks', name: '煙花發射器', cat: '爆裂物', reward: '通關國慶特別版解鎖', limited: '國慶限定', price: 0, sound: 'fwshoot', dmg: 160, direct: 220, rate: 0.7, auto: false,
     mag: 6, reserve: 36, reload: 3, spread: 0.004, pellets: 1, recoil: 0.04, explosive: true, rocket: true, firework: true, volley: 3, safe: true, burn: 3, radius: 5.5, move: 0.95,
     desc: '國慶特別版的通關獎勵，商店買不到。每次扣扳機同時射出三發拖著火花的煙火彈，扇形散開、炸成一片彩色煙火，直擊與範圍傷害都很高，還會點燃殭屍。煙火不會傷到自己。' },
+  // ---- 兌換限定 (CONTEXT.md: 兌換碼); model in tools/blender/guns.py ----
+  { id: 'sawlauncher', name: '圓鋸發射器', cat: '特殊', reward: '兌換碼解鎖', limited: '兌換限定', price: 0, sound: 'sawshot', dmg: 140, rate: 0.35, auto: false,
+    mag: 8, reserve: 48, reload: 2.4, spread: 0, pellets: 1, recoil: 0.03, saw: true, speed: 30, bounces: 5, move: 0.95, noFlash: true, zoom: 10,
+    desc: '只能用兌換碼取得的限定武器。射出高速旋轉的圓鋸片，切過一隻殭屍後會自動飛向附近的下一隻，撞到牆會反彈，一片最多切六次，常常直接把頭削掉。' },
   // ---- 第二批新武器 (.scratch/weapons-2/spec.md); models in tools/blender/guns.py ----
   { id: 'chainsaw', name: '電鋸', cat: '近戰', price: 3500, sound: '', dmg: 22, rate: 0.1, auto: true, mag: Infinity, reserve: Infinity, reload: 0, spread: 0, pellets: 1, recoil: 0,
     melee: true, saw: true, range: 2.2, arc: 0.6, noFlash: true, zoom: 0,
@@ -2149,6 +2153,7 @@ function buildLevel() {
         addHouse(g, cx + ox * L, cz + oz * L, face, trees);
       }
     } else { // industrial
+      if (theme === 'industrial' && bi === 0 && bj === 4) placeCodeWall(g, cx + 17.5, cz + 19, 'code_wall_port', Math.PI); // a 兌換碼牆 in the far corner of the yard
       if (r < 0.45) {
         const along = Math.random() < 0.5;
         const w = along ? 34 : 16, d = along ? 16 : 34;
@@ -2541,6 +2546,8 @@ function sfx(name, vol = 1) {
     case 'frost': sNoise(t, 0.3, 6000, 3000, 0.22 * vol, 'highpass'); sNoise(t, 0.3, 900, 500, 0.12 * vol, 'bandpass'); break;
     case 'freeze': sNoise(t, 0.35, 7000, 2500, 0.4 * vol, 'highpass'); sTone(t, 0.3, 2400, 1600, 0.1 * vol, 'triangle'); break;
     case 'swoosh': sNoise(t, 0.3, 500, 1800, 0.3 * vol, 'bandpass'); break;
+    case 'sawshot': sTone(t, 0.35, 900, 1800, 0.25, 'sawtooth'); sNoise(t, 0.12, 3000, 1500, 0.35, 'bandpass'); sTone(t, 0.08, 180, 90, 0.4, 'square'); break;
+    case 'sawhit': sNoise(t, 0.18, 4200, 2200, 0.5 * vol, 'bandpass'); sTone(t, 0.15, 1400, 700, 0.18 * vol, 'sawtooth'); break;
     case 'bhfire': sTone(t, 0.5, 300, 60, 0.4, 'sawtooth'); sNoise(t, 0.4, 1200, 200, 0.3, 'bandpass'); break;
     case 'bhopen': sTone(t, 2.8, 50, 30, 0.45 * vol, 'sawtooth'); sTone(t, 2.8, 75, 44, 0.25 * vol, 'sine'); break;
     case 'implode': sNoise(t, 1.0, 200, 3000, 0.9 * vol, 'bandpass'); sTone(t, 0.8, 40, 140, 0.8 * vol); sNoise(t + 0.4, 0.8, 2500, 100, 0.8 * vol); break;
@@ -2908,12 +2915,12 @@ function airportBlock(g, bi, bj, cx, cz, inside) {
 let CV = null, NZ = null;
 loadModel('carrier', (scene) => { CV = {}; scene.children.forEach((o) => { CV[o.name] = o; }); });
 loadModel('navalzombie', (scene) => { NZ = {}; scene.children.forEach((o) => { NZ[o.name] = o; }); });
-// the 兌換碼牆 (tools/blender/graffiti.py): an old garden wall with a 兌換碼 sprayed on it, painted face toward +z
+// the 兌換碼牆 (tools/blender/graffiti.py): walls with a 兌換碼 sprayed on them, painted face toward +z
 let CODEWALL = null;
-loadModel('graffiti', (scene) => { CODEWALL = scene.getObjectByName('code_wall') || scene.children[0]; });
-function placeCodeWall(g, x, z) {
-  if (!CODEWALL) return;
-  const o = CODEWALL.clone(); o.position.set(x, 0.15, z);
+loadModel('graffiti', (scene) => { CODEWALL = {}; scene.children.forEach((o) => { CODEWALL[o.name] = o; }); });
+function placeCodeWall(g, x, z, name = 'code_wall', rot = 0) {
+  if (!CODEWALL || !CODEWALL[name]) return;
+  const o = CODEWALL[name].clone(); o.position.set(x, 0.15, z); o.rotation.y = rot;
   o.traverse((c) => { if (c.isMesh) { c.castShadow = c.receiveShadow = true; worldMeshes.push(c); } });
   g.add(o); addCollider(x, z, 4.8, 0.5);
 }
@@ -3327,6 +3334,10 @@ function buildGun(id) {
     gb(g, 0.06, 0.08, 0.4, gunMats.metal, 0, 0, 0); for (const y of [0.035, -0.02]) gb(g, 0.022, 0.016, 0.62, gunMats.silver, 0, y, -0.48);
     arm(g, 0, -0.08, 0.15, 0.05, -0.22, 0.44); arm(g, 0, -0.04, -0.3, -0.14, -0.22, -0.04);
     muzzle = new THREE.Vector3(0, 0.008, -0.8); hip = new THREE.Vector3(0.18, -0.18, -0.5); aim = new THREE.Vector3(0, -0.072, -0.3);
+  } else if (id === 'sawlauncher') {
+    gb(g, 0.075, 0.1, 0.38, gunMats.metal, 0, 0.01, -0.01); gc(g, 0.1, 0.012, gunMats.silver, 0, 0.005, -0.33);
+    arm(g, 0, -0.09, 0.13, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.2, -0.15, -0.24, -0.04);
+    muzzle = new THREE.Vector3(0, 0.005, -0.45); hip = new THREE.Vector3(0.19, -0.19, -0.46); aim = new THREE.Vector3(0.08, -0.15, -0.42);
   } else if (id === 'laser') {
     gb(g, 0.055, 0.09, 0.56, gunMats.white, 0, 0, -0.08);
     arm(g, 0, -0.08, 0.13, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.26, -0.14, -0.22, -0.02);
@@ -4967,6 +4978,7 @@ const money = (n) => '$' + n.toLocaleString('en-US');
 // ---- 兌換碼 (CONTEXT.md, docs/adr/0002): only salted SHA-256 hashes live in the game; the codes themselves are
 // sprayed on walls inside the levels (the one for $10,000 is the 兌換碼牆 in 黃昏住宅區)
 const REDEEM = [
+  { h: '7b79261e4afa4428877d2158a0730cb4249c90dfbd558a87fc8d2adac3778022', weapon: 'sawlauncher' },
   { h: 'e7a9f749429c4c95b8e5d4ff8eaa7b98d0efdff6ec270b9a82605640c7c69f88', cash: 10000 },
 ];
 function sha256(text) {
@@ -5009,6 +5021,7 @@ function redeemCode(input) {
   const used = store.get('deadcity_redeemed', []);
   if (used.includes(h)) return { ok: false, msg: '這個兌換碼已經兌換過了' };
   store.set('deadcity_redeemed', [...used, h]);
+  if (gift.weapon) { grantWeapon(gift.weapon); return { ok: true, msg: `兌換成功！獲得限定武器：${WEAPON[gift.weapon].name}。到「武器裝備」把它放進欄位。` }; }
   cash += gift.cash; store.set('deadcity_cash', cash);
   return { ok: true, msg: `兌換成功！獲得 ${money(gift.cash)}` };
 }
@@ -5508,6 +5521,7 @@ function clearDynamic() {
   gongWaves.forEach((w) => scene.remove(w.m)); strays.forEach((s) => scene.remove(s.m)); gongWaves = []; strays = []; finale = null; player.knock = null;
   slams.forEach((q) => { scene.remove(q.marker); if (q.t) scene.remove(q.t); }); spores.forEach((q) => scene.remove(q.m)); slams = []; spores = []; board = null;
   frosts.forEach((q) => scene.remove(q.sp)); orbs.forEach((q) => scene.remove(q.m)); holes.forEach((q) => { scene.remove(q.m); scene.remove(q.light); }); nades.forEach((q) => scene.remove(q.m));
+  blades.forEach((q) => scene.remove(q.m)); blades = [];
   frosts = []; orbs = []; holes = []; nades = []; railCharge = 0; pendingSmash = null;
   slicks.forEach((q) => scene.remove(q.m)); kSlams.forEach((q) => { scene.remove(q.t); scene.remove(q.marker); }); kSweeps.forEach((q) => { scene.remove(q.t); scene.remove(q.marker); });
   slicks = []; kSlams = []; kSweeps = []; jamming = false; player.slickT = 0; player.jammed = false;
@@ -6172,7 +6186,45 @@ function doSmash(w) {
   if (hits) { hitMarker(kill); sfx('slam', 1.1); hitStop = 0.09; shake = Math.min(1, shake + 0.6); }
 }
 // ---- 冷凍槍: a cone of frost that slows, then freezes
-let frosts = [], orbs = [], holes = [], nades = [], beams = [];
+let frosts = [], orbs = [], holes = [], nades = [], beams = [], blades = [];
+// ---- 圓鋸發射器: a spinning blade that cuts a zombie, flies on to the next one nearby and glances off walls
+function launchSaw(from, dir, c) {
+  const m = GUNS && GUNS.saw_blade ? GUNS.saw_blade.clone() : new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.01, 24), gunMats.silver);
+  m.traverse((o) => { o.frustumCulled = false; }); m.position.copy(from); scene.add(m);
+  blades.push({ m, v: dir.clone().multiplyScalar(c.speed), life: 3, left: c.bounces, hits: new Set(), c });
+}
+function sawHeight(z) { return z.c.bug ? 0.6 : z.type === 'dog' ? 0.9 : z.type === 'crawler' ? 0.8 : 2.1 * z.g.scale.y; }
+function updateBlades(dt) {
+  blades = blades.filter((b) => {
+    b.life -= dt; b.m.rotation.y += dt * 45;
+    const p = b.m.position, n = Math.max(1, Math.ceil(b.v.length() * dt / 0.35));
+    let ended = false;
+    for (let s = 0; s < n && !ended; s++) {
+      const ox = p.x, oz = p.z;
+      p.addScaledVector(b.v, dt / n);
+      if (p.y < 0.2) { p.y = 0.2; b.v.y = Math.abs(b.v.y) * 0.4; } // skims off the ground
+      if (p.y < 8 && blocked(p.x, p.z, 0)) { // glance off the wall on the side it came through
+        if (!blocked(ox, p.z, 0)) b.v.x = -b.v.x; else if (!blocked(p.x, oz, 0)) b.v.z = -b.v.z; else { b.v.x = -b.v.x; b.v.z = -b.v.z; }
+        p.x = ox; p.z = oz; burst(p, UP, sparkMat, 8, 5); sfx('sawhit', 0.6);
+        if (--b.left < 0) ended = true;
+        break;
+      }
+      const z = zombies.find((o) => !o.dead && !b.hits.has(o) && Math.hypot(o.pos.x - p.x, o.pos.z - p.z) < o.radius + 0.4 && p.y > (o.airY || 0) - 0.2 && p.y < (o.airY || 0) + sawHeight(o));
+      if (!z) continue;
+      b.hits.add(z);
+      const killed = z.damage(b.c.dmg, { part: 'body' }, b.v.clone().setY(0).normalize());
+      burst(p, UP, bloodMat, 14, 4); sfx('sawhit', 1); hitMarker(killed);
+      if (killed && z.headPivot && !z.c.boss && z.type !== 'dog' && Math.random() < 0.5) decapitate(z);
+      if (--b.left < 0) { ended = true; break; }
+      let next = null, best = 14; // on to the nearest zombie it hasn't cut yet
+      for (const o of zombies) { if (o.dead || b.hits.has(o)) continue; const d = Math.hypot(o.pos.x - p.x, o.pos.z - p.z); if (d < best) { best = d; next = o; } }
+      if (next) b.v.copy(next.pos.clone().setY((next.airY || 0) + Math.min(1.2, sawHeight(next) * 0.6)).sub(p).normalize().multiplyScalar(b.c.speed));
+      break;
+    }
+    if (!ended && b.life > 0) return true;
+    scene.remove(b.m); burst(p, UP, sparkMat, 6, 3); return false;
+  });
+}
 const iceMat = new THREE.MeshStandardMaterial({ color: 0xbfe8ff, roughness: 0.08, metalness: 0.25, emissive: 0x2a6a9a, emissiveIntensity: 0.5, transparent: true, opacity: 0.92 });
 const iceShardMat = new THREE.MeshBasicMaterial({ color: 0xd8f2ff });
 function emitFrost(from, dir, speed) {
@@ -6271,6 +6323,7 @@ function updateWeaponFx(dt) {
     const k = 1 - f.life / f.max; f.sp.scale.setScalar(0.2 + k * 1.3); f.sp.material.opacity = Math.max(0, f.life / f.max) * 0.75;
     if (f.life > 0) return true; scene.remove(f.sp); f.sp.material.dispose(); return false;
   });
+  updateBlades(dt);
   orbs = orbs.filter((o) => {
     o.life -= dt; o.m.position.addScaledVector(o.v, dt); o.m.rotation.y += dt * 4;
     if (Math.random() < 0.6) burst(o.m.position, UP, voidPartMat, 1, 1);
@@ -6395,9 +6448,10 @@ function tryFire(click) {
     const v = w.view; v.side = !v.side; const m = v.side ? v.muzzleL : v.muzzleR;
     v.muzzle.copy(m).multiplyScalar(0.8); v.flash.position.copy(m);
   }
-  if (w.c.freeze || w.c.hole || w.c.thrown || w.c.beam) {
+  if (w.c.freeze || w.c.hole || w.c.thrown || w.c.beam || w.c.saw) {
     const origin = camera.getWorldPosition(new THREE.Vector3()), fwd = camera.getWorldDirection(new THREE.Vector3());
-    if (w.c.freeze) sprayFrost(w, origin, fwd);
+    if (w.c.saw) { launchSaw(origin.clone().addScaledVector(fwd, 0.8).addScaledVector(camRight(), 0.12).add(new THREE.Vector3(0, -0.12, 0)), fwd, w.c); player.pitch += w.c.recoil; }
+    else if (w.c.freeze) sprayFrost(w, origin, fwd);
     else if (w.c.hole) launchOrb(origin.clone().addScaledVector(fwd, 0.9).addScaledVector(camRight(), 0.15).add(new THREE.Vector3(0, -0.15, 0)), fwd, w.c);
     else if (w.c.thrown) { throwGrenade(origin.clone().addScaledVector(fwd, 0.5).addScaledVector(camRight(), 0.2).add(new THREE.Vector3(0, -0.1, 0)), fwd, w.c); w.view.throwT = 0.35; }
     else beamShot(w, origin, fwd);
@@ -6749,7 +6803,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026101401'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026101402'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
@@ -6775,7 +6829,7 @@ renderMenu();
 applyArmorLook();
 $('loading').style.display = 'none';
 requestAnimationFrame(loop);
-window.__game = { get state() { return state; }, player, codeWall: () => !!CODEWALL, zombies: () => zombies, startLevel, spawnZombie,
+window.__game = { get state() { return state; }, player, codeWall: () => !!CODEWALL, blades: () => blades, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
   modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), grantWeapon, holes: () => holes, nades: () => nades, trigger(v) { mouseDown = v; }, gongWaves: () => gongWaves, startBoarding, cargo: () => CARGO, boarding: () => board, setCompass, compassOn: () => compassOn, spawnDragon, setWeapon(i) { wi = i; weapons.forEach((w, k) => { w.view.group.visible = k === i; }); }, EVENT_LEVEL, completeLevel: () => levelComplete(), setDate(d) { dateOverride = d ? new Date(d + 'T12:00:00') : null; renderMenu(); }, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
