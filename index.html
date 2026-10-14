@@ -378,6 +378,7 @@
   <div class="arow"><span>數量</span><button class="b acount" data-n="1">1</button><button class="b acount" data-n="3">3</button><button class="b acount" data-n="5">5</button><button class="b acount" data-n="10">10</button>
     <button class="b primary" id="btnSummon">召喚</button></div>
   <div class="arow"><span>戰鬥</span><button class="b" id="btnLive">開戰</button><button class="b" id="btnClear">清場</button></div>
+  <div class="arow"><span>互打傷害</span><button class="b azdmg" data-v="1">1×</button><button class="b azdmg" data-v="2">2×</button><button class="b azdmg" data-v="3">3×</button><button class="b azdmg" data-v="5">5×</button></div>
   <div class="arow"><span>倍速</span><button class="b aspeed" data-v="0.25">0.25×</button><button class="b aspeed" data-v="0.5">0.5×</button><button class="b aspeed" data-v="1">1×</button><button class="b aspeed" data-v="2">2×</button><button class="b aspeed" data-v="4">4×</button></div>
   <div class="arow" id="aKitRow"><span>武器</span><select id="aKit0"></select><select id="aKit1"></select><select id="aKit2"></select></div>
   <div class="btns"><button class="b primary" id="btnArenaGo">返回戰場</button><button class="b" id="btnArenaQuit">離開競技場</button></div></div></div>
@@ -4338,7 +4339,7 @@ class Zombie {
   hurtT(T, dmg, kind) {
     if (!T) return;
     if (T === player) { hurtPlayer(dmg, kind); return; }
-    T.damage(dmg, { part: 'body' }, T.pos.clone().sub(this.pos).setY(0).normalize());
+    T.damage(dmg * (ARENA ? ARENA.zdmg : 1), { part: 'body' }, T.pos.clone().sub(this.pos).setY(0).normalize());
   }
   tLow(T, h = 1) { return T === player ? player.pos.y < h : (T.airY || 0) < h; }
   tVel(T) { return T === player ? player.vel : ZERO3; }
@@ -4643,7 +4644,7 @@ class Zombie {
         if (this.type === 'behemoth' || this.c.stomp) { // ground-shaking stomp
           const p = this.pos.clone(); burst(p.clone().setY(0.2), UP, dustMat, 30, 6); stompRing(p); sfx('slam', 1.4);
           shake = 1; if (dist <= reach + 1.8 && this.tLow(T)) { this.hurtT(T, this.c.dmg); if (T === player) player.slowT = 0.8; }
-          if (ARENA) for (const o of zombies) if (o !== this && o !== T && !o.dead && !(ARENA.teams && o.team === this.team) && Math.hypot(o.pos.x - this.pos.x, o.pos.z - this.pos.z) < reach + 1.8) o.damage(this.c.dmg * 0.5, { part: 'body' }, null);
+          if (ARENA) for (const o of zombies) if (o !== this && o !== T && !o.dead && !(ARENA.teams && o.team === this.team) && Math.hypot(o.pos.x - this.pos.x, o.pos.z - this.pos.z) < reach + 1.8) o.damage(this.c.dmg * 0.5 * ARENA.zdmg, { part: 'body' }, null);
         } else if (dist <= reach + 0.5) this.hurtT(T, this.c.dmg);
       }
       if (this.atkAnim >= 1) { this.atkAnim = 0; this.atkHit = false; }
@@ -4922,7 +4923,7 @@ function updateHazards(dt) {
     if (ARENA && p.owner) { // 競技場: spit lands on zombies too
       const q = p.m.position, hz = zombies.find((o) => !o.dead && o !== p.owner && !(ARENA.teams && o.team === p.owner.team)
         && Math.hypot(o.pos.x - q.x, o.pos.z - q.z) < o.radius + 0.45 && q.y > (o.airY || 0) - 0.2 && q.y < (o.airY || 0) + 2.1 * o.g.scale.y);
-      if (hz) { hz.damage(p.water ? ZTYPES.drowned.dmg : ZTYPES.spitter.dmg + 4, { part: 'body' }, p.v.clone().setY(0).normalize()); burst(q, UP, p.water ? seaSprayMat : acidPartMat, 8, 2.5); sfx('splash', 0.5); return done(); }
+      if (hz) { hz.damage((p.water ? ZTYPES.drowned.dmg : ZTYPES.spitter.dmg + 4) * ARENA.zdmg, { part: 'body' }, p.v.clone().setY(0).normalize()); burst(q, UP, p.water ? seaSprayMat : acidPartMat, 8, 2.5); sfx('splash', 0.5); return done(); }
     }
     if (p.water) { // sea water: knocks the wind out of you and leaves a 水灘
       if (p.m.position.distanceTo(eye) < 0.8) { hurtPlayer(ZTYPES.drowned.dmg); player.slowT = Math.max(player.slowT || 0, 1.2); sfx('splash'); return done(); }
@@ -5597,6 +5598,7 @@ function setArenaSpeed(v) {
   if (state === 'playing') showMsg('', `速度 ${speedLabel(v)}`, 1);
 }
 const cycleArenaSpeed = () => setArenaSpeed(ARENA_SPEEDS[(ARENA_SPEEDS.indexOf(ARENA.speed) + 1) % ARENA_SPEEDS.length]);
+let arenaZdmg = 3; // 互打傷害: zombies hit each other this many times harder than they hit you
 let arenaMode = 'team', arenaKit = null, arenaPick = 'walker', arenaTeam = 'red', arenaCount = 1;
 loadModel('arena', (scene) => { AR = {}; scene.children.forEach((o) => { AR[o.name] = o; }); });
 const TEAM_COLOR = { red: 0xff3a2a, blue: 0x3a8cff };
@@ -5721,6 +5723,7 @@ function renderArenaPanel() {
   document.querySelectorAll('.acount').forEach((b) => b.classList.toggle('on', +b.dataset.n === arenaCount));
   $('btnLive').textContent = ARENA.live ? '停戰' : '開戰'; $('btnLive').classList.toggle('primary', !ARENA.live);
   document.querySelectorAll('.aspeed').forEach((b) => b.classList.toggle('on', +b.dataset.v === ARENA.speed));
+  document.querySelectorAll('.azdmg').forEach((b) => b.classList.toggle('on', +b.dataset.v === ARENA.zdmg));
   $('aKitRow').style.display = ARENA.spectate ? 'none' : '';
   if (!ARENA.spectate) for (let i = 0; i < 3; i++) {
     const sel = $('aKit' + i);
@@ -5811,7 +5814,7 @@ function startLevel(i) {
     modelsReady.then(() => { $('loading').style.display = 'none'; startLevel(i); });
     return;
   }
-  ARENA = LEVELS[i].arena ? { mode: arenaMode, ...ARENA_MODES[arenaMode], live: !ARENA_MODES[arenaMode].spectate, contested: false, kit: [...(arenaKit || loadout)], speed: 1 } : null;
+  ARENA = LEVELS[i].arena ? { mode: arenaMode, ...ARENA_MODES[arenaMode], live: !ARENA_MODES[arenaMode].spectate, contested: false, kit: [...(arenaKit || loadout)], speed: 1, zdmg: arenaZdmg } : null;
   loadLevel(i);
   if (DECK_EDGES) player.pos.set(-4, 0, -10); else if (ARENA) player.pos.set(0, 0, 14); else player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
   player.yaw = DECK_EDGES ? Math.PI : 0; player.slickT = 0; player.jammed = false; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0); player.calmT = 0; player.regenT = 0;
@@ -6316,6 +6319,7 @@ $('btnClear').onclick = () => { zombies.forEach((z) => z.remove()); zombies = []
 for (let i = 0; i < 3; i++) $('aKit' + i).onchange = (e) => { ARENA.kit[i] = e.target.value; arenaKit = [...ARENA.kit]; ARENA.kitDirty = true; };
 $('btnArenaGo').onclick = closeArenaPanel;
 document.querySelectorAll('.aspeed').forEach((b) => { b.onclick = () => setArenaSpeed(+b.dataset.v); });
+document.querySelectorAll('.azdmg').forEach((b) => { b.onclick = () => { arenaZdmg = ARENA.zdmg = +b.dataset.v; renderArenaPanel(); }; });
 $('btnArenaQuit').onclick = () => toMenu();
 $('btnRedeem').onclick = () => {
   $('redeemInput').value = ''; $('redeemMsg').textContent = ''; $('redeemMsg').className = '';
@@ -7094,7 +7098,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026101404'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026101405'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
