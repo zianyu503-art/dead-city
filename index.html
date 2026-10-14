@@ -149,7 +149,9 @@
   body.watch #tFire, body.watch #tAim, body.watch #tReload, body.watch #tSwitch { display: none; }
   #tArena { display: none; width: 64px; height: 44px; left: calc(max(16px, env(safe-area-inset-left, 0px)) + 118px); top: 14px; border-radius: 10px; font-size: 13px;
     border-color: rgba(240,200,140,0.8); }
-  body.inarena #tArena { display: flex; }
+  #tSpeed { display: none; width: 54px; height: 44px; left: calc(max(16px, env(safe-area-inset-left, 0px)) + 190px); top: 14px; border-radius: 10px; font-size: 14px;
+    border-color: rgba(240,200,140,0.8); }
+  body.inarena #tArena, body.inarena #tSpeed { display: flex; }
   .t-seastorm { background: linear-gradient(160deg, rgba(40,85,115,0.65), rgba(6,12,20,0.92)); }
   .t-fog { background: linear-gradient(160deg, rgba(130,140,140,0.55), rgba(20,20,20,0.85)); }
   .controls { margin-top: 26px; font-size: 12px; color: var(--dim); letter-spacing: 0.05em; text-align: center; line-height: 1.9; }
@@ -376,6 +378,7 @@
   <div class="arow"><span>數量</span><button class="b acount" data-n="1">1</button><button class="b acount" data-n="3">3</button><button class="b acount" data-n="5">5</button><button class="b acount" data-n="10">10</button>
     <button class="b primary" id="btnSummon">召喚</button></div>
   <div class="arow"><span>戰鬥</span><button class="b" id="btnLive">開戰</button><button class="b" id="btnClear">清場</button></div>
+  <div class="arow"><span>倍速</span><button class="b aspeed" data-v="0.25">0.25×</button><button class="b aspeed" data-v="0.5">0.5×</button><button class="b aspeed" data-v="1">1×</button><button class="b aspeed" data-v="2">2×</button><button class="b aspeed" data-v="4">4×</button></div>
   <div class="arow" id="aKitRow"><span>武器</span><select id="aKit0"></select><select id="aKit1"></select><select id="aKit2"></select></div>
   <div class="btns"><button class="b primary" id="btnArenaGo">返回戰場</button><button class="b" id="btnArenaQuit">離開競技場</button></div></div></div>
 
@@ -410,6 +413,7 @@
   <div class="tb" id="tPause">❚❚</div>
   <div class="tb" id="tCompass">羅盤</div>
   <div class="tb" id="tArena">召喚</div>
+  <div class="tb" id="tSpeed">1×</div>
 </div>
 <div id="rotate"><div class="ph"></div><div>橫放手機，畫面和操作空間比較大</div><button class="b" id="btnPortrait">直接直向玩</button></div>
 
@@ -5154,7 +5158,10 @@ function updateHUD() {
   $('wave').textContent = interT > 0 && !waveActive ? `下一波 ${Math.ceil(interT)}` : `第 ${waveIdx + 1} / ${LV.waves.length} 波`;
   const alive = zombies.filter((z) => !z.dead).length;
   $('remain').textContent = `剩餘感染者 ${queue.length + alive}`;
-  if (ARENA) { $('wave').textContent = `${ARENA.label}${ARENA.live ? '' : ' · 尚未開戰'}`; $('remain').textContent = `${arenaCounts()} · 按 B 召喚`; }
+  if (ARENA) {
+    $('wave').textContent = `${ARENA.label}${ARENA.live ? '' : ' · 尚未開戰'}${ARENA.speed !== 1 ? ` · ${speedLabel(ARENA.speed)}` : ''}`;
+    $('remain').textContent = `${arenaCounts()} · B 召喚 · V 倍速`;
+  }
   $('kills').textContent = kills; $('pts').textContent = score; $('cash').textContent = money(cash);
   const sp = 10 + spreadK * 40 + (aimT > 0.5 ? -6 : 0) + (jamming ? rand(10, 22) : 0);
   const ch = $('crosshair').children;
@@ -5581,6 +5588,15 @@ const ARENA_MODES = {
   join: { label: '親自上陣・加入藍隊', spectate: false, teams: true },
 };
 let ARENA = null, AR = null, ARENA_RING = 0, BRAZIERS = [];
+const ARENA_SPEEDS = [0.25, 0.5, 1, 2, 4];
+const speedLabel = (v) => `${v}×`;
+function setArenaSpeed(v) {
+  if (!ARENA) return;
+  ARENA.speed = v; $('tSpeed').textContent = speedLabel(v);
+  document.querySelectorAll('.aspeed').forEach((b) => b.classList.toggle('on', +b.dataset.v === v));
+  if (state === 'playing') showMsg('', `速度 ${speedLabel(v)}`, 1);
+}
+const cycleArenaSpeed = () => setArenaSpeed(ARENA_SPEEDS[(ARENA_SPEEDS.indexOf(ARENA.speed) + 1) % ARENA_SPEEDS.length]);
 let arenaMode = 'team', arenaKit = null, arenaPick = 'walker', arenaTeam = 'red', arenaCount = 1;
 loadModel('arena', (scene) => { AR = {}; scene.children.forEach((o) => { AR[o.name] = o; }); });
 const TEAM_COLOR = { red: 0xff3a2a, blue: 0x3a8cff };
@@ -5704,6 +5720,7 @@ function renderArenaPanel() {
   document.querySelectorAll('.ateam').forEach((b) => b.classList.toggle('on', b.dataset.t === arenaTeam));
   document.querySelectorAll('.acount').forEach((b) => b.classList.toggle('on', +b.dataset.n === arenaCount));
   $('btnLive').textContent = ARENA.live ? '停戰' : '開戰'; $('btnLive').classList.toggle('primary', !ARENA.live);
+  document.querySelectorAll('.aspeed').forEach((b) => b.classList.toggle('on', +b.dataset.v === ARENA.speed));
   $('aKitRow').style.display = ARENA.spectate ? 'none' : '';
   if (!ARENA.spectate) for (let i = 0; i < 3; i++) {
     const sel = $('aKit' + i);
@@ -5794,7 +5811,7 @@ function startLevel(i) {
     modelsReady.then(() => { $('loading').style.display = 'none'; startLevel(i); });
     return;
   }
-  ARENA = LEVELS[i].arena ? { mode: arenaMode, ...ARENA_MODES[arenaMode], live: !ARENA_MODES[arenaMode].spectate, contested: false, kit: [...(arenaKit || loadout)] } : null;
+  ARENA = LEVELS[i].arena ? { mode: arenaMode, ...ARENA_MODES[arenaMode], live: !ARENA_MODES[arenaMode].spectate, contested: false, kit: [...(arenaKit || loadout)], speed: 1 } : null;
   loadLevel(i);
   if (DECK_EDGES) player.pos.set(-4, 0, -10); else if (ARENA) player.pos.set(0, 0, 14); else player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
   player.yaw = DECK_EDGES ? Math.PI : 0; player.slickT = 0; player.jammed = false; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0); player.calmT = 0; player.regenT = 0;
@@ -5804,7 +5821,7 @@ function startLevel(i) {
     showMsg(levelTitle(LV), `${ARENA.label} — 按 B 打開召喚面板`, 3); waveActive = false; interT = 0;
     if (ARENA.spectate) { flyPos.set(0, 13, 30); player.pitch = -0.32; player.pos.copy(flyPos); }
   } else showMsg(levelTitle(LV), `${TIMES[LV.time].label} — 撐過 ${LV.waves.length} 波感染者`, 3);
-  document.body.classList.toggle('inarena', !!ARENA); document.body.classList.toggle('watch', !!(ARENA && ARENA.spectate));
+  document.body.classList.toggle('inarena', !!ARENA); document.body.classList.toggle('watch', !!(ARENA && ARENA.spectate)); $('tSpeed').textContent = '1×';
   document.querySelectorAll('.overlay').forEach((o) => o.classList.remove('show'));
   $('hud').style.display = 'block';
   state = 'playing';
@@ -5966,6 +5983,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyR') startReload();
   if (e.code === 'KeyC' && !e.repeat && !(ARENA && ARENA.spectate)) setCompass(!compassOn);
   if (e.code === 'KeyB' && ARENA && !e.repeat) openArenaPanel();
+  if (e.code === 'KeyV' && ARENA && !e.repeat) cycleArenaSpeed();
   if (e.code === 'Digit1') switchWeapon(0);
   if (e.code === 'Digit2') switchWeapon(1);
   if (e.code === 'Digit3') switchWeapon(2);
@@ -6049,6 +6067,7 @@ function lookBy(dx, dy) {
   btn('tAim', () => { aiming = !aiming; $('tAim').classList.toggle('on', aiming); });
   btn('tJump', () => { touchJump = true; touchUpHeld = true; }, () => { touchUpHeld = false; });
   btn('tArena', () => openArenaPanel());
+  btn('tSpeed', () => cycleArenaSpeed());
   btn('tReload', () => startReload());
   btn('tSwitch', () => switchWeapon((wi + 1) % weapons.length));
   btn('tCompass', () => setCompass(!compassOn));
@@ -6296,6 +6315,7 @@ $('btnLive').onclick = () => { ARENA.live = !ARENA.live; ARENA.contested = false
 $('btnClear').onclick = () => { zombies.forEach((z) => z.remove()); zombies = []; zMeshes = []; ARENA.contested = false; renderArenaPanel(); };
 for (let i = 0; i < 3; i++) $('aKit' + i).onchange = (e) => { ARENA.kit[i] = e.target.value; arenaKit = [...ARENA.kit]; ARENA.kitDirty = true; };
 $('btnArenaGo').onclick = closeArenaPanel;
+document.querySelectorAll('.aspeed').forEach((b) => { b.onclick = () => setArenaSpeed(+b.dataset.v); });
 $('btnArenaQuit').onclick = () => toMenu();
 $('btnRedeem').onclick = () => {
   $('redeemInput').value = ''; $('redeemMsg').textContent = ''; $('redeemMsg').className = '';
@@ -7044,8 +7064,12 @@ function frame(dt, now) {
   pollPad(dt);
   if (state === 'playing') autoQuality(dt);
   if (state === 'playing') {
-    if (ARENA && ARENA.spectate) updateFlyCam(dt); else { updatePlayer(dt); updateWeapon(dt); }
-    updateArena(dt); updateZombies(dt); updateHazards(dt); updateGrenades(dt); updateWaves(dt); updatePickups(dt); updateFireworks(dt); updateFestHazards(dt); updateAirportHazards(dt); updateCarrierHazards(dt); updateWeaponFx(dt);
+    const speed = ARENA ? ARENA.speed : 1, steps = speed > 1 ? speed : 1, sdt = speed < 1 ? dt * speed : dt; // 倍速 (競技場 only)
+    if (ARENA && ARENA.spectate) updateFlyCam(dt);
+    for (let k = 0; k < steps && state === 'playing'; k++) {
+      if (!(ARENA && ARENA.spectate)) { updatePlayer(sdt); updateWeapon(sdt); }
+      updateArena(sdt); updateZombies(sdt); updateHazards(sdt); updateGrenades(sdt); updateWaves(sdt); updatePickups(sdt); updateFireworks(sdt); updateFestHazards(sdt); updateAirportHazards(sdt); updateCarrierHazards(sdt); updateWeaponFx(sdt);
+    }
     updateHUD();
   } else if (state === 'menu') {
     menuT += dt;
@@ -7056,7 +7080,7 @@ function frame(dt, now) {
     gunRoot.visible = false;
   }
   gunRoot.visible = state !== 'menu' && !(ARENA && ARENA.spectate);
-  updateParticles(dt); updateLighting(dt); updateRain(dt); updateSaber();
+  updateParticles(state === 'playing' && ARENA ? dt * ARENA.speed : dt); updateLighting(dt); updateRain(dt); updateSaber();
   if (msgTimer > 0) { msgTimer -= dt; if (msgTimer <= 0) $('msg').style.opacity = 0; }
   if (cashPopT > 0) { cashPopT -= dt; if (cashPopT <= 0) $('cashpop').style.opacity = 0; }
   if (hitTimer > 0) { hitTimer -= dt; if (hitTimer <= 0) $('hitmark').style.opacity = 0; }
@@ -7070,7 +7094,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026101403'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026101404'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
