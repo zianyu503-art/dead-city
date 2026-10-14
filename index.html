@@ -129,6 +129,11 @@
   .panel { background: var(--panel); border: 1px solid var(--line); padding: 34px 44px; text-align: center; min-width: 320px; }
   .panel h2 { font-size: 40px; font-weight: 900; letter-spacing: 0.1em; }
   .panel p { color: var(--dim); margin: 10px 0 22px; line-height: 1.7; }
+  #redeemInput { display: block; width: min(340px, 72vw); margin: 0 auto; padding: 10px 14px; font-family: inherit; font-size: 22px; font-weight: 700;
+    letter-spacing: 0.14em; text-align: center; text-transform: uppercase; color: var(--fg); background: rgba(0,0,0,0.45); border: 1px solid var(--line); outline: none; border-radius: 0; }
+  #redeemInput:focus { border-color: #e8a23a; }
+  #redeemMsg { min-height: 1.7em; margin: 12px 0 2px; color: var(--dim); }
+  #redeemMsg.ok { color: #7ee08a; font-weight: 700; } #redeemMsg.bad { color: #ff7a5a; }
   .btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   button.b { font: inherit; font-size: 15px; letter-spacing: 0.12em; color: var(--fg); background: transparent;
     border: 1px solid var(--fg); padding: 10px 24px; cursor: pointer; }
@@ -312,7 +317,7 @@
   <div class="title">死城<span>突圍</span></div>
   <div class="subtitle">DEAD CITY</div>
   <div id="levels"></div>
-  <div class="menubtns"><span class="wallet num" id="menuCash">$0</span><button class="b primary" id="btnShop">武器裝備<span class="salebadge">3折</span></button><button class="b" id="btnBestiary">感染者圖鑑</button><button class="b" id="quality">畫質：自動</button></div>
+  <div class="menubtns"><span class="wallet num" id="menuCash">$0</span><button class="b primary" id="btnShop">武器裝備<span class="salebadge">3折</span></button><button class="b" id="btnBestiary">感染者圖鑑</button><button class="b" id="btnRedeem">兌換碼</button><button class="b" id="quality">畫質：自動</button></div>
   <div class="controls">
     <span class="keyhelp"><b>W A S D</b> 移動　<b>Shift</b> 衝刺　<b>空白鍵</b> 跳躍　<b>滑鼠左鍵</b> 射擊　<b>右鍵</b> 瞄準<br>
     <b>R</b> 換彈　<b>1 2 3</b> / 滾輪 切換武器　<b>C</b> 殭屍羅盤　<b>Esc</b> 暫停　·　</span>爆頭傷害 ×2.5
@@ -326,6 +331,11 @@
 
 <div id="dead" class="overlay"><div class="panel"><h2 style="color:var(--accent)">你已陣亡</h2><p id="deadStats"></p>
   <div class="btns"><button class="b primary" id="btnRetry">重新挑戰</button><button class="b shopbtn">武器裝備</button><button class="b" id="btnQuit2">返回選單</button></div></div></div>
+
+<div id="redeem" class="overlay"><div class="panel"><h2>兌換碼</h2><p>輸入在城市裡找到的兌換碼，領取禮物。<br>每個兌換碼只能兌換一次。</p>
+  <input id="redeemInput" maxlength="20" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="XXXXX-XXXXX">
+  <div id="redeemMsg"></div>
+  <div class="btns"><button class="b primary" id="btnRedeemGo">兌換</button><button class="b" id="btnCloseRedeem">關閉</button></div></div></div>
 
 <div id="bestiary" class="overlay"><div class="panel"><h2>感染者圖鑑</h2><div id="zlist"></div>
   <div class="btns"><button class="b" id="btnCloseBestiary">關閉</button></div></div></div>
@@ -2127,9 +2137,13 @@ function buildLevel() {
     } else if (theme === 'suburb') {
       const gr = mesh(new THREE.PlaneGeometry(38, 38), M.grass, g, cx, 0.17, cz, false); gr.rotation.x = -Math.PI / 2;
       M.grass.map.repeat.set(10, 10);
-      const L = 12.7;
+      const L = 12.7, codeWall = inside && bi === 3 && bj === 1; // the 兌換碼牆 stands in this block's back gardens
       for (const ox of [-1, 0, 1]) for (const oz of [-1, 0, 1]) {
-        if (!ox && !oz) { for (let k = 0; k < 3; k++) trees.push([cx + rand(-4, 4), cz + rand(-4, 4), rand(1, 1.5)]); continue; }
+        if (!ox && !oz) {
+          for (let k = 0; k < 3; k++) { const tz = cz + rand(-4, 4); if (!codeWall || tz > cz - 1.5) trees.push([cx + rand(-4, 4), tz, rand(1, 1.5)]); }
+          if (codeWall) placeCodeWall(g, cx, cz - 3.2);
+          continue;
+        }
         if (!inside) { addHouse(g, cx + ox * L, cz + oz * L, ox ? (ox > 0 ? 'x+' : 'x-') : (oz > 0 ? 'z+' : 'z-'), trees); colliders.pop(); continue; }
         const face = Math.abs(ox) >= Math.abs(oz) && ox ? (ox > 0 ? 'x+' : 'x-') : (oz > 0 ? 'z+' : 'z-');
         addHouse(g, cx + ox * L, cz + oz * L, face, trees);
@@ -2768,8 +2782,9 @@ function loadModel(name, onLoad) {
     gltf.scene.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; o.material.metalness = Math.min(o.material.metalness, 0.82); } });
     onLoad(gltf.scene); settle();
   };
-  if (inline) new GLTFLoader().parse(Uint8Array.from(atob(inline), (ch) => ch.charCodeAt(0)).buffer, '', done, settle);
-  else new GLTFLoader().load(`./assets/models/${name}.glb`, done, undefined, settle); // on failure the procedural stand-ins remain
+  const fail = (e) => { console.warn(`model ${name} failed to load`, e); (window.__modelErrors ||= []).push(`${name}: ${e && (e.message || e)}`); settle(); };
+  if (inline) new GLTFLoader().parse(Uint8Array.from(atob(inline), (ch) => ch.charCodeAt(0)).buffer, '', done, fail);
+  else new GLTFLoader().load(`./assets/models/${name}.glb`, done, undefined, fail); // on failure the procedural stand-ins remain
 }
 setTimeout(() => { if (!modelsLoaded) { modelsLoaded = true; markModelsLoaded(); } }, 20000); // never block play for long
 let KATANA_GLB = null, ARM_GLB = null, EVAC = null;
@@ -2893,6 +2908,15 @@ function airportBlock(g, bi, bj, cx, cz, inside) {
 let CV = null, NZ = null;
 loadModel('carrier', (scene) => { CV = {}; scene.children.forEach((o) => { CV[o.name] = o; }); });
 loadModel('navalzombie', (scene) => { NZ = {}; scene.children.forEach((o) => { NZ[o.name] = o; }); });
+// the 兌換碼牆 (tools/blender/graffiti.py): an old garden wall with a 兌換碼 sprayed on it, painted face toward +z
+let CODEWALL = null;
+loadModel('graffiti', (scene) => { CODEWALL = scene.getObjectByName('code_wall') || scene.children[0]; });
+function placeCodeWall(g, x, z) {
+  if (!CODEWALL) return;
+  const o = CODEWALL.clone(); o.position.set(x, 0.15, z);
+  o.traverse((c) => { if (c.isMesh) { c.castShadow = c.receiveShadow = true; worldMeshes.push(c); } });
+  g.add(o); addCollider(x, z, 4.8, 0.5);
+}
 let FZ = null; // 國慶殭屍 costumes (tools/blender/fest_zombies.py), by name
 loadModel('festzombie', (scene) => {
   const m = festMats();
@@ -4940,6 +4964,54 @@ function addCash(n) {
   $('cashpop').textContent = `+$${cashPopSum}`; $('cashpop').style.opacity = 1;
 }
 const money = (n) => '$' + n.toLocaleString('en-US');
+// ---- 兌換碼 (CONTEXT.md, docs/adr/0002): only salted SHA-256 hashes live in the game; the codes themselves are
+// sprayed on walls inside the levels (the one for $10,000 is the 兌換碼牆 in 黃昏住宅區)
+const REDEEM = [
+  { h: 'e7a9f749429c4c95b8e5d4ff8eaa7b98d0efdff6ec270b9a82605640c7c69f88', cash: 10000 },
+];
+function sha256(text) {
+  const K = [], H = [], frac = (x) => ((x - Math.floor(x)) * 0x100000000) | 0;
+  for (let n = 2; K.length < 64; n++) {
+    let prime = true; for (let d = 2; d * d <= n; d++) if (n % d === 0) { prime = false; break; }
+    if (prime) { if (H.length < 8) H.push(frac(Math.sqrt(n))); K.push(frac(Math.cbrt(n))); }
+  }
+  const bytes = new TextEncoder().encode(text), len = bytes.length, words = new Int32Array(((len + 9 + 63) >> 6) << 4);
+  for (let i = 0; i < len; i++) words[i >> 2] |= bytes[i] << (24 - (i & 3) * 8);
+  words[len >> 2] |= 0x80 << (24 - (len & 3) * 8); words[words.length - 1] = len * 8;
+  const W = new Int32Array(64), ror = (x, n) => (x >>> n) | (x << (32 - n));
+  for (let b = 0; b < words.length; b += 16) {
+    let [a, bb, c, d, e, f, g, h] = H;
+    for (let t = 0; t < 64; t++) {
+      if (t < 16) W[t] = words[b + t];
+      else { const x = W[t - 15], y = W[t - 2]; W[t] = (W[t - 16] + (ror(x, 7) ^ ror(x, 18) ^ (x >>> 3)) + W[t - 7] + (ror(y, 17) ^ ror(y, 19) ^ (y >>> 10))) | 0; }
+      const t1 = (h + (ror(e, 6) ^ ror(e, 11) ^ ror(e, 25)) + ((e & f) ^ (~e & g)) + K[t] + W[t]) | 0;
+      const t2 = ((ror(a, 2) ^ ror(a, 13) ^ ror(a, 22)) + ((a & bb) ^ (a & c) ^ (bb & c))) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = bb; bb = a; a = (t1 + t2) | 0;
+    }
+    [a, bb, c, d, e, f, g, h].forEach((v, i) => { H[i] = (H[i] + v) | 0; });
+  }
+  return H.map((v) => (v >>> 0).toString(16).padStart(8, '0')).join('');
+}
+// each device redeems a code once; five wrong guesses in a row lock the box for a minute
+function redeemCode(input) {
+  const now = Date.now(), lock = store.get('deadcity_redeem_lock', 0);
+  if (now < lock) return { ok: false, msg: `嘗試太多次，請 ${Math.ceil((lock - now) / 1000)} 秒後再試` };
+  const code = String(input).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!code) return { ok: false, msg: '請輸入兌換碼' };
+  const h = sha256('deadcity:' + code), gift = REDEEM.find((r) => r.h === h);
+  if (!gift) {
+    const fails = store.get('deadcity_redeem_fails', 0) + 1;
+    if (fails >= 5) { store.set('deadcity_redeem_fails', 0); store.set('deadcity_redeem_lock', now + 60000); return { ok: false, msg: '兌換碼錯誤。嘗試太多次，請 60 秒後再試' }; }
+    store.set('deadcity_redeem_fails', fails);
+    return { ok: false, msg: `兌換碼錯誤（還能再試 ${5 - fails} 次）` };
+  }
+  store.set('deadcity_redeem_fails', 0);
+  const used = store.get('deadcity_redeemed', []);
+  if (used.includes(h)) return { ok: false, msg: '這個兌換碼已經兌換過了' };
+  store.set('deadcity_redeemed', [...used, h]);
+  cash += gift.cash; store.set('deadcity_cash', cash);
+  return { ok: true, msg: `兌換成功！獲得 ${money(gift.cash)}` };
+}
 function hitMarker(kill) { const h = $('hitmark'); h.className = kill ? 'kill' : ''; h.style.opacity = 1; hitTimer = 0.12; }
 let hurtAlpha = 0;
 let lastHurtSfx = 0;
@@ -5946,6 +6018,18 @@ function renderBestiary() {
 }
 $('btnBestiary').onclick = () => { renderBestiary(); $('bestiary').classList.add('show'); };
 $('btnCloseBestiary').onclick = () => $('bestiary').classList.remove('show');
+$('btnRedeem').onclick = () => {
+  $('redeemInput').value = ''; $('redeemMsg').textContent = ''; $('redeemMsg').className = '';
+  $('redeem').classList.add('show'); setTimeout(() => $('redeemInput').focus(), 50);
+};
+$('btnCloseRedeem').onclick = () => $('redeem').classList.remove('show');
+function submitRedeem() {
+  const r = redeemCode($('redeemInput').value);
+  $('redeemMsg').textContent = r.msg; $('redeemMsg').className = r.ok ? 'ok' : 'bad';
+  if (r.ok) { $('redeemInput').value = ''; audio(); sfx('wave'); renderMenu(); }
+}
+$('btnRedeemGo').onclick = submitRedeem;
+$('redeemInput').addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') submitRedeem(); }); // typing is not game input
 $('btnPortrait').onclick = () => document.documentElement.classList.add('allow-portrait');
 
 // ============================================================
@@ -6665,7 +6749,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026101101'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026101401'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
@@ -6691,7 +6775,7 @@ renderMenu();
 applyArmorLook();
 $('loading').style.display = 'none';
 requestAnimationFrame(loop);
-window.__game = { get state() { return state; }, player, zombies: () => zombies, startLevel, spawnZombie,
+window.__game = { get state() { return state; }, player, codeWall: () => !!CODEWALL, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
   modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), grantWeapon, holes: () => holes, nades: () => nades, trigger(v) { mouseDown = v; }, gongWaves: () => gongWaves, startBoarding, cargo: () => CARGO, boarding: () => board, setCompass, compassOn: () => compassOn, spawnDragon, setWeapon(i) { wi = i; weapons.forEach((w, k) => { w.view.group.visible = k === i; }); }, EVENT_LEVEL, completeLevel: () => levelComplete(), setDate(d) { dateOverride = d ? new Date(d + 'T12:00:00') : null; renderMenu(); }, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
