@@ -610,7 +610,7 @@ const WEAPONS = [
     desc: '大口徑手槍，一發子彈能貫穿兩隻殭屍。' },
   { id: 'katana', name: '武士刀', cat: '近戰', price: 1800, sound: 'slash', dmg: 60, rate: 0.7, auto: false, mag: Infinity, reserve: Infinity, reload: 0, spread: 0, pellets: 1, recoil: 0,
     melee: true, range: 2.7, arc: 0.95, move: 1.1, noFlash: true, desc: '不需要彈藥。每次點擊揮一刀，不能按住連砍；一刀能砍中面前扇形範圍內的多隻殭屍，有機會斬首。拿著跑得更快，會被盾牌擋下。' },
-  { id: 'saber', name: '紅色光劍', cat: '近戰', limited: '國慶限定', price: 6500, sound: 'saberswing', dmg: 150, rate: 0.6, auto: false, mag: Infinity, reserve: Infinity, reload: 0, spread: 0, pellets: 1, recoil: 0,
+  { id: 'saber', name: '紅色光劍', cat: '近戰', limited: '國慶限定', eventItem: true, price: 6500, sound: 'saberswing', dmg: 150, rate: 0.6, auto: false, mag: Infinity, reserve: Infinity, reload: 0, spread: 0, pellets: 1, recoil: 0,
     melee: true, saber: true, burn: 4, range: 2.9, arc: 1.0, move: 1.1, noFlash: true,
     desc: '國慶限定的高溫電漿劍，傷害極高，不需要彈藥。每次點擊揮一劍，不能按住連砍；被砍中的殭屍會著火持續燃燒，常常身首異處。拿著跑得更快，紅光會照亮四周，會被盾牌擋下。' },
   { id: 'mp5', name: 'MP5 衝鋒槍', cat: '衝鋒槍', price: 1200, sound: 'smg', dmg: 21, rate: 0.068, auto: true, mag: 30, reserve: 210, reload: 1.8, spread: 0.03, pellets: 1, recoil: 0.007, move: 1.06,
@@ -641,7 +641,7 @@ const WEAPONS = [
     explosive: true, radius: 5.5, move: 0.95, desc: '發射會爆炸的榴彈，範圍傷害能炸碎盾牌。太近開火會炸到自己。' },
   { id: 'rpg', name: 'RPG-7 火箭筒', cat: '爆裂物', price: 6000, sound: 'rpg', dmg: 720, rate: 1.4, auto: false, mag: 1, reserve: 8, reload: 2.8, spread: 0.002, pellets: 1, recoil: 0.08,
     explosive: true, rocket: true, radius: 7.5, move: 0.9, desc: '直線飛行的火箭，爆炸範圍和威力都是榴彈的兩倍。能一發炸死巨型感染者。' },
-  { id: 'fireworks', name: '煙花發射器', cat: '爆裂物', reward: '通關國慶特別版解鎖', limited: '國慶限定', price: 0, sound: 'fwshoot', dmg: 160, direct: 220, rate: 0.7, auto: false,
+  { id: 'fireworks', name: '煙花發射器', cat: '爆裂物', reward: '通關國慶特別版解鎖', limited: '國慶限定', eventItem: true, price: 0, sound: 'fwshoot', dmg: 160, direct: 220, rate: 0.7, auto: false,
     mag: 6, reserve: 36, reload: 3, spread: 0.004, pellets: 1, recoil: 0.04, explosive: true, rocket: true, firework: true, volley: 3, safe: true, burn: 3, radius: 5.5, move: 0.95,
     desc: '國慶特別版的通關獎勵，商店買不到。每次扣扳機同時射出三發拖著火花的煙火彈，扇形散開、炸成一片彩色煙火，直擊與範圍傷害都很高，還會點燃殭屍。煙火不會傷到自己。' },
   // ---- 兌換限定 (CONTEXT.md: 兌換碼); model in tools/blender/guns.py ----
@@ -722,10 +722,15 @@ if (!ownedArmor.includes(armorId)) armorId = null;
 let armorDur = store.get('deadcity_armor_dur', {}) || {};
 const durOf = (id) => Math.max(0, Math.min(ARMOR[id].dur, armorDur[id] ?? ARMOR[id].dur));
 const repairPer = (id) => ARMOR[id].price * REPAIR_RATE / ARMOR[id].dur;
-// storewide sale: every weapon and armour costs 30% of its list price (三折); repairs keep the list price
-const SALE = 0.3;
+// ---- 活動開關 (CONTEXT.md: 活動開關). The 國慶 event, its 活動武器 and the storewide sale are switched off, not deleted:
+// flip these back on (and retheme the texts) to run them again, e.g. for 新年. Owned 活動武器 stay usable either way,
+// and the 競技場 always has every zombie and weapon.
+const EVENT_ON = false;               // the 國慶特別版 card in the menu (playable during 國慶期間) and buying or earning 活動武器
+const SALE_ON = false, SALE_RATE = 0.3; // storewide sale: every weapon and armour at 30% of its list price (三折); repairs keep the list price
+const SALE = SALE_ON ? SALE_RATE : 1;
 const cost = (item) => Math.round(item.price * SALE);
-const priceTag = (item) => `<s class="was">${money(item.price)}</s> ${money(cost(item))}`;
+const priceTag = (item) => (SALE < 1 ? `<s class="was">${money(item.price)}</s> ${money(cost(item))}` : money(cost(item)));
+const forSale = (w) => !w.eventItem || EVENT_ON; // a 活動武器 can't be bought or earned while the event is off
 const armorOn = () => (armorId && durOf(armorId) > 0 ? ARMOR[armorId] : null); // worn and not broken
 let levelCash = 0;
 
@@ -5807,7 +5812,7 @@ function loadLevel(i) {
 }
 
 function startLevel(i) {
-  if (LEVELS[i].event && !eventDaysLeft()) return; // 國慶特別版 is closed outside 國慶期間
+  if (LEVELS[i].event && (!EVENT_ON || !eventDaysLeft())) return; // 國慶特別版 is closed outside 國慶期間, and while the event is switched off
   audio();
   if (!modelsLoaded) { // finish downloading the Blender models first
     $('loading').textContent = '載入模型中…'; $('loading').style.display = 'flex';
@@ -5920,6 +5925,7 @@ function toMenu() {
 }
 
 function renderMenu() {
+  document.querySelectorAll('.salebadge, #shop .sale').forEach((b) => { b.hidden = !SALE_ON; }); // the sale's badge and banner
   if (updateReady) { location.replace(location.pathname + '?v=' + updateReady); return; } // a newer build came out mid-level
   const un = loadUnlocked();
   $('menuCash').textContent = money(cash);
@@ -5929,7 +5935,7 @@ function renderMenu() {
     b.innerHTML = `<div class="n">競技</div><div class="nm">${LEVELS[ARENA_LEVEL].name}</div><div class="tm">沙盒模式 · 不給金錢</div><div class="ds">${LEVELS[ARENA_LEVEL].desc}</div>`;
     b.onclick = openArenaSetup; $('levels').appendChild(b);
   }
-  if (EVENT_LEVEL >= 0) {
+  if (EVENT_LEVEL >= 0 && EVENT_ON) {
     const l = LEVELS[EVENT_LEVEL], left = eventDaysLeft(), b = document.createElement('button');
     b.className = 'card event' + (left ? '' : ' locked');
     b.innerHTML = `<div class="n">國慶</div><div class="nm">${l.name}</div><div class="tm">${left ? `國慶限定 · 剩 ${left} 天` : '每年 10/1–10/15 開放'}</div><div class="ds">${l.desc}</div>`;
@@ -6193,7 +6199,7 @@ function renderShop() {
   if (shopTab === 'a') { renderArmorShop(); return; }
   $('loadout').innerHTML = loadout.map((id, i) => `<div class="slot"><div class="k">欄位 ${i + 1}</div><div class="v">${WEAPON[id].name}</div></div>`).join('');
   const bar = (v) => `<div class="bar"><i style="width:${Math.round(clamp(v, 0.04, 1) * 100)}%"></i></div>`;
-  $('wlist').innerHTML = WEAPONS.map((w) => {
+  $('wlist').innerHTML = WEAPONS.filter((w) => owned.includes(w.id) || forSale(w)).map((w) => {
     const have = owned.includes(w.id), slot = loadout.indexOf(w.id);
     const perShot = w.dmg * w.pellets, rpm = Math.round(60 / w.rate);
     const acc = 1 - Math.min(1, (w.hipSpread || w.spread) / 0.09);
@@ -6221,7 +6227,7 @@ $('wlist').addEventListener('click', (e) => {
   const buy = e.target.closest('[data-buy]'), eq = e.target.closest('[data-eq]');
   if (buy) {
     const w = WEAPON[buy.dataset.buy];
-    if (owned.includes(w.id) || w.reward || cash < cost(w)) return;
+    if (owned.includes(w.id) || w.reward || !forSale(w) || cash < cost(w)) return;
     cash -= cost(w); owned.push(w.id);
     store.set('deadcity_cash', cash); store.set('deadcity_owned', owned);
     audio(); sfx('cash'); renderShop(); renderMenu();
@@ -6301,7 +6307,7 @@ function renderBestiary() {
     const hpBar = z.hp + (z.shield || 0);
     const bar = (v, m) => `<div class="bar"><i style="width:${Math.max(6, Math.min(100, v / m * 100))}%"></i></div>`;
     return `<div class="zc"><div class="zh"><span class="dot" style="background:${z.color}"></span>${known ? z.name : '？？？'}</div>
-      <div class="first">${z.from ? `由${ZTYPES[z.from].name}產生` : '首次出現'}：${levelTitle(LEVELS[lv])} · 擊殺獎勵 ${money(z.cash)}</div>
+      <div class="first">${LEVELS[lv]?.event && !EVENT_ON ? '目前只在競技場出現' : `${z.from ? `由${ZTYPES[z.from].name}產生` : '首次出現'}：${levelTitle(LEVELS[lv])}`} · 擊殺獎勵 ${money(z.cash)}</div>
       <div class="zd ${known ? '' : 'unk'}">${known ? z.desc : '還沒遇過。玩到這一關就會解鎖說明。'}</div>
       <div class="bars"><span>生命</span>${bar(hpBar, maxHp)}<span>速度</span>${bar(z.speed, maxSp)}<span>傷害</span>${bar(dmg, maxDmg)}</div></div>`;
   }).join('');
@@ -7098,7 +7104,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026101405'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026101501'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
