@@ -2854,7 +2854,11 @@ function loadModel(name, onLoad) {
     onLoad(gltf.scene); settle();
   };
   const fail = (e) => { console.warn(`model ${name} failed to load`, e); (window.__modelErrors ||= []).push(`${name}: ${e && (e.message || e)}`); settle(); };
-  if (inline) new GLTFLoader().parse(Uint8Array.from(atob(inline), (ch) => ch.charCodeAt(0)).buffer, '', done, fail);
+  if (inline) { // the artifact copy inlines models as base64, gzipped when it starts with "gz:" (build-artifact.py)
+    const bytes = Uint8Array.from(atob(inline.startsWith('gz:') ? inline.slice(3) : inline), (ch) => ch.charCodeAt(0));
+    const buf = inline.startsWith('gz:') ? new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer() : Promise.resolve(bytes.buffer);
+    buf.then((ab) => new GLTFLoader().parse(ab, '', done, fail), fail);
+  }
   else new GLTFLoader().load(`./assets/models/${name}.glb`, done, undefined, fail); // on failure the procedural stand-ins remain
 }
 setTimeout(() => { if (!modelsLoaded) { modelsLoaded = true; markModelsLoaded(); } }, 20000); // never block play for long
