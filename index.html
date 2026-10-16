@@ -4280,9 +4280,9 @@ class Zombie {
     else if (ud.part === 'shell') { mul = 0.1; this.lastFx = 'spark'; } // bullets glance off the 蟹殼
     else if (ud.part === 'excore' && this.coreHp > 0) { mul = 3; this.lastFx = 'spark'; this.coreHp -= dmg; if (this.coreHp <= 0) this.powerDown(); } // the 動力核心
     else if (ud.part === 'exo' && this.coreHp > 0) { mul = 0.35; this.lastFx = 'spark'; } // the powered frame
-    if (this.c.kraken) mul = ud.part === 'eye' ? 2 : 0.2;
-    if (this.floatHp > 0) mul *= 0.25; // the float shields the boss
-    if (this.cores && this.cores.some((q) => q.hp > 0)) mul *= 0.25; // so do the virus cores
+    if (this.c.kraken) mul = ud.part === 'eye' ? 2 : ud.fromZombie ? 1 : 0.2;
+    if (this.floatHp > 0 && !ud.fromZombie) mul *= 0.25; // the float shields the boss (from shots; a zombie tears at it up close)
+    if (this.cores && this.cores.some((q) => q.hp > 0) && !ud.fromZombie) mul *= 0.25; // so do the virus cores
     if (this.frozenT > 0) mul *= 2; // ice cracks easily
     else if (ud.part === 'helmet') {
       mul = ap ? 0.6 : 0.3; this.lastFx = 'spark'; this.helmetHp -= dmg * (ap ? 2 : 1);
@@ -4433,7 +4433,7 @@ class Zombie {
   hurtT(T, dmg, kind) {
     if (!T) return;
     if (T === player) { hurtPlayer(dmg, kind); return; }
-    T.damage(dmg * (ARENA ? ARENA.zdmg : 1), { part: 'body' }, T.pos.clone().sub(this.pos).setY(0).normalize());
+    T.damage(dmg * (ARENA ? ARENA.zdmg : 1), { part: 'body', fromZombie: true }, T.pos.clone().sub(this.pos).setY(0).normalize());
   }
   tLow(T, h = 1) { return T === player ? player.pos.y < h : (T.airY || 0) < h; }
   tVel(T) { return T === player ? player.vel : ZERO3; }
@@ -4488,11 +4488,12 @@ class Zombie {
     }
     this.T = T;
     const idle = !T, tp = idle ? this.pos : T.pos;
-    const dx = idle ? Math.sin(g.rotation.y) : tp.x - this.pos.x, dz = idle ? Math.cos(g.rotation.y) : tp.z - this.pos.z, dist = idle ? 999 : Math.hypot(dx, dz);
+    const tr = T && T !== player ? T.radius : 0; // a big target is reached at its edge, not its centre
+    const dx = idle ? Math.sin(g.rotation.y) : tp.x - this.pos.x, dz = idle ? Math.cos(g.rotation.y) : tp.z - this.pos.z, dist = idle ? 999 : Math.max(0, Math.hypot(dx, dz) - tr);
     if (this.c.kraken) { this.updateKraken(dt, T); return true; }
     let mx = dx / (dist || 1), mz = dz / (dist || 1);
     for (const o of zombies) {
-      if (o === this || o.dead) continue;
+      if (o === this || o.dead || o === T) continue; // keep clear of the crowd, but not of the one it is fighting
       const ox = this.pos.x - o.pos.x, oz = this.pos.z - o.pos.z, d2 = ox * ox + oz * oz, rr = (this.radius + o.radius) * 1.6;
       if (d2 < rr * rr && d2 > 1e-6) { const d = Math.sqrt(d2); mx += ox / d * (rr - d) * 1.5; mz += oz / d * (rr - d) * 1.5; }
     }
@@ -4778,7 +4779,7 @@ class Zombie {
         if (this.type === 'behemoth' || this.c.stomp) { // ground-shaking stomp
           const p = this.pos.clone(); burst(p.clone().setY(0.2), UP, dustMat, 30, 6); stompRing(p); sfx('slam', 1.4);
           shake = 1; if (dist <= reach + 1.8 && this.tLow(T)) { this.hurtT(T, this.c.dmg); if (T === player) player.slowT = 0.8; }
-          if (ARENA) for (const o of zombies) if (o !== this && o !== T && !o.dead && !(ARENA.teams && o.team === this.team) && Math.hypot(o.pos.x - this.pos.x, o.pos.z - this.pos.z) < reach + 1.8) o.damage(this.c.dmg * 0.5 * ARENA.zdmg, { part: 'body' }, null);
+          if (ARENA) for (const o of zombies) if (o !== this && o !== T && !o.dead && !(ARENA.teams && o.team === this.team) && Math.hypot(o.pos.x - this.pos.x, o.pos.z - this.pos.z) < reach + 1.8) o.damage(this.c.dmg * 0.5 * ARENA.zdmg, { part: 'body', fromZombie: true }, null);
         } else if (dist <= reach + 0.5) this.hurtT(T, this.c.dmg);
       }
       if (this.atkAnim >= 1) { this.atkAnim = 0; this.atkHit = false; }
@@ -5057,7 +5058,7 @@ function updateHazards(dt) {
     if (ARENA && p.owner) { // 競技場: spit lands on zombies too
       const q = p.m.position, hz = zombies.find((o) => !o.dead && o !== p.owner && !(ARENA.teams && o.team === p.owner.team)
         && Math.hypot(o.pos.x - q.x, o.pos.z - q.z) < o.radius + 0.45 && q.y > (o.airY || 0) - 0.2 && q.y < (o.airY || 0) + 2.1 * o.g.scale.y);
-      if (hz) { hz.damage((p.water ? ZTYPES.drowned.dmg : ZTYPES.spitter.dmg + 4) * ARENA.zdmg, { part: 'body' }, p.v.clone().setY(0).normalize()); burst(q, UP, p.water ? seaSprayMat : acidPartMat, 8, 2.5); sfx('splash', 0.5); return done(); }
+      if (hz) { hz.damage((p.water ? ZTYPES.drowned.dmg : ZTYPES.spitter.dmg + 4) * ARENA.zdmg, { part: 'body', fromZombie: true }, p.v.clone().setY(0).normalize()); burst(q, UP, p.water ? seaSprayMat : acidPartMat, 8, 2.5); sfx('splash', 0.5); return done(); }
     }
     if (p.water) { // sea water: knocks the wind out of you and leaves a 水灘
       if (p.m.position.distanceTo(eye) < 0.8) { hurtPlayer(ZTYPES.drowned.dmg); player.slowT = Math.max(player.slowT || 0, 1.2); sfx('splash'); return done(); }
@@ -7376,7 +7377,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026101502'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026101601'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
