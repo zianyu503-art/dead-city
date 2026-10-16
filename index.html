@@ -153,6 +153,7 @@
     border-color: rgba(240,200,140,0.8); }
   body.inarena #tArena, body.inarena #tSpeed { display: flex; }
   .t-seastorm { background: linear-gradient(160deg, rgba(40,85,115,0.65), rgba(6,12,20,0.92)); }
+  .t-lab { background: linear-gradient(160deg, rgba(150,30,25,0.6), rgba(8,6,6,0.94)); }
   .t-fog { background: linear-gradient(160deg, rgba(130,140,140,0.55), rgba(20,20,20,0.85)); }
   .controls { margin-top: 26px; font-size: 12px; color: var(--dim); letter-spacing: 0.05em; text-align: center; line-height: 1.9; }
   .controls b { color: var(--fg); font-weight: 400; border: 1px solid var(--line); padding: 1px 6px; margin: 0 2px; }
@@ -476,6 +477,12 @@ const LEVELS = [
     hpMul: 1.95, speedMul: 1.33, waves: [{ walker: 18, runner: 10, sailor: 3 }, { sailor: 3, drowned: 5, runner: 12, crab: 2 },
       { sailor: 3, drowned: 6, crab: 4, jammer: 2, parasite: 2 }, { runner: 16, sailor: 4, crab: 5, jammer: 3, flyer: 4, drowned: 4 },
       { kraken: 1, sailor: 3, drowned: 5, crab: 3, jammer: 2 }] },
+  // level 13: the source of the infection, a military research facility under the coast (CONTEXT.md: 第十三關)
+  { num: 13, name: '地下實驗室', theme: 'lab', time: 'lab', outro: '零號病人倒下了，研究所的自毀程序啟動。你搭著貨梯回到地面，身後的研究所在爆炸聲中崩塌。',
+    desc: '航空母艦把你送到海岸邊的軍方地下研究所，感染就是從這裡開始的。警報聲中深入實驗大廳，消滅收容槽裡的零號病人。',
+    hpMul: 2.05, speedMul: 1.36, waves: [{ walker: 18, runner: 12, hazmat: 3, labdog: 2 }, { runner: 14, hazmat: 4, exo: 2, labdog: 2, medic: 3 },
+      { walker: 14, runner: 12, exo: 3, hazmat: 4, stalker: 3, labdog: 3 }, { runner: 16, exo: 4, hazmat: 4, mutant: 2, splitter: 3, labdog: 3 },
+      { patientzero: 1, runner: 12, hazmat: 3, exo: 2, labdog: 2 }] },
   // 國慶特別版: an event level outside the numbered campaign, open only during 國慶期間 (see CONTEXT.md).
   // num only sets the clear bonus; it plays at level 5's difficulty
   { id: 'national-day', event: true, label: '國慶特別版', num: 5, name: '國慶夜・煙火大道', theme: 'festival', time: 'festival',
@@ -524,6 +531,8 @@ const TIMES = {
            sun: 0xc8d0dc, sunI: 0.7, hemiSky: 0x9aa6b4, hemiGround: 0x2c2c2c, hemiI: 0.85, exp: 0.78, envI: 0.35, night: false },
   seastorm: { label: '海上風暴', sky: true, bgFog: true, rain: true, sea: true, elev: 24, azi: 215, turb: 18, ray: 0.6, mie: 0.02, mieG: 0.8, fog: 0x4a5866, fogD: 0.011,
            sun: 0xc4d0dc, sunI: 0.85, hemiSky: 0x8c9cae, hemiGround: 0x22282e, hemiI: 0.85, exp: 0.8, envI: 0.35, night: false },
+  lab:   { label: '緊急照明', sky: false, bg: 0x050405, alarm: true, fog: 0x0b0707, fogD: 0.02,
+           sun: 0xffb4a4, sunI: 0.45, hemiSky: 0x8a6a68, hemiGround: 0x1a1212, hemiI: 0.8, exp: 1.0, envI: 0, night: true },
   fog:   { label: '濃霧', sky: true, bgFog: true, elev: 25, azi: 180, turb: 20, ray: 0.6, mie: 0.02, mieG: 0.8, fog: 0x8c9599, fogD: 0.03,
            sun: 0xdde4ea, sunI: 1.0, hemiSky: 0xa9b4bb, hemiGround: 0x3c3b38, hemiI: 1.0, exp: 0.7, envI: 0.5, night: false },
 };
@@ -599,6 +608,16 @@ const ZTYPES = {
               desc: '背著電子干擾器的通訊兵。靠近到 15 公尺內，殭屍羅盤會變成雜訊、準星亂跳、子彈散布變大。打倒它就恢復，優先擊殺。' },
   kraken:   { name: '巨型海怪', color: '#8a2a6a', hp: 6000, speed: 0, dmg: 35, scale: 1, rate: 99, cash: 2000, score: 10000, boss: true, kraken: true,
               desc: '從左舷外海面冒出的巨大海怪，只露出頭和一隻發光的眼睛。眼睛是弱點，打頭的其他地方只有兩成傷害。甲板上出現紅圈是觸手要砸下來，出現紅色長帶是觸手要橫掃甲板，跳起來可以躲過；還會朝你吐酸。' },
+  // ---- 第十三關 (CONTEXT.md); gear from tools/blender/lab_zombies.py ----
+  hazmat:   { name: '防護衣研究員', color: '#d8b020', hp: 140, speed: 1.5, dmg: 10, scale: 1, rate: 1.2, cash: 35, score: 350, gas: true, lab: true,
+              desc: '穿著黃色防護衣、背著氣瓶的研究員。靠近時會噴出一團綠色毒氣，被打死時氣瓶破裂噴出更大一團。別站在毒氣裡，在遠處解決它。' },
+  exo:      { name: '外骨骼殭屍', color: '#5a6a7a', hp: 380, speed: 1.7, dmg: 22, scale: 1.08, rate: 1.4, cash: 70, score: 600, exo: true, lab: true,
+              desc: '穿著軍用外骨骼的士兵，金屬骨架擋得住子彈。背上發藍光的動力核心是弱點，打爆後外骨骼斷電、變慢。看到它蓄力就閃開，衝撞會把你撞飛。' },
+  labdog:   { name: '實驗獵犬', color: '#c09080', hp: 70, speed: 6.0, dmg: 9, scale: 1, rate: 0.7, cash: 15, score: 150, look: 'dog', swarm: 3, revive: true, lab: true,
+              desc: '頭上裝著金屬板的實驗犬，三隻一群。倒下三秒後會重新站起來一次；爆頭、燒死或凍碎，牠就不會再起來。' },
+  patientzero: { name: '零號病人', color: '#b02040', hp: 5500, speed: 1.2, dmg: 34, scale: 2.3, rate: 2.0, cash: 2500, score: 12000, boss: true, look: 'behemoth',
+              stomp: true, pz: true, lab: true, reach: 2.6,
+              desc: '最早被感染的人，一直泡在收容槽裡。血越少變異越可怕：先是踩地、丟殘骸，接著長出骨刺、撲跳、召喚實驗獵犬，最後背上長出觸手從地下拍擊、身邊冒出毒氣。每次變異時短暫無敵，會震開身邊的人。' },
   brute:    { name: '巨型感染者', color: '#9a3a2a', hp: 650, speed: 1.3, dmg: 30, scale: 1.45, rate: 1.6, cash: 60, score: 500,
               desc: '體型巨大、血量極高，一拳就能打掉你三成生命。' },
 };
@@ -2128,11 +2147,12 @@ function buildLevel() {
   }
   levelGroup = new THREE.Group(); scene.add(levelGroup);
   colliders = []; worldMeshes = []; lampPositions = []; POLICE_CARS.length = 0; BARRELS.length = 0; FIRE_SPOTS.length = 0; barrelQueue = [];
-  festBanners = []; fwRacks = []; CARGO = null; DECK_EDGES = null; SEA = null; RADAR = null; ARENA_RING = 0; BRAZIERS = [];
+  festBanners = []; fwRacks = []; CARGO = null; DECK_EDGES = null; SEA = null; RADAR = null; ARENA_RING = 0; BRAZIERS = []; LAB = null;
   makeMaterials();
   const g = levelGroup, theme = LV.theme;
   if (theme === 'carrier') { buildCarrier(g); return; } // no city at all: one ship in the open sea
   if (theme === 'arena') { buildArena(g); return; }
+  if (theme === 'lab') { buildLab(g); return; }
 
   // ground (roads)
   const ground = mesh(new THREE.PlaneGeometry(900, 900), M.asphalt, g, 0, 0, 0, false);
@@ -2979,6 +2999,17 @@ function airportBlock(g, bi, bj, cx, cz, inside) {
   if (Math.random() < 0.7) { const bx = cx - dx * 9 - Math.sin(rot) * 8, bz = cz - dz * 9 - Math.cos(rot) * 8; apPut(g, 'baggage_train', bx, 0.16, bz, rot); axisCollider(bx, bz, rot, 0, 1.8, 10); }
   if (Math.random() < 0.4) addTanker(g, cx - dx * 13 + Math.sin(rot) * 6, cz - dz * 13 + Math.cos(rot) * 6, rot);
 }
+// 第十三關: the lab hall (tools/blender/lab.py) and the lab zombies' gear (tools/blender/lab_zombies.py)
+let LB = null, LZ = null;
+loadModel('lab', (scene) => {
+  scene.traverse((o) => {
+    if (!o.isMesh) return; const m = o.material;
+    if (m.name === 'glass') { m.transparent = true; m.opacity = 0.16; m.depthWrite = false; m.roughness = 0.05; }
+    if (m.name === 'fluid') { m.transparent = true; m.opacity = 0.55; m.depthWrite = false; }
+  });
+  LB = {}; scene.children.forEach((o) => { LB[o.name] = o; });
+});
+loadModel('labzombie', (scene) => { LZ = {}; scene.children.forEach((o) => { LZ[o.name] = o; }); });
 // 第十二關: the carrier, its deck gear and the kraken (tools/blender/carrier.py); the naval costumes (tools/blender/naval_zombies.py)
 let CV = null, NZ = null;
 loadModel('carrier', (scene) => { CV = {}; scene.children.forEach((o) => { CV[o.name] = o; }); });
@@ -2986,6 +3017,8 @@ loadModel('navalzombie', (scene) => { NZ = {}; scene.children.forEach((o) => { N
 // the 兌換碼牆 (tools/blender/graffiti.py): walls with a 兌換碼 sprayed on them, painted face toward +z
 let CODEWALL = null;
 loadModel('graffiti', (scene) => { CODEWALL = {}; scene.children.forEach((o) => { CODEWALL[o.name] = o; }); });
+let _hazmatSuit = null;
+const hazmatSuit = () => (_hazmatSuit ||= new THREE.MeshStandardMaterial({ color: 0xc89a18, roughness: 0.55, metalness: 0.05 }));
 function placeCodeWall(g, x, z, name = 'code_wall', rot = 0) {
   if (!CODEWALL || !CODEWALL[name]) return;
   const o = CODEWALL[name].clone(); o.position.set(x, 0.15, z); o.rotation.y = rot;
@@ -3624,6 +3657,8 @@ class Zombie {
     if (type === 'flamer') { cloth = zm.camo; pants = zm.camo; }
     if (type === 'sailor') { cloth = pick(zm.police); pants = zm.policePants; } // navy blues under the life vest
     if (type === 'jammer') { cloth = zm.camo; pants = zm.camo; }
+    if (type === 'hazmat') { cloth = hazmatSuit(); pants = cloth; } // the yellow suit
+    if (type === 'exo') { cloth = zm.camo; pants = zm.camo; }
     this.tankHp = type === 'flamer' ? 50 : 0; this.flameTick = 0; this.flaming = false;
     this.healCd = rand(2, 4); this.leapCd = rand(1.5, 3); this.crouch = 0; this.leapT = 0; this.airY = 0;
     this.shieldHp = c.shield ? c.shield * LV.hpMul : 0; this.shieldMax = this.shieldHp; this.gunT = rand(1.5, 3); this.aimT = 0;
@@ -3639,8 +3674,10 @@ class Zombie {
       g.position.copy(this.pos); scene.add(g); zMeshes.push(...this.meshes);
       return;
     }
-    if (type === 'dog') {
+    this.look = look;
+    if (look === 'dog') {
       this.buildDog(add, zm);
+      if (c.lab) this.dressLab(type);
       g.position.copy(this.pos); scene.add(g); zMeshes.push(...this.meshes);
       return;
     }
@@ -3678,7 +3715,7 @@ class Zombie {
     const hp = this.headPivot = new THREE.Group(); hp.position.set(0, 1.72, 0.03); body.add(hp);
     const headS = type === 'spitter' ? 1.22 : type === 'bloater' ? 1.12 : 1;
     const jw = this.jaw = new THREE.Group(); jw.position.set(0, 0.07, 0.03); hp.add(jw);
-    const hairless = ['armored', 'bloater', 'flamer', 'medic', 'stalker', 'splitter', 'behemoth', 'liondance', 'floatboss', 'sailor', 'drowned'].includes(type);
+    const hairless = ['armored', 'bloater', 'flamer', 'medic', 'stalker', 'splitter', 'behemoth', 'liondance', 'floatboss', 'sailor', 'drowned', 'hazmat', 'patientzero'].includes(type);
     if (ZP) { // sculpted skull with brow, sockets, cheekbones, nose and ears; hinged jaw with teeth
       add(ZP.head, skin, hp, 0, 0, 0, 'head').scale.setScalar(headS);
       add(ZP.mouth, zm.mouth, hp, 0, 0, 0, 'head').scale.setScalar(headS);
@@ -3861,6 +3898,7 @@ class Zombie {
     }
     if (c.fest) this.dressFest(type);
     if (c.naval) this.dressNaval(type);
+    if (c.lab) this.dressLab(type);
     if (type === 'crawler') { body.position.set(0, 0, -0.95); add(G.hand, pants, body, 0.1, 0.93, 0).scale.set(1.3, 1, 1.3); }
     this.lean = { behemoth: 0.22, shocker: 0.08, runner: 0.32, brute: 0.18, crawler: 1.36, bloater: -0.08, screamer: 0.12, armored: 0.1, riot: 0.06, gunner: 0.05, medic: 0.1, mutant: 0.42, gong: 0.05, dragon: 0.25 }[look] ?? rand(0.08, 0.2);
     this.limp = type === 'walker' && Math.random() < 0.4 ? rand(0.2, 0.5) : 0;
@@ -3935,11 +3973,52 @@ class Zombie {
   }
   // a costume piece from fest_zombies.py, attached to a joint and shootable as `part`
   festPart(name, parent, part = 'body') {
-    const src = [FZ, NZ, CV].find((d) => d && d[name]);
+    const src = [FZ, NZ, CV, LZ].find((d) => d && d[name]);
     if (!src) return null;
     const o = src[name].clone();
     o.traverse((m) => { if (!m.isMesh) return; m.castShadow = true; m.userData = { z: this, part, head: part === 'head', mesh: m }; this.meshes.push(m); });
     parent.add(o); return o;
+  }
+  dressLab(type) {
+    const hp = this.headPivot, body = this.body, put = (name, parent, part) => this.festPart(name, parent, part);
+    const mirror = (o, i) => { if (o && i === 0) o.scale.x = -1; }; // the gear is drawn for the right side
+    if (type === 'hazmat') { put('hazmat_hood', hp, 'head'); put('hazmat_tank', body); this.gasCd = rand(2, 4); }
+    if (type === 'exo') {
+      put('exo_frame', body, 'exo'); this.exoCore = put('exo_core', body, 'excore');
+      this.arms.forEach((a, i) => mirror(put('exo_arm', a, 'exo'), i));
+      this.legs.forEach((l, i) => mirror(put('exo_thigh', l, 'exo'), i));
+      this.knees.forEach((k, i) => mirror(put('exo_shin', k, 'exo'), i));
+      this.coreHp = 100 * LV.hpMul; this.exoCd = rand(2, 4); this.exoWind = 0; this.exoT = 0;
+    }
+    if (type === 'labdog') { put('labdog_gear', body); put('labdog_head', hp, 'head'); }
+    if (type === 'patientzero') {
+      put('pz_gear', body); this.hands.forEach((h, i) => mirror(put('pz_cuff', h), i));
+      this.radius = 0.95; this.pzPhase = 1; this.mutateT = 0; this.slamCd = 3; this.gasCd = 4; this.dogCd = 4; this.throwCd = 3;
+    }
+  }
+  // 外骨骼殭屍: the power core is shot out — the frame goes dead and heavy
+  powerDown() {
+    this.exoDead = true; this.speed *= 0.6; this.exoT = 0; this.exoWind = 0;
+    if (this.exoCore) this.exoCore.traverse((m) => { if (m.isMesh && m.material.name === 'core_glow') { m.material = m.material.clone(); m.material.emissiveIntensity = 0; m.material.color.set(0x151515); } });
+    burst(this.body.localToWorld(new THREE.Vector3(0, 1.3, -0.3)), UP, sparkMat, 22, 5); sfx('zap', 0.9);
+    showMsg('', '動力核心被打爆了！外骨骼斷電', 1.6);
+  }
+  // 零號病人 changes form: a moment of invulnerability and a shove, then the next phase's body and moves
+  mutate(n) {
+    this.pzPhase = n; this.mutateT = 1.6; this.windup = 0; this.crouch = 0; this.leapT = 0; this.airY = 0;
+    sfx('bossroar'); shake = 1; burst(this.pos.clone().setY(2.5), UP, bloodMat, 40, 6);
+    for (const o of zombies) if (o !== this && !o.dead && !o.c.boss && o.pos.distanceTo(this.pos) < 6) o.knockV = o.pos.clone().sub(this.pos).setY(0).normalize().multiplyScalar(14);
+    if (Math.hypot(player.pos.x - this.pos.x, player.pos.z - this.pos.z) < 7) { knockPlayer(this.pos, 16); hurtPlayer(10, 'blast'); }
+    const grow = (name) => { const before = this.meshes.length; this.festPart(name, this.body); zMeshes.push(...this.meshes.slice(before)); };
+    if (n === 2) { grow('pz_spikes'); this.speed *= 1.3; this.c = { ...this.c, leap: true }; showMsg('零號病人開始變異！', '長出骨刺，會撲跳，還會召喚實驗獵犬', 3); }
+    if (n === 3) { grow('pz_tendrils'); this.speed *= 1.2; showMsg('零號病人進入最終型態！', '觸手會從地下拍擊，身邊冒出毒氣', 3); }
+  }
+  // 實驗獵犬 gets back up once
+  revive() {
+    this.dead = false; this.revived = true; this.reviveT = 0; this.deadT = 0; this.hp = this.maxHp * 0.5; this.atkT = 0.6; this.airY = 0;
+    this.g.rotation.x = 0; this.g.rotation.z = 0; this.g.position.y = 0;
+    zMeshes.push(...this.meshes); if (this.teamRing) this.teamRing.visible = true;
+    burst(this.pos.clone().setY(0.6), UP, acidPartMat, 14, 3); sfx('growl', 0.9);
   }
   dressNaval(type) {
     const hp = this.headPivot, body = this.body;
@@ -4137,13 +4216,15 @@ class Zombie {
     this.body.rotation.x = (moving ? Math.cos(this.phase) * 0.08 : 0) - lunge * 0.25;
     this.body.position.z = lunge * 0.35;
     this.headPivot.rotation.x = -0.1 + lunge * 0.5 + (this.hitT > 0 ? -0.4 : 0);
-    this.tail.rotation.y = Math.sin(this.phase * 1.5) * 0.4;
+    if (this.tail) this.tail.rotation.y = Math.sin(this.phase * 1.5) * 0.4; // (death clears this.tail, meant for the dragon's tail)
     this.g.position.set(this.pos.x, moving ? Math.abs(Math.cos(this.phase)) * 0.08 : 0, this.pos.z);
     let da = Math.atan2(dx, dz) - this.g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
     this.g.rotation.y += da * Math.min(1, dt * 8);
   }
   damage(dmg, ud, dir, ap = false) {
     if (this.dead) return false;
+    this.lastPart = ud.part;
+    if (this.mutateT > 0) { this.lastFx = 'spark'; return false; } // 零號病人 can't be hurt mid-mutation
     let mul = 1; this.lastFx = 'blood';
     if (ud.part === 'sac' && this.sacs) {
       const sc = this.sacs.find((q) => q.m === ud.mesh);
@@ -4197,6 +4278,8 @@ class Zombie {
     }
     if (ud.part === 'head') mul = 2.5;
     else if (ud.part === 'shell') { mul = 0.1; this.lastFx = 'spark'; } // bullets glance off the 蟹殼
+    else if (ud.part === 'excore' && this.coreHp > 0) { mul = 3; this.lastFx = 'spark'; this.coreHp -= dmg; if (this.coreHp <= 0) this.powerDown(); } // the 動力核心
+    else if (ud.part === 'exo' && this.coreHp > 0) { mul = 0.35; this.lastFx = 'spark'; } // the powered frame
     if (this.c.kraken) mul = ud.part === 'eye' ? 2 : 0.2;
     if (this.floatHp > 0) mul *= 0.25; // the float shields the boss
     if (this.cores && this.cores.some((q) => q.hp > 0)) mul *= 0.25; // so do the virus cores
@@ -4273,9 +4356,11 @@ class Zombie {
     if (this.dead) return;
     this.dead = true; this.deadT = 0; this.fallDir = Math.random() < 0.7 ? -1 : 1;
     if (this.climbT > 0) { this.climbT = 0; this.g.position.set(this.pos.x, 0, this.pos.z); } // shot off the rim mid-climb: falls onto the deck
+    if (this.c.revive && !this.revived && this.lastPart !== 'head' && !(this.burnT > 0) && !(this.frozenT > 0)) this.reviveT = 3; // 實驗獵犬 gets up again
+    if (this.c.gas) { releaseGas(this.pos.x, this.pos.z, 4, 8); burst(this.pos.clone().setY(1.3), UP, acidPartMat, 16, 4); } // the air tank bursts
     if (this.laser) this.laser.visible = false;
     zMeshes = zMeshes.filter((m) => m.userData.z !== this);
-    kills++; score += this.c.score; if (!ARENA) addCash(this.c.cash); // the arena pays nothing
+    kills++; score += this.c.score; if (!ARENA && !this.revived) addCash(this.c.cash); // the arena pays nothing, nor does a 實驗獵犬's second death
     if (this.teamRing) this.teamRing.visible = false;
     if (this.segment) { scene.remove(this.segment); burst(this.segment.position, UP, confettiMat, 12, 3); this.segment = null; }
     if (this.tail) { scene.remove(this.tail); this.tail = null; }
@@ -4356,9 +4441,10 @@ class Zombie {
   update(dt) {
     const g = this.g;
     if (this.dead) {
+      if (this.reviveT > 0) { this.reviveT -= dt; if (this.reviveT <= 0) { this.revive(); return true; } }
       this.deadT += dt;
       const k = Math.min(1, this.deadT / 0.55);
-      if (this.type === 'dog' || this.c.bug) { g.rotation.z = this.fallDir * (Math.PI / 2) * (k * k); g.position.y = 0; }
+      if (this.look === 'dog' || this.c.bug) { g.rotation.z = this.fallDir * (Math.PI / 2) * (k * k); g.position.y = 0; }
       else if (this.c.mother) { g.position.y = -3 * k; this.body.scale.setScalar(1 - 0.3 * k); }
       else if (this.c.kraken) { g.position.y = -this.deadT * 5; this.body.rotation.z = this.deadT * 0.05; } // sinks back to the bottom
       else if (this.type === 'broodmother') { g.rotation.z = this.fallDir * 0.35 * k; g.position.y = -0.5 * k; }
@@ -4616,6 +4702,45 @@ class Zombie {
         for (let k = 0; k < 2; k++) lobSpore(from, tp.clone().add(new THREE.Vector3(rand(-5, 5), 0, rand(-5, 5))).setY(0), this.team || null);
       }
     }
+    if (this.c.gas) { // 防護衣研究員 vents gas when it gets close
+      this.gasCd -= dt;
+      if (this.gasCd <= 0 && dist < 7 && !idle) { this.gasCd = 6; releaseGas(this.pos.x, this.pos.z, 3, 6); }
+    }
+    if (this.c.exo && !this.exoDead) { // 外骨骼殭屍: wind up, then charge
+      this.exoCd -= dt;
+      if (this.exoWind > 0) {
+        this.exoWind -= dt; hold = true;
+        if (Math.random() < dt * 25) burst(this.body.localToWorld(new THREE.Vector3(0, 1.3, -0.32)), UP, sparkMat, 1, 3);
+        if (this.exoWind <= 0) { this.exoT = 1.4; this.exoHit = false; sfx('roar', clamp(1.3 - dist / 30, 0.3, 1.2)); }
+      } else if (this.exoT > 0) {
+        this.exoT -= dt;
+        if (dist < 1.7 && !this.exoHit && !idle) {
+          this.exoHit = true; this.exoT = 0; this.hurtT(T, 28, 'melee');
+          if (T === player) { knockPlayer(this.pos, 15); shake = 1; }
+          else if (T && !T.c.boss) T.knockV = T.pos.clone().sub(this.pos).setY(0).normalize().multiplyScalar(12);
+          sfx('slam', 1);
+        }
+      } else if (this.exoCd <= 0 && dist > 6 && dist < 20 && this.los && !idle) { this.exoWind = 0.7; this.exoCd = rand(6, 8); sfx('charge', clamp(1.3 - dist / 30, 0.3, 1)); }
+    }
+    if (this.c.pz) { // 零號病人: three phases
+      const f = this.hp / this.maxHp, want = f > 0.66 ? 1 : f > 0.33 ? 2 : 3;
+      if (want > this.pzPhase) this.mutate(want);
+      if (this.mutateT > 0) {
+        this.mutateT -= dt; hold = true; this.body.scale.setScalar(1 + Math.sin(this.mutateT * 30) * 0.04);
+        if (this.mutateT <= 0) this.body.scale.setScalar(1);
+      } else if (!idle) {
+        this.throwCd -= dt; this.dogCd -= dt; this.slamCd -= dt; this.gasCd -= dt;
+        if (this.windup > 0) { this.windup -= dt; hold = true; if (this.windup <= 0) throwRock(this); }
+        else if (this.throwCd <= 0 && dist > 9 && dist < 42 && this.los && !(this.leapT > 0) && !(this.crouch > 0)) { this.windup = 0.9; this.throwCd = this.pzPhase === 1 ? 5 : 7; sfx('growl', 1); }
+        if (this.pzPhase >= 2 && this.dogCd <= 0 && zombies.filter((q) => !q.dead).length < QUALITY[qLevel].maxZ + 6) {
+          this.dogCd = 12;
+          for (let k = 0; k < 2; k++) { const d = new Zombie('labdog', this.pos.x + rand(-3, 3), this.pos.z + rand(-3, 3)); d.rage = 2; addZombie(d); if (this.team) setTeam(d, this.team); }
+          showMsg('', '零號病人召喚了實驗獵犬！', 1.5); sfx('growl', 1);
+        }
+        if (this.pzPhase >= 3 && this.slamCd <= 0 && dist < 40) { this.slamCd = 4; tentacleSlam(this, tp.clone().addScaledVector(this.tVel(T), 0.5).setY(0)); }
+        if (this.pzPhase >= 3 && this.gasCd <= 0) { this.gasCd = 6; releaseGas(this.pos.x + rand(-3, 3), this.pos.z + rand(-3, 3), 4, 7); }
+      }
+    }
     if (this.c.explode && !this.c.flyer) {
       if (!this.fuse && dist < 2.4) { this.fuse = 0.9; sfx('hiss'); }
       if (this.fuse > 0) {
@@ -4630,7 +4755,7 @@ class Zombie {
     let moving = false;
     const goal = this.dancer && this.leader && !this.leader.dead ? this.follow : dist; // dancers keep their place in the line
     if (goal > reach && !hold) {
-      const sp = this.speed * slow * (this.chillT > 0 ? 0.5 : 1) * (this.diving ? 1.5 : 1) * (this.flaming ? 0.4 : 1) * (this.rage > 0 ? 1.6 : 1) * (this.ramT > 0 ? 4 : 1) * (1 - this.limp * (0.5 + 0.5 * Math.sin(this.phase)));
+      const sp = this.speed * slow * (this.chillT > 0 ? 0.5 : 1) * (this.diving ? 1.5 : 1) * (this.flaming ? 0.4 : 1) * (this.rage > 0 ? 1.6 : 1) * (this.ramT > 0 ? 4 : 1) * (this.exoT > 0 ? 3.2 : 1) * (1 - this.limp * (0.5 + 0.5 * Math.sin(this.phase)));
       const px = this.pos.x, pz = this.pos.z;
       this.pos.x += mx * sp * dt; this.pos.z += mz * sp * dt;
       const res = this.c.flyer ? () => {} : this.c.boss ? resolveLarge : resolve; // flyers pass over everything
@@ -4666,7 +4791,7 @@ class Zombie {
       this.ghost.depthWrite = this.ghost.opacity > 0.9;
     }
     if (this.anchor && this.dancer) { this.g.updateMatrixWorld(true); this.updateDance(); }
-    if (this.type === 'dog') { this.animateDog(dt, moving, dx, dz); return true; }
+    if (this.look === 'dog') { this.animateDog(dt, moving, dx, dz); return true; }
     if (this.c.bug) { this.animateBug(dt, moving, dx, dz); return true; }
     if (this.c.flyer) { this.animateFlyer(dt, dx, dz); return true; }
     if (this.c.mother) { this.animateMother(dt, dx, dz); return true; }
@@ -4976,6 +5101,7 @@ let acidFlash = 0;
 
 function spawnZombie(type) {
   if (DECK_EDGES) return spawnOnDeck(type);
+  if (LAB) return spawnInLab(type);
   for (let tries = 0; tries < 40; tries++) {
     const rc = pick(ROAD_CENTERS), t = rand(-HALF + 4, HALF - 4), off = rand(-4, 4);
     const [x, z] = Math.random() < 0.5 ? [rc + off, t] : [t, rc + off];
@@ -5154,7 +5280,7 @@ function armorStatus() {
 function updateHUD() {
   const boss = zombies.find((z) => !z.dead && z.c.boss);
   $('bossbar').style.display = boss ? 'block' : 'none';
-  if (boss) $('bossbar').querySelector('.bn').textContent = boss.floatHp > 0 ? `${boss.c.name} · 花車` : boss.cores ? `${boss.c.name} · 核心 ${boss.cores.filter((q) => q.hp > 0).length}/3` : boss.c.name;
+  if (boss) $('bossbar').querySelector('.bn').textContent = boss.pzPhase ? `${boss.c.name} · 第 ${boss.pzPhase} 階段` : boss.floatHp > 0 ? `${boss.c.name} · 花車` : boss.cores ? `${boss.c.name} · 核心 ${boss.cores.filter((q) => q.hp > 0).length}/3` : boss.c.name;
   if (boss) $('bossfill').style.width = Math.max(0, boss.floatHp > 0 ? boss.floatHp / boss.floatMax * 100 : boss.hp / boss.maxHp * 100) + '%';
   const w = weapons[wi];
   $('hpnum').textContent = Math.ceil(player.hp);
@@ -5750,6 +5876,147 @@ function closeArenaPanel() {
   state = 'playing';
   if (inputMode !== 'touch' && !padActive) lockPointer();
 }
+// ============================================================
+//  第十三關: the underground lab (CONTEXT.md; .scratch/level-13/spec.md)
+// ============================================================
+let LAB = null, gasClouds = [], gasTick = 0;
+const LAB_X = 72, LAB_Z = 56, LAB_H = 7.2;
+const _alarmRed = new THREE.Color(0xff2010);
+function labPut(g, name, x, y, z, rot = 0, shoot = true) {
+  if (!LB || !LB[name]) return null;
+  const o = LB[name].clone(); o.position.set(x, y, z); o.rotation.y = rot;
+  o.traverse((c) => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; if (shoot) worldMeshes.push(c); } });
+  g.add(o); return o;
+}
+function labMany(g, name, items, shoot = true, shadow = true) {
+  if (!LB || !LB[name] || !items.length) return [];
+  const out = [];
+  LB[name].traverse((c) => {
+    if (!c.isMesh) return;
+    const im = new THREE.InstancedMesh(c.geometry, c.material, items.length);
+    items.forEach(([x, y, z, rot = 0], k) => { _fq.setFromAxisAngle(_UPY, rot); im.setMatrixAt(k, _fm4.compose(_fv.set(x, y, z), _fq, _fsc.set(1, 1, 1))); });
+    im.castShadow = shadow; im.receiveShadow = true; im.frustumCulled = false; g.add(im); out.push(im); if (shoot) worldMeshes.push(im);
+  });
+  return out;
+}
+let labFloorTex = null;
+function buildLab(g) {
+  LAB = { t: 0, broken: false };
+  if (!labFloorTex) { // epoxy floor tiles, 2 m each, with seams and the odd stain
+    const [c, x] = makeCanvas(256);
+    x.fillStyle = '#5c6062'; x.fillRect(0, 0, 256, 256);
+    for (let k = 0; k < 900; k++) { x.fillStyle = `rgba(${Math.random() < 0.5 ? '255,255,255' : '0,0,0'},${rand(0.01, 0.04)})`; x.fillRect(rand(0, 256), rand(0, 256), rand(2, 10), rand(2, 10)); }
+    x.strokeStyle = 'rgba(20,22,24,0.9)'; x.lineWidth = 4; x.strokeRect(0, 0, 256, 256);
+    x.fillStyle = 'rgba(40,90,40,0.12)'; x.beginPath(); x.ellipse(170, 90, 50, 30, 0.4, 0, Math.PI * 2); x.fill();
+    labFloorTex = new THREE.CanvasTexture(c); labFloorTex.wrapS = labFloorTex.wrapT = THREE.RepeatWrapping; labFloorTex.colorSpace = THREE.SRGBColorSpace;
+    labFloorTex.repeat.set(LAB_X, LAB_Z); labFloorTex.anisotropy = 4;
+  }
+  const floor = mesh(new THREE.PlaneGeometry(LAB_X * 2, LAB_Z * 2), std({ map: labFloorTex, roughness: 0.32, metalness: 0.15 }), g, 0, 0, 0, false);
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; worldMeshes.push(floor);
+  const ceil = mesh(new THREE.PlaneGeometry(LAB_X * 2, LAB_Z * 2), std({ color: 0x17181a, roughness: 0.9 }), g, 0, LAB_H, 0, false);
+  ceil.rotation.x = Math.PI / 2; ceil.castShadow = false; worldMeshes.push(ceil);
+  // the walls all round, the freight lift on the south wall where the player comes in
+  const walls = [];
+  for (let k = 0; k < 24; k++) { const x = -LAB_X + 3 + k * 6; walls.push([x, 0, -LAB_Z, 0], [x, 0, LAB_Z, Math.PI]); }
+  for (let k = 0; k < 19; k++) { const z = -LAB_Z + 3 + k * 6; walls.push([LAB_X, 0, z, -Math.PI / 2], [-LAB_X, 0, z, Math.PI / 2]); }
+  labMany(g, 'lab_wall', walls, true, false);
+  addCollider(0, -LAB_Z - 1, LAB_X * 2 + 6, 2); addCollider(0, LAB_Z + 1, LAB_X * 2 + 6, 2);
+  addCollider(LAB_X + 1, 0, 2, LAB_Z * 2 + 6); addCollider(-LAB_X - 1, 0, 2, LAB_Z * 2 + 6);
+  labPut(g, 'lab_elevator', 0, 0, LAB_Z - 0.1, Math.PI);
+  const beacons = [];
+  for (const x of [-48, -24, 24, 48]) beacons.push([x, 5, -LAB_Z + 0.05, 0], [x, 5, LAB_Z - 0.05, Math.PI]);
+  for (const z of [-28, 0, 28]) beacons.push([LAB_X - 0.05, 5, z, -Math.PI / 2], [-LAB_X + 0.05, 5, z, Math.PI / 2]);
+  beacons.push([-4, 5.2, LAB_Z - 0.1, Math.PI], [4, 5.2, LAB_Z - 0.1, Math.PI]);
+  labMany(g, 'lab_beacon', beacons, false, false).forEach((im) => { if (im.material.name === 'beacon') LAB.beaconMat = im.material; });
+  const lights = [];
+  for (let x = -60; x <= 60; x += 12) for (let z = -50; z <= 50; z += 10) if (Math.hypot(x, z) > 9) lights.push([x, LAB_H, z, 0]);
+  labMany(g, 'lab_light', lights, false, false);
+  // the 收容槽 in the middle of the hall
+  labPut(g, 'lab_tank', 0, 0, 0);
+  LAB.glass = labPut(g, 'lab_tank_glass', 0, 0, 0);
+  LAB.fluid = labPut(g, 'lab_tank_fluid', 0, 0, 0, 0, false);
+  LAB.broken = labPut(g, 'lab_tank_broken', 0, 0, 0, 0, false); if (LAB.broken) LAB.broken.visible = false;
+  LAB.burst = false;
+  addCollider(0, 0, 12.6, 12.6);
+  // glass-walled lab rooms, culture tubes, server racks, pillars and decontamination arches
+  for (const [x, z, r] of [[-46, -38, 0], [-18, -40, 0], [18, -40, 0], [46, -38, 0], [-56, 6, Math.PI / 2], [56, 6, Math.PI / 2]]) {
+    labPut(g, 'lab_office', x, 0, z, r); const side = r ? [8.3, 12.3] : [12.3, 8.3]; addCollider(x, z, side[0], side[1]);
+  }
+  const tubes = [];
+  for (const sx of [-1, 1]) for (const z of [-16, -21]) { for (let k = 0; k < 7; k++) tubes.push([sx * (18 + k * 3), 0, z, 0]); addCollider(sx * 27, z, 20, 1.7); }
+  labMany(g, 'lab_tube', tubes);
+  const racks = [];
+  for (const sx of [-1, 1]) for (const z of [24, 28]) { for (let k = 0; k < 12; k++) racks.push([sx * (30.5 + k * 0.85), 0, z, sx < 0 ? 0 : Math.PI]); addCollider(sx * 35.2, z, 10.6, 1.4); }
+  labMany(g, 'lab_rack', racks);
+  const pillars = [[-30, 0], [30, 0], [-12, -26], [12, -26], [-12, 22], [12, 22], [-44, 16], [44, 16], [-60, -24], [60, -24], [-30, 44], [30, 44]];
+  labMany(g, 'lab_pillar', pillars.map(([x, z]) => [x, 0, z, 0])); pillars.forEach(([x, z]) => addCollider(x, z, 1.3, 1.3));
+  for (const z of [40, 33]) { labPut(g, 'lab_arch', 0, 0, z, 0); for (const sx of [-1, 1]) addCollider(sx * 2.1, z, 0.5, 1.3); }
+  const crates = [];
+  for (const [x, z, n] of [[-6, 26, 2], [8, -26, 3], [46, 34, 2], [-48, 34, 3], [24, 10, 2], [-24, 8, 2], [-64, 44, 2], [64, 44, 2], [62, -46, 2], [-30, -50, 2]]) {
+    for (let k = 0; k < n; k++) { const cx = x + (k % 2) * 2.5, cz = z + Math.floor(k / 2) * 1.8; crates.push([cx, 0, cz, rand(-0.1, 0.1)]); addCollider(cx, cz, 2.5, 1.7); }
+  }
+  cvMany(g, 'crate', crates);
+  for (const [x, z] of [[-20, 12], [22, -8], [-40, -28], [40, -26], [-8, -46], [60, 30], [-62, -6], [10, 40]]) addBarrel(g, x, z);
+}
+function spawnInLab(type) {
+  const c = ZTYPES[type];
+  if (c.pz && !LAB.burst) { // 零號病人 bursts out of the 收容槽 on the side facing the player
+    breakTank();
+    const d = Math.hypot(player.pos.x, player.pos.z) || 1, zb = new Zombie(type, player.pos.x / d * 8.2, player.pos.z / d * 8.2);
+    zb.g.rotation.y = Math.atan2(player.pos.x, player.pos.z); zombies.push(zb);
+    return true;
+  }
+  for (let tries = 0; tries < 40; tries++) {
+    const x = rand(-LAB_X + 4, LAB_X - 4), z = rand(-LAB_Z + 4, LAB_Z - 4), d = Math.hypot(x - player.pos.x, z - player.pos.z);
+    if (d < 28 || d > 100 || blocked(x, z, 0.8)) continue;
+    if (c.swarm) { spawnSwarm(x, z, c.swarm, type); return true; }
+    zombies.push(new Zombie(type, x, z));
+    return true;
+  }
+  return false;
+}
+function breakTank() {
+  LAB.burst = true;
+  const gone = new Set(); if (LAB.glass) { LAB.glass.traverse((m) => { if (m.isMesh) gone.add(m); }); LAB.glass.visible = false; }
+  worldMeshes = worldMeshes.filter((m) => !gone.has(m));
+  if (LAB.fluid) LAB.fluid.visible = false; if (LAB.broken) LAB.broken.visible = true;
+  for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2, at = new THREE.Vector3(Math.sin(a) * 4.8, rand(1, 5), Math.cos(a) * 4.8); burst(at, at.clone().setY(0).normalize(), shardMat, 10, 7); burst(at, UP, acidPartMat, 6, 4); }
+  shake = 1; sfx('glass'); sfx('bossroar'); showMsg('收容槽破裂了！', '零號病人走出來了', 3.5);
+}
+// ---- 毒氣: green clouds that hurt the player standing in them ----
+let gasTex = null;
+function releaseGas(x, z, r, life) {
+  if (!gasTex) {
+    const [c, xx] = makeCanvas(64), gr = xx.createRadialGradient(32, 32, 0, 32, 32, 31);
+    gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(0.55, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    xx.fillStyle = gr; xx.fillRect(0, 0, 64, 64); gasTex = new THREE.CanvasTexture(c);
+  }
+  const sprites = [];
+  for (let k = 0; k < 8; k++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: gasTex, color: 0x7aff4a, transparent: true, opacity: 0, depthWrite: false }));
+    sp.position.set(x + rand(-0.6, 0.6) * r, rand(0.4, 1.9), z + rand(-0.6, 0.6) * r); sp.scale.setScalar(r * rand(1.0, 1.7)); sp.material.rotation = rand(0, 6);
+    scene.add(sp); sprites.push(sp);
+  }
+  gasClouds.push({ x, z, r, life, max: life, sprites });
+  sfx('hiss', 0.8);
+}
+function updateLabHazards(dt) {
+  let inGas = false;
+  gasClouds = gasClouds.filter((q) => {
+    q.life -= dt;
+    const f = Math.min(1, (q.max - q.life) / 0.6) * Math.min(1, q.life / 1.5);
+    q.sprites.forEach((sp, i) => { sp.material.opacity = 0.3 * f; sp.material.rotation += dt * (i % 2 ? 0.25 : -0.25); sp.position.y += Math.sin(q.life * 1.3 + i) * dt * 0.15; });
+    if (q.life <= 0) { q.sprites.forEach((sp) => { scene.remove(sp); sp.material.dispose(); }); return false; }
+    if (Math.hypot(player.pos.x - q.x, player.pos.z - q.z) < q.r && player.pos.y < 2) inGas = true;
+    return true;
+  });
+  gasTick -= dt;
+  if (inGas && gasTick <= 0) { gasTick = 0.5; hurtPlayer(5, 'acid'); acidFlash = Math.min(1, acidFlash + 0.5); }
+  if (!LAB) return;
+  LAB.t += dt; const a = 0.5 + 0.5 * Math.sin(LAB.t * 3.2); // the alarm washes the hall red
+  hemi.color.set(TM.hemiSky).lerp(_alarmRed, a * 0.5);
+  if (LAB.beaconMat) LAB.beaconMat.emissiveIntensity = 0.5 + a * 4;
+}
 function updateFestHazards(dt) {
   gongWaves = gongWaves.filter((w) => {
     const r0 = w.r; w.r += 9 * dt;
@@ -5793,6 +6060,7 @@ function clearDynamic() {
   frosts = []; orbs = []; holes = []; nades = []; railCharge = 0; pendingSmash = null;
   slicks.forEach((q) => scene.remove(q.m)); kSlams.forEach((q) => { scene.remove(q.t); scene.remove(q.marker); }); kSweeps.forEach((q) => { scene.remove(q.t); scene.remove(q.marker); });
   slicks = []; kSlams = []; kSweeps = []; jamming = false; player.slickT = 0; player.jammed = false;
+  gasClouds.forEach((q) => q.sprites.forEach((sp) => scene.remove(sp))); gasClouds = [];
   fwShells.forEach((sh) => scene.remove(sh.head)); fwBursts.forEach((b) => scene.remove(b.pts)); fwShells = []; fwBursts = []; fwQueue = [];
   fwVolleyT = 8; fwAmbientT = 2; fwLights.forEach((l) => { l.intensity = 0; });
   zombies.forEach((z) => z.remove()); zombies = []; zMeshes = [];
@@ -5825,7 +6093,7 @@ function startLevel(i) {
   }
   ARENA = LEVELS[i].arena ? { mode: arenaMode, ...ARENA_MODES[arenaMode], live: !ARENA_MODES[arenaMode].spectate, contested: false, kit: [...(arenaKit || loadout)], speed: 1, zdmg: arenaZdmg } : null;
   loadLevel(i);
-  if (DECK_EDGES) player.pos.set(-4, 0, -10); else if (ARENA) player.pos.set(0, 0, 14); else player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
+  if (DECK_EDGES) player.pos.set(-4, 0, -10); else if (LAB) player.pos.set(0, 0, LAB_Z - 6); else if (ARENA) player.pos.set(0, 0, 14); else player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
   player.yaw = DECK_EDGES ? Math.PI : 0; player.slickT = 0; player.jammed = false; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0); player.calmT = 0; player.regenT = 0;
   wi = 1; resetWeapons(); reloading = 0; switching = 0;
   kills = 0; score = 0; levelCash = 0; waveIdx = 0; queue = []; waveActive = false; interT = 3;
@@ -5872,7 +6140,7 @@ function updateWaves(dt) {
     if (interT <= 0) startWave();
     return;
   }
-  const alive = zombies.filter((z) => !z.dead).length;
+  const alive = zombies.filter((z) => !z.dead || z.reviveT > 0).length; // a 實驗獵犬 about to get up still counts
   if (queue.length && alive < QUALITY[qLevel].maxZ) {
     spawnT -= dt;
     if (spawnT <= 0) { if (spawnZombie(queue[0])) queue.shift(); spawnT = rand(0.4, 1.2); }
@@ -5904,7 +6172,7 @@ function levelComplete() {
   const bonus = 150 + LV.num * 100 + (firstEvent ? 1000 : 0); addCash(bonus);
   const stats = `擊殺 ${kills} · 分數 ${score}<br>本關賺得 ${money(levelCash)}（含過關獎勵 ${money(bonus)}）${armorStatus()}`;
   $('winStats').innerHTML = LV.event ? `國慶快樂！${gotLauncher ? '<b class="gift">獲得限定武器：煙花發射器</b><br>到「武器裝備」把它放進欄位。<br>' : ''}${firstEvent ? '首次通關另得 $1,000。' : ''}<br>${stats}`
-    : next >= 0 ? `${LV.board ? '你搭上最後一班運輸機，飛離了死城。<br>' : ''}${stats}<br>下一關已解鎖：第 ${LEVELS[next].num} 關 · ${LEVELS[next].name}`
+    : next >= 0 ? `${LV.board ? '你搭上最後一班運輸機，飛離了死城。<br>' : ''}${LV.outro ? LV.outro + '<br>' : ''}${stats}<br>下一關已解鎖：第 ${LEVELS[next].num} 關 · ${LEVELS[next].name}`
     : LV.outro ? `${LV.outro}<br>${stats}<br>更多關卡製作中，敬請期待。`
     : LV.board ? `你搭上最後一班運輸機，飛離了死城。<br>${stats}` : LV.num === 10 ? `你守住了最後防線，撤離成功！<br>${stats}` : `${stats}<br>更多關卡製作中，敬請期待。`;
   $('btnNext').style.display = next >= 0 ? '' : 'none';
@@ -6435,11 +6703,11 @@ function meleeSwing(w) {
       slashMark(at.clone().addScaledVector(f, -0.25), 0xff3a22);
       if (!killed) z.burnT = Math.max(z.burnT || 0, w.c.burn);
       else for (let k = 0; k < 6; k++) emitFire(at.clone().add(new THREE.Vector3(rand(-0.25, 0.25), rand(-0.5, 0.3), rand(-0.25, 0.25))), UP, rand(1, 2));
-      if (killed && z.headPivot && z.type !== 'dog' && !z.c.boss && Math.random() < 0.5) decapitate(z);
+      if (killed && z.headPivot && z.look !== 'dog' && !z.c.boss && Math.random() < 0.5) decapitate(z);
     } else {
       burst(at, sweep, bloodMat, 22, 5.5); burst(at, f.clone().negate(), bloodMat, 8, 2.5);
       slashMark(at.clone().addScaledVector(f, -0.25));
-      if (killed && z.headPivot && z.type !== 'dog' && !z.c.boss && Math.random() < 0.5) decapitate(z);
+      if (killed && z.headPivot && z.look !== 'dog' && !z.c.boss && Math.random() < 0.5) decapitate(z);
     }
     hits++; kill = kill || killed;
   }
@@ -6492,7 +6760,7 @@ function launchSaw(from, dir, c) {
   m.traverse((o) => { o.frustumCulled = false; }); m.position.copy(from); scene.add(m);
   blades.push({ m, v: dir.clone().multiplyScalar(c.speed), life: 3, left: c.bounces, hits: new Set(), c });
 }
-function sawHeight(z) { return z.c.bug ? 0.6 : z.type === 'dog' ? 0.9 : z.type === 'crawler' ? 0.8 : 2.1 * z.g.scale.y; }
+function sawHeight(z) { return z.c.bug ? 0.6 : z.look === 'dog' ? 0.9 : z.type === 'crawler' ? 0.8 : 2.1 * z.g.scale.y; }
 function updateBlades(dt) {
   blades = blades.filter((b) => {
     b.life -= dt; b.m.rotation.y += dt * 45;
@@ -6513,7 +6781,7 @@ function updateBlades(dt) {
       b.hits.add(z);
       const killed = z.damage(b.c.dmg, { part: 'body' }, b.v.clone().setY(0).normalize());
       burst(p, UP, bloodMat, 14, 4); sfx('sawhit', 1); hitMarker(killed);
-      if (killed && z.headPivot && !z.c.boss && z.type !== 'dog' && Math.random() < 0.5) decapitate(z);
+      if (killed && z.headPivot && !z.c.boss && z.look !== 'dog' && Math.random() < 0.5) decapitate(z);
       if (--b.left < 0) { ended = true; break; }
       let next = null, best = 14; // on to the nearest zombie it hasn't cut yet
       for (const o of zombies) { if (o.dead || b.hits.has(o)) continue; const d = Math.hypot(o.pos.x - p.x, o.pos.z - p.z); if (d < best) { best = d; next = o; } }
@@ -7082,7 +7350,7 @@ function frame(dt, now) {
     if (ARENA && ARENA.spectate) updateFlyCam(dt);
     for (let k = 0; k < steps && state === 'playing'; k++) {
       if (!(ARENA && ARENA.spectate)) { updatePlayer(sdt); updateWeapon(sdt); }
-      updateArena(sdt); updateZombies(sdt); updateHazards(sdt); updateGrenades(sdt); updateWaves(sdt); updatePickups(sdt); updateFireworks(sdt); updateFestHazards(sdt); updateAirportHazards(sdt); updateCarrierHazards(sdt); updateWeaponFx(sdt);
+      updateArena(sdt); updateZombies(sdt); updateHazards(sdt); updateGrenades(sdt); updateWaves(sdt); updatePickups(sdt); updateFireworks(sdt); updateFestHazards(sdt); updateAirportHazards(sdt); updateCarrierHazards(sdt); updateLabHazards(sdt); updateWeaponFx(sdt);
     }
     updateHUD();
   } else if (state === 'menu') {
@@ -7108,7 +7376,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026101501'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026101502'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
