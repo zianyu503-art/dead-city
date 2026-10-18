@@ -153,6 +153,7 @@
     border-color: rgba(240,200,140,0.8); }
   body.inarena #tArena, body.inarena #tSpeed { display: flex; }
   .t-seastorm { background: linear-gradient(160deg, rgba(40,85,115,0.65), rgba(6,12,20,0.92)); }
+  .t-tropic { background: linear-gradient(160deg, rgba(220,120,40,0.6), rgba(30,20,12,0.9)); }
   .t-blizzard { background: linear-gradient(160deg, rgba(190,210,230,0.6), rgba(20,28,40,0.9)); }
   .t-lab { background: linear-gradient(160deg, rgba(150,30,25,0.6), rgba(8,6,6,0.94)); }
   .t-fog { background: linear-gradient(160deg, rgba(130,140,140,0.55), rgba(20,20,20,0.85)); }
@@ -490,6 +491,12 @@ const LEVELS = [
     hpMul: 2.15, speedMul: 1.4, waves: [{ walker: 18, runner: 12, polar: 3, iceclad: 2 }, { runner: 14, iceclad: 4, polar: 3, dog: 6, yeti: 1 },
       { walker: 14, runner: 12, yeti: 2, iceclad: 4, polar: 3, stalker: 3 }, { runner: 16, yeti: 3, iceclad: 5, polar: 4, splitter: 3 },
       { ancient: 1, runner: 12, iceclad: 3, yeti: 2, polar: 3 }] },
+  // level 15: the volcano island where heat-proof strains were bred (CONTEXT.md: 第十五關)
+  { num: 15, name: '熱帶火山島', theme: 'tropic', time: 'tropic', outro: '火山巨人沉回岩漿湖，島上的地熱實驗室跟著火山一起被吞沒。直升機從海上飛來接你。',
+    desc: '破冰船一路北上，最後一份研究資料指向赤道上的火山島：島上的地熱實驗室在培養不怕高溫的變種。你乘小艇登上海灘，火山正在噴發。',
+    hpMul: 2.25, speedMul: 1.42, waves: [{ walker: 18, runner: 12, lurker: 3, magma: 2 }, { runner: 14, hive: 3, magma: 3, lurker: 3, dog: 6 },
+      { walker: 14, runner: 12, hive: 3, magma: 4, lurker: 4, spitter: 3 }, { runner: 16, hive: 4, magma: 5, lurker: 4, brute: 2 },
+      { titan: 1, runner: 12, magma: 3, hive: 2, lurker: 3 }] },
   // 國慶特別版: an event level outside the numbered campaign, open only during 國慶期間 (see CONTEXT.md).
   // num only sets the clear bonus; it plays at level 5's difficulty
   { id: 'national-day', event: true, label: '國慶特別版', num: 5, name: '國慶夜・煙火大道', theme: 'festival', time: 'festival',
@@ -538,6 +545,8 @@ const TIMES = {
            sun: 0xc8d0dc, sunI: 0.7, hemiSky: 0x9aa6b4, hemiGround: 0x2c2c2c, hemiI: 0.85, exp: 0.78, envI: 0.35, night: false },
   seastorm: { label: '海上風暴', sky: true, bgFog: true, rain: true, sea: true, elev: 24, azi: 215, turb: 18, ray: 0.6, mie: 0.02, mieG: 0.8, fog: 0x4a5866, fogD: 0.011,
            sun: 0xc4d0dc, sunI: 0.85, hemiSky: 0x8c9cae, hemiGround: 0x22282e, hemiI: 0.85, exp: 0.8, envI: 0.35, night: false },
+  tropic: { label: '火山灰', sky: true, ash: true, elev: 40, azi: 210, turb: 10, ray: 1.6, mie: 0.012, mieG: 0.85, fog: 0xb8957a, fogD: 0.007,
+           sun: 0xffe0b8, sunI: 2.8, hemiSky: 0xd0c0a8, hemiGround: 0x3a3020, hemiI: 0.7, exp: 0.6, envI: 0.45, night: false },
   blizzard: { label: '暴風雪', sky: true, bgFog: true, snow: true, wind: true, elev: 20, azi: 160, turb: 18, ray: 0.8, mie: 0.03, mieG: 0.8, fog: 0xc6d0da, fogD: 0.017,
            sun: 0xe4ecff, sunI: 1.1, hemiSky: 0xd8e2ee, hemiGround: 0x8894a2, hemiI: 1.05, exp: 0.72, envI: 0.45, night: false },
   lab:   { label: '緊急照明', sky: false, bg: 0x050405, alarm: true, fog: 0x0b0707, fogD: 0.02,
@@ -617,6 +626,16 @@ const ZTYPES = {
               desc: '背著電子干擾器的通訊兵。靠近到 15 公尺內，殭屍羅盤會變成雜訊、準星亂跳、子彈散布變大。打倒它就恢復，優先擊殺。' },
   kraken:   { name: '巨型海怪', color: '#8a2a6a', hp: 6000, speed: 0, dmg: 35, scale: 1, rate: 99, cash: 2000, score: 10000, boss: true, kraken: true,
               desc: '從左舷外海面冒出的巨大海怪，只露出頭和一隻發光的眼睛。眼睛是弱點，打頭的其他地方只有兩成傷害。甲板上出現紅圈是觸手要砸下來，出現紅色長帶是觸手要橫掃甲板，跳起來可以躲過；還會朝你吐酸。' },
+  // ---- 第十五關 (CONTEXT.md); gear from tools/blender/tropic_zombies.py ----
+  lurker:   { name: '叢林偽裝者', color: '#4a8a2a', hp: 120, speed: 3.6, dmg: 16, scale: 1, rate: 1.0, cash: 40, score: 400, camo: true, leap: true, tropicz: true,
+              desc: '披著樹葉偽裝，不動時幾乎看不見，會慢慢摸到你身邊。九公尺內突然現形撲上來；被打中也會現形幾秒。注意草叢裡晃動的影子。' },
+  hive:     { name: '蜂巢殭屍', color: '#c8a050', hp: 150, speed: 1.5, dmg: 10, scale: 1.02, rate: 1.2, cash: 40, score: 400, hive: true, tropicz: true,
+              desc: '背上長著一個大蜂窩。靠近時會放出一群毒蜂追著你螫，死的時候蜂窩破開再放一群。先在遠處打倒它，毒蜂幾秒後就會散去。' },
+  magma:    { name: '岩漿殭屍', color: '#ff6a20', hp: 200, speed: 1.6, dmg: 16, scale: 1.05, rate: 1.3, cash: 50, score: 450, fireproof: true, ignite: true, magma: true, tropicz: true,
+              desc: '全身裂著發光的岩漿，火燒不動它。被它打中會著火；它死的時候會炸開一團火，別在近處打死它。' },
+  titan:    { name: '火山巨人', color: '#ff4010', hp: 7000, speed: 1.2, dmg: 40, scale: 2.8, rate: 2.2, cash: 3500, score: 16000, boss: true, look: 'behemoth',
+              stomp: true, titan: true, fireproof: true, tropicz: true, reach: 3.2,
+              desc: '從岩漿湖裡站起來的岩石巨人。胸口發光的熔岩核心是弱點（2.5 倍），打身體只有一半。會丟岩漿彈、讓地面裂開噴出岩漿（紅色長帶）；血量剩一半時火山噴發，火山彈從天而降。' },
   // ---- 第十四關 (CONTEXT.md); models from tools/blender/polar_zombies.py ----
   iceclad:  { name: '冰甲殭屍', color: '#9ad0f0', hp: 160, speed: 1.3, dmg: 18, scale: 1.05, rate: 1.4, cash: 45, score: 450, ice: 160, polarz: true,
               desc: '全身包著厚冰。冰甲沒破之前，子彈只會打掉冰；火焰、燃燒和爆炸對冰甲有三倍效果。冰碎了才傷得到它。' },
@@ -2165,13 +2184,14 @@ function buildLevel() {
   }
   levelGroup = new THREE.Group(); scene.add(levelGroup);
   colliders = []; worldMeshes = []; lampPositions = []; POLICE_CARS.length = 0; BARRELS.length = 0; FIRE_SPOTS.length = 0; barrelQueue = [];
-  festBanners = []; fwRacks = []; CARGO = null; DECK_EDGES = null; SEA = null; RADAR = null; ARENA_RING = 0; BRAZIERS = []; LAB = null; POLAR = null;
+  festBanners = []; fwRacks = []; CARGO = null; DECK_EDGES = null; SEA = null; RADAR = null; ARENA_RING = 0; BRAZIERS = []; LAB = null; POLAR = null; TROPIC = null;
   makeMaterials();
   const g = levelGroup, theme = LV.theme;
   if (theme === 'carrier') { buildCarrier(g); return; } // no city at all: one ship in the open sea
   if (theme === 'arena') { buildArena(g); return; }
   if (theme === 'lab') { buildLab(g); return; }
   if (theme === 'polar') { buildPolar(g); return; }
+  if (theme === 'tropic') { buildTropic(g); return; }
 
   // ground (roads)
   const ground = mesh(new THREE.PlaneGeometry(900, 900), M.asphalt, g, 0, 0, 0, false);
@@ -2481,7 +2501,7 @@ function updateSnow(dt) {
   snowPts.geometry.attributes.position.needsUpdate = true;
 }
 function updateRain(dt) {
-  if (weather === 'snow') { updateSnow(dt); return; }
+  if (weather === 'snow' || weather === 'ash') { updateSnow(dt); return; }
   if (!rain.visible) return;
   const pos = rainGeo.attributes.position.array, c = camera.position;
   const n = qLevel === 'low' ? 1400 : RAIN_N;
@@ -2514,9 +2534,10 @@ function updateRain(dt) {
 }
 function setRain(mode) {
   weather = mode || null; const on = !!weather;
-  rain.visible = on && weather !== 'snow';
-  if (weather === 'snow' && !snowPts) makeSnow();
-  if (snowPts) snowPts.visible = weather === 'snow';
+  const flakes = weather === 'snow' || weather === 'ash'; // 火山灰 falls like snow, in grey
+  rain.visible = on && !flakes;
+  if (flakes && !snowPts) makeSnow();
+  if (snowPts) { snowPts.visible = flakes; snowPts.material.color.set(weather === 'ash' ? 0x5a504a : 0xffffff); }
   rain.material.color.set(weather === 'dust' ? 0xd8c098 : 0xaab6c4); rain.material.opacity = weather === 'dust' ? 0.28 : 0.32;
   hemi.intensity = TM.hemiI;
   if (rainAudio) { try { rainAudio.stop(); } catch {} rainAudio = null; }
@@ -2533,7 +2554,7 @@ function setRain(mode) {
 
 function applyTime() {
   const t = TM;
-  setRain(t.rain ? 'rain' : t.dust ? 'dust' : t.snow ? 'snow' : null); thunderT = rand(5, 10);
+  setRain(t.rain ? 'rain' : t.dust ? 'dust' : t.snow ? 'snow' : t.ash ? 'ash' : null); thunderT = rand(5, 10);
   renderer.toneMappingExposure = t.exp;
   scene.fog = new THREE.FogExp2(t.fog, t.fogD);
   hemi.color.set(t.hemiSky); hemi.groundColor.set(t.hemiGround); hemi.intensity = t.hemiI;
@@ -2683,6 +2704,7 @@ function sfx(name, vol = 1) {
     case 'ping': sTone(t, 0.18, 2600, 1900, 0.22, 'triangle'); sTone(t, 0.12, 3900, 3000, 0.1, 'triangle'); break;
     case 'spit': sNoise(t, 0.35, 2200, 500, 0.4 * vol, 'bandpass'); sTone(t, 0.2, 300, 120, 0.2 * vol, 'sawtooth'); break;
     case 'splash': sNoise(t, 0.4, 3000, 700, 0.3 * vol, 'bandpass'); break;
+    case 'buzz': sTone(t, 0.5, 210, 230, 0.06 * vol, 'sawtooth'); sTone(t, 0.5, 420, 440, 0.03 * vol, 'square'); break;
     case 'hiss': sNoise(t, 0.9, 5000, 2500, 0.35 * vol, 'highpass'); break;
     case 'scream':
       sTone(t, 1.4, 950, 560, 0.3 * vol, 'sawtooth'); sTone(t, 1.4, 1310, 820, 0.2 * vol, 'sawtooth');
@@ -3018,6 +3040,15 @@ function airportBlock(g, bi, bj, cx, cz, inside) {
   if (Math.random() < 0.7) { const bx = cx - dx * 9 - Math.sin(rot) * 8, bz = cz - dz * 9 - Math.cos(rot) * 8; apPut(g, 'baggage_train', bx, 0.16, bz, rot); axisCollider(bx, bz, rot, 0, 1.8, 10); }
   if (Math.random() < 0.4) addTanker(g, cx - dx * 13 + Math.sin(rot) * 6, cz - dz * 13 + Math.cos(rot) * 6, rot);
 }
+// 第十五關: the volcano island (tools/blender/tropic.py) and its zombies' gear (tools/blender/tropic_zombies.py)
+let TR = null, TZ = null;
+loadModel('tropic', (scene) => {
+  TR = {}; scene.children.forEach((o) => { TR[o.name] = o; });
+  if (TR.volcano) TR.volcano.traverse((o) => { if (o.isMesh) o.material.fog = false; }); // the volcano stands out above the haze
+});
+loadModel('tropiczombie', (scene) => { TZ = {}; scene.children.forEach((o) => { TZ[o.name] = o; }); });
+let _titanSkin = null;
+const titanSkin = () => (_titanSkin ||= new THREE.MeshStandardMaterial({ color: 0x2a2220, roughness: 0.9, emissive: 0x501000, emissiveIntensity: 0.5 }));
 // 第十四關: the research station (tools/blender/polar.py) and the polar zombies with the 遠古巨獸 (tools/blender/polar_zombies.py)
 let PO = null, IZ = null;
 const icyMats = (scene) => scene.traverse((o) => { if (o.isMesh && o.material.name === 'ice') { o.material.transparent = true; o.material.opacity = 0.8; o.material.depthWrite = false; } });
@@ -3143,7 +3174,7 @@ function updateCompass() {
   x.fillStyle = 'rgba(80,255,140,0.18)'; x.beginPath(); x.moveTo(0, 0); x.arc(0, 0, R, Math.PI / 2 - 0.45, Math.PI / 2 + 0.45); x.fill(); // the view cone
   const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);
   for (const z of zombies) {
-    if (z.dead || (z.ghost && z.ghost.opacity < 0.3)) continue; // a hidden 潛行者 stays hidden
+    if (z.dead || (z.ghost && z.ghost.opacity < 0.3) || (z.c.camo && (z.camoA ?? 0) < 0.3)) continue; // a hidden 潛行者 or 叢林偽裝者 stays hidden
     const dx = z.pos.x - player.pos.x, dz = z.pos.z - player.pos.z, d = Math.hypot(dx, dz) || 1;
     const fwd = (dx * fx + dz * fz) / d, side = (dx * rx + dz * rz) / d;
     const r = R * Math.min(0.96, d / (d + 22)); // the whole map fits: near ones spread out, far ones crowd the rim
@@ -3671,7 +3702,7 @@ class Zombie {
     const g = this.g = new THREE.Group();
     const sw = c.scale * (c.boss ? 1 : rand(0.93, 1.07)); g.scale.set(sw, sw * (c.boss ? 1 : rand(0.95, 1.07)), sw); // varied height and build
     const look = c.look || type; // the float boss wears the 屍王's body
-    const skin = type === 'yeti' ? yetiFur() : type === 'stalker' ? zm.stalkerSkin : look === 'behemoth' ? zm.bossSkin[0] : pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' || type === 'drowned' || type === 'iceclad' ? zm.paleSkin : type === 'mutant' ? zm.fleshSkin : type === 'splitter' ? zm.splitSkin : zm.skins);
+    const skin = type === 'yeti' ? yetiFur() : type === 'titan' ? titanSkin() : type === 'stalker' ? zm.stalkerSkin : look === 'behemoth' ? zm.bossSkin[0] : pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' || type === 'drowned' || type === 'iceclad' ? zm.paleSkin : type === 'mutant' ? zm.fleshSkin : type === 'splitter' ? zm.splitSkin : zm.skins);
     const cop = type === 'riot' || type === 'gunner';
     let cloth = cop ? pick(zm.police) : pick(zm.cloth), pants = cop ? zm.policePants : pick(zm.pants);
     if (type === 'medic') { cloth = pick(zm.scrubs); pants = cloth; }
@@ -3689,6 +3720,8 @@ class Zombie {
     if (type === 'exo') { cloth = zm.camo; pants = zm.camo; }
     if (type === 'yeti') { cloth = yetiFur(); pants = cloth; } // fur all over
     if (type === 'polar') { cloth = parkaMat(); pants = zm.policePants; }
+    if (type === 'titan') { cloth = titanSkin(); pants = cloth; } // a body of basalt
+    if (type === 'lurker') { cloth = zm.camo; pants = zm.camo; }
     this.tankHp = type === 'flamer' ? 50 : 0; this.flameTick = 0; this.flaming = false;
     this.healCd = rand(2, 4); this.leapCd = rand(1.5, 3); this.crouch = 0; this.leapT = 0; this.airY = 0;
     this.shieldHp = c.shield ? c.shield * LV.hpMul : 0; this.shieldMax = this.shieldHp; this.gunT = rand(1.5, 3); this.aimT = 0;
@@ -3745,7 +3778,7 @@ class Zombie {
     const hp = this.headPivot = new THREE.Group(); hp.position.set(0, 1.72, 0.03); body.add(hp);
     const headS = type === 'spitter' ? 1.22 : type === 'bloater' ? 1.12 : 1;
     const jw = this.jaw = new THREE.Group(); jw.position.set(0, 0.07, 0.03); hp.add(jw);
-    const hairless = ['armored', 'bloater', 'flamer', 'medic', 'stalker', 'splitter', 'behemoth', 'liondance', 'floatboss', 'sailor', 'drowned', 'hazmat', 'patientzero', 'iceclad', 'yeti', 'polar'].includes(type);
+    const hairless = ['armored', 'bloater', 'flamer', 'medic', 'stalker', 'splitter', 'behemoth', 'liondance', 'floatboss', 'sailor', 'drowned', 'hazmat', 'patientzero', 'iceclad', 'yeti', 'polar', 'lurker', 'magma', 'titan'].includes(type);
     if (ZP) { // sculpted skull with brow, sockets, cheekbones, nose and ears; hinged jaw with teeth
       add(ZP.head, skin, hp, 0, 0, 0, 'head').scale.setScalar(headS);
       add(ZP.mouth, zm.mouth, hp, 0, 0, 0, 'head').scale.setScalar(headS);
@@ -3930,6 +3963,7 @@ class Zombie {
     if (c.naval) this.dressNaval(type);
     if (c.lab) this.dressLab(type);
     if (c.polarz) this.dressPolar(type);
+    if (c.tropicz) this.dressTropic(type);
     if (type === 'crawler') { body.position.set(0, 0, -0.95); add(G.hand, pants, body, 0.1, 0.93, 0).scale.set(1.3, 1, 1.3); }
     this.lean = { yeti: 0.28, behemoth: 0.22, shocker: 0.08, runner: 0.32, brute: 0.18, crawler: 1.36, bloater: -0.08, screamer: 0.12, armored: 0.1, riot: 0.06, gunner: 0.05, medic: 0.1, mutant: 0.42, gong: 0.05, dragon: 0.25 }[look] ?? rand(0.08, 0.2);
     this.limp = type === 'walker' && Math.random() < 0.4 ? rand(0.2, 0.5) : 0;
@@ -4004,11 +4038,22 @@ class Zombie {
   }
   // a costume piece from fest_zombies.py, attached to a joint and shootable as `part`
   festPart(name, parent, part = 'body') {
-    const src = [FZ, NZ, CV, LZ, IZ].find((d) => d && d[name]);
+    const src = [FZ, NZ, CV, LZ, IZ, TZ].find((d) => d && d[name]);
     if (!src) return null;
     const o = src[name].clone();
     o.traverse((m) => { if (!m.isMesh) return; m.castShadow = true; m.userData = { z: this, part, head: part === 'head', mesh: m }; this.meshes.push(m); });
     parent.add(o); return o;
+  }
+  dressTropic(type) {
+    const hp = this.headPivot, body = this.body, put = (name, parent, part) => this.festPart(name, parent, part);
+    const mirror = (o, i) => { if (o && i === 0) o.scale.x = -1; };
+    if (type === 'lurker') { put('lurker_ghillie', body); put('lurker_hood', hp, 'head'); }
+    if (type === 'hive') { put('hive_nest', body); put('hive_head', hp, 'head'); this.hiveCd = rand(2, 4); }
+    if (type === 'magma') { put('magma_crust', body); put('magma_head', hp, 'head'); this.arms.forEach((a, i) => mirror(put('magma_arm', a), i)); }
+    if (type === 'titan') {
+      put('titan_armor', body); put('titan_core', body, 'tcore'); put('titan_horns', hp, 'head'); this.arms.forEach((a, i) => mirror(put('titan_arm', a), i));
+      this.radius = 1.1; this.riseT = 1; this.lavaCd = 3; this.fissureCd = 6; this.eruptCd = 2;
+    }
   }
   dressPolar(type) {
     const hp = this.headPivot, body = this.body, put = (name, parent, part) => this.festPart(name, parent, part);
@@ -4365,6 +4410,7 @@ class Zombie {
     else if (ud.part === 'exo' && this.coreHp > 0) { mul = 0.35; this.lastFx = 'spark'; } // the powered frame
     if (this.c.kraken) mul = ud.part === 'eye' ? 2 : ud.fromZombie ? 1 : 0.2;
     if (this.c.ancient) mul = ud.part === 'crystal' ? 2.5 : ud.fromZombie ? 1 : 0.5; // the 冰晶 are its weak point
+    if (this.c.titan) mul = ud.part === 'tcore' ? 2.5 : ud.fromZombie ? 1 : 0.5; // the 熔岩核心
     if (this.floatHp > 0 && !ud.fromZombie) mul *= 0.25; // the float shields the boss (from shots; a zombie tears at it up close)
     if (this.cores && this.cores.some((q) => q.hp > 0) && !ud.fromZombie) mul *= 0.25; // so do the virus cores
     if (this.frozenT > 0) mul *= 2; // ice cracks easily
@@ -4374,6 +4420,7 @@ class Zombie {
     } else if (ud.part === 'armor') { mul = ap ? 0.85 : 0.45; this.lastFx = 'spark'; }
     this.hp -= dmg * mul;
     if (this.ghost) this.revealT = 2.5;
+    if (this.c.camo) this.revealT = 3; // a hit gives the 叢林偽裝者 away
     this.hitT = this.type === 'brute' || this.type === 'armored' ? 0.06 : 0.15;
     if (this.type !== 'brute' && !this.c.kraken && dir) { this.pos.x += dir.x * 0.12; this.pos.z += dir.z * 0.12; }
     if (this.hp <= 0) { this.die(dir || new THREE.Vector3(0, 0, 1)); return true; }
@@ -4442,6 +4489,12 @@ class Zombie {
     if (this.climbT > 0) { this.climbT = 0; this.g.position.set(this.pos.x, 0, this.pos.z); } // shot off the rim mid-climb: falls onto the deck
     if (this.c.revive && !this.revived && this.lastPart !== 'head' && !(this.burnT > 0) && !(this.frozenT > 0)) this.reviveT = 3; // 實驗獵犬 gets up again
     if (this.c.gas) { releaseGas(this.pos.x, this.pos.z, 4, 8); burst(this.pos.clone().setY(1.3), UP, acidPartMat, 16, 4); } // the air tank bursts
+    if (this.c.hive) releaseSwarm(this.body.localToWorld(new THREE.Vector3(0, 1.45, -0.35)), this); // the nest splits open
+    if (this.c.magma) { // a burst of fire
+      const at = this.pos.clone().setY(1); blastAt(at, 3.5, 60, 15, this);
+      for (let k = 0; k < 16; k++) emitFire(at.clone().add(new THREE.Vector3(rand(-1, 1), rand(-0.5, 0.8), rand(-1, 1))), UP, rand(2, 5));
+      for (const o of zombies) if (o !== this && !o.dead && !o.c.fireproof && o.pos.distanceTo(this.pos) < 3.5) o.burnT = Math.max(o.burnT || 0, 2);
+    }
     if (this.laser) this.laser.visible = false;
     zMeshes = zMeshes.filter((m) => m.userData.z !== this);
     kills++; score += this.c.score; if (!ARENA && !this.revived) addCash(this.c.cash); // the arena pays nothing, nor does a 實驗獵犬's second death
@@ -4516,7 +4569,8 @@ class Zombie {
   // hitting whatever this zombie is fighting: the player, or (in the 競技場) another zombie
   hurtT(T, dmg, kind) {
     if (!T) return;
-    if (T === player) { hurtPlayer(dmg, kind); return; }
+    if (T === player) { hurtPlayer(dmg, kind); if (this.c.ignite) player.burnT = Math.max(player.burnT || 0, 3); return; }
+    if (this.c.ignite && !T.c.fireproof) T.burnT = Math.max(T.burnT || 0, 2);
     T.damage(dmg * (ARENA ? ARENA.zdmg : 1), { part: 'body', fromZombie: true }, T.pos.clone().sub(this.pos).setY(0).normalize());
   }
   tLow(T, h = 1) { return T === player ? player.pos.y < h : (T.airY || 0) < h; }
@@ -4543,6 +4597,7 @@ class Zombie {
       if (this.deadT > 8) g.position.y -= dt * 0.3;
       return this.deadT < 11;
     }
+    if (this.c.fireproof) this.burnT = 0; // 岩漿殭屍 and 火山巨人 don't burn
     if (this.burnT > 0) { // set alight by the flamethrower or the lightsaber
       this.burnT -= dt; this.burnTick = (this.burnTick || 0) - dt;
       if (Math.random() < dt * 16) emitFire(this.pos.clone().setY(rand(0.4, 1.6) * this.g.scale.y).add(new THREE.Vector3(rand(-0.2, 0.2), 0, rand(-0.2, 0.2))), UP, rand(1, 2));
@@ -4678,7 +4733,7 @@ class Zombie {
           this.leapTo = this.pos.clone().add(off); this.leapDur = 0.75; this.leapT = this.leapDur;
           sfx('roar', clamp(1.3 - dist / 30, 0.3, 1.2));
         }
-      } else if (this.leapCd <= 0 && dist > 5 && dist < 16 && this.los) {
+      } else if (this.leapCd <= 0 && dist > 5 && dist < 16 && this.los && (!this.c.camo || dist < 9)) {
         this.crouch = 0.7; this.leapCd = rand(4.5, 6.5);
         sfx('growl', clamp(1.3 - dist / 30, 0.3, 1));
       }
@@ -4788,6 +4843,32 @@ class Zombie {
         for (let k = 0; k < 2; k++) lobSpore(from, tp.clone().add(new THREE.Vector3(rand(-5, 5), 0, rand(-5, 5))).setY(0), this.team || null);
       }
     }
+    if (this.c.camo) { // 叢林偽裝者: all but invisible until close or hit
+      if (!this.camoMats) { this.camoMats = []; this.meshes.forEach((m) => { m.material = m.material.clone(); m.material.transparent = true; this.camoMats.push(m.material); m.castShadow = false; }); }
+      this.revealT = Math.max(0, (this.revealT || 0) - dt);
+      const shown = this.revealT > 0 || dist < 9 || this.leapT > 0 || this.crouch > 0;
+      this.camoA = (this.camoA ?? 0.12) + ((shown ? 1 : 0.12) - (this.camoA ?? 0.12)) * Math.min(1, dt * 5);
+      for (const m of this.camoMats) { m.opacity = this.camoA; m.depthWrite = this.camoA > 0.9; }
+      this.creeping = !shown;
+    }
+    if (this.c.hive && !idle) { // 蜂巢殭屍 lets a swarm loose
+      this.hiveCd -= dt;
+      if (this.hiveCd <= 0 && dist < 14 && this.los) { this.hiveCd = 8; releaseSwarm(this.body.localToWorld(new THREE.Vector3(0, 1.45, -0.35)), this); }
+    }
+    if (this.c.magma && Math.random() < dt * 5) emitFire(this.pos.clone().add(new THREE.Vector3(rand(-0.25, 0.25), rand(0.9, 1.7) * this.g.scale.y, rand(-0.25, 0.25))), UP, rand(0.5, 1));
+    if (this.c.titan) { // 火山巨人
+      if (this.riseT < 1) { // climbing out of the lava lake
+        this.riseT = Math.min(1, this.riseT + dt / 3); this.airY = -7 * (1 - this.riseT); hold = true;
+        if (Math.random() < dt * 30) emitFire(this.pos.clone().add(new THREE.Vector3(rand(-3, 3), 0.2, rand(-3, 3))), UP, rand(3, 7));
+      } else if (!idle) {
+        if (!this.erupting && this.hp < this.maxHp * 0.5) { this.erupting = true; this.speed *= 1.25; showMsg('火山噴發了！', '火山彈從天而降', 3); sfx('bossroar'); shake = 1; }
+        this.lavaCd -= dt; this.fissureCd -= dt; this.eruptCd -= dt;
+        if (this.windup > 0) { this.windup -= dt; hold = true; if (this.windup <= 0) { const from = this.hands[1].getWorldPosition(new THREE.Vector3()); for (let k = 0; k < 3; k++) lobLava(from, tp.clone().add(new THREE.Vector3(rand(-3.5, 3.5), 0, rand(-3.5, 3.5))).setY(0), this); } }
+        else if (this.lavaCd <= 0 && dist > 8 && dist < 45 && this.los) { this.windup = 0.8; this.lavaCd = 6; sfx('growl', 1); }
+        if (this.fissureCd <= 0 && dist < 30) { this.fissureCd = 9; crackGround(this, tp); }
+        if (this.erupting && this.eruptCd <= 0) { this.eruptCd = 2; const at = tp.clone().add(new THREE.Vector3(rand(-7, 7), 0, rand(-7, 7))).setY(0); lobLava(at.clone().add(new THREE.Vector3(rand(-10, 10), 55, rand(-10, 10))), at, this); }
+      }
+    }
     if (this.c.icethrow && !idle) { // 雪怪 hurls ice from afar
       this.throwCd -= dt;
       if (this.windup > 0) { this.windup -= dt; hold = true; if (this.windup <= 0) throwRock(this, iceChunkMat); }
@@ -4878,7 +4959,7 @@ class Zombie {
     let moving = false;
     const goal = this.dancer && this.leader && !this.leader.dead ? this.follow : dist; // dancers keep their place in the line
     if (goal > reach && !hold) {
-      const sp = this.speed * slow * (this.chillT > 0 ? 0.5 : 1) * (this.diving ? 1.5 : 1) * (this.flaming ? 0.4 : 1) * (this.rage > 0 ? 1.6 : 1) * (this.ramT > 0 ? 4 : 1) * (this.exoT > 0 ? 3.2 : 1) * (this.chT > 0 ? 3 : 1) * (1 - this.limp * (0.5 + 0.5 * Math.sin(this.phase)));
+      const sp = this.speed * slow * (this.chillT > 0 ? 0.5 : 1) * (this.diving ? 1.5 : 1) * (this.flaming ? 0.4 : 1) * (this.rage > 0 ? 1.6 : 1) * (this.ramT > 0 ? 4 : 1) * (this.exoT > 0 ? 3.2 : 1) * (this.chT > 0 ? 3 : 1) * (this.creeping ? 0.35 : 1) * (1 - this.limp * (0.5 + 0.5 * Math.sin(this.phase)));
       const px = this.pos.x, pz = this.pos.z;
       this.pos.x += mx * sp * dt; this.pos.z += mz * sp * dt;
       const res = this.c.flyer ? () => {} : this.c.boss ? resolveLarge : resolve; // flyers pass over everything
@@ -5227,6 +5308,7 @@ function spawnZombie(type) {
   if (DECK_EDGES) return spawnOnDeck(type);
   if (LAB) return spawnInLab(type);
   if (POLAR) return spawnInPolar(type);
+  if (TROPIC) return spawnInTropic(type);
   for (let tries = 0; tries < 40; tries++) {
     const rc = pick(ROAD_CENTERS), t = rand(-HALF + 4, HALF - 4), off = rand(-4, 4);
     const [x, z] = Math.random() < 0.5 ? [rc + off, t] : [t, rc + off];
@@ -6110,12 +6192,16 @@ function breakTank() {
 }
 // ---- 毒氣: green clouds that hurt the player standing in them ----
 let gasTex = null;
-function releaseGas(x, z, r, life, kind = 'toxic') {
+function softTex() {
   if (!gasTex) {
     const [c, xx] = makeCanvas(64), gr = xx.createRadialGradient(32, 32, 0, 32, 32, 31);
     gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(0.55, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
     xx.fillStyle = gr; xx.fillRect(0, 0, 64, 64); gasTex = new THREE.CanvasTexture(c);
   }
+  return gasTex;
+}
+function releaseGas(x, z, r, life, kind = 'toxic') {
+  softTex();
   const sprites = [];
   for (let k = 0; k < 8; k++) {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: gasTex, color: kind === 'frost' ? 0xe4f4ff : 0x7aff4a, transparent: true, opacity: 0, depthWrite: false }));
@@ -6264,6 +6350,212 @@ function updatePolarHazards(dt) {
     return false;
   });
 }
+// ============================================================
+//  第十五關: the volcano island (CONTEXT.md; .scratch/level-15/spec.md)
+// ============================================================
+let TROPIC = null, swarms = [], lavaShots = [], lavaPools = [], fissures = [], lavaTick = 0, burnTick = 0, beeBuzz = 0;
+const RIVER_Z = -10, LAKE = new THREE.Vector3(0, 0, -62);
+let lavaTex = null, sandTex = null;
+function trPut(g, name, x, y, z, rot = 0, shoot = true) {
+  if (!TR || !TR[name]) return null;
+  const o = TR[name].clone(); o.position.set(x, y, z); o.rotation.y = rot;
+  o.traverse((c) => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; if (shoot) worldMeshes.push(c); } });
+  g.add(o); return o;
+}
+function trMany(g, name, items, shoot = true, shadow = true) {
+  if (!TR || !TR[name] || !items.length) return;
+  TR[name].traverse((c) => {
+    if (!c.isMesh) return;
+    const im = new THREE.InstancedMesh(c.geometry, c.material, items.length);
+    items.forEach(([x, y, z, rot = 0, sc = 1], k) => { _fq.setFromAxisAngle(_UPY, rot); im.setMatrixAt(k, _fm4.compose(_fv.set(x, y, z), _fq, _fsc.set(sc, sc, sc))); });
+    im.castShadow = shadow; im.receiveShadow = true; im.frustumCulled = false; g.add(im); if (shoot) worldMeshes.push(im);
+  });
+}
+function onLava(p) {
+  if (!TROPIC) return false;
+  return (Math.abs(p.z - RIVER_Z) < 3.5 && !TROPIC.bridges.some((b) => Math.abs(p.x - b) < 2.2)) || Math.hypot(p.x - LAKE.x, p.z - LAKE.z) < 11.5;
+}
+function makeLavaTex() {
+  const [c, x] = makeCanvas(128);
+  x.fillStyle = '#ff6a10'; x.fillRect(0, 0, 128, 128);
+  for (let k = 0; k < 70; k++) { // dark crust plates floating on the glow
+    x.fillStyle = `rgba(${rand(20, 60) | 0},${rand(8, 20) | 0},${rand(4, 10) | 0},${rand(0.6, 0.95)})`;
+    x.beginPath(); x.ellipse(rand(0, 128), rand(0, 128), rand(4, 14), rand(3, 9), rand(0, 3), 0, Math.PI * 2); x.fill();
+  }
+  for (let k = 0; k < 40; k++) { x.fillStyle = `rgba(255,${rand(180, 240) | 0},80,${rand(0.3, 0.7)})`; x.fillRect(rand(0, 128), rand(0, 128), rand(1, 4), rand(1, 4)); }
+  const t = toTex(c); return t;
+}
+function makeSandTex() {
+  const [c, x] = makeCanvas(128);
+  x.fillStyle = '#c8b088'; x.fillRect(0, 0, 128, 128);
+  for (let k = 0; k < 1400; k++) { const v = rand(-30, 30) | 0; x.fillStyle = `rgba(${200 + v},${176 + v},${136 + v},0.6)`; x.fillRect(rand(0, 128), rand(0, 128), 1.5, 1.5); }
+  return toTex(c);
+}
+function buildTropic(g) {
+  TROPIC = { bridges: [-28, 30], smoke: [], t: 0 };
+  // jungle floor, the beach and the sea to the south
+  const grassTex = TEX.grass.clone(); grassTex.repeat.set(55, 55); grassTex.needsUpdate = true; // its own copy: other levels tile the grass differently
+  const ground = mesh(new THREE.PlaneGeometry(200, 200), std({ map: grassTex, roughness: 1 }), g, 0, 0, 0, false); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; worldMeshes.push(ground);
+  if (!sandTex) sandTex = makeSandTex(); sandTex.repeat.set(40, 8);
+  const sand = mesh(new THREE.PlaneGeometry(200, 40), std({ map: sandTex, roughness: 0.95 }), g, 0, 0.01, 60, false); sand.rotation.x = -Math.PI / 2; sand.receiveShadow = true; worldMeshes.push(sand);
+  const sea = mesh(new THREE.PlaneGeometry(900, 400), std({ color: 0x1d6a84, roughness: 0.12, metalness: 0.25 }), g, 0, -0.25, 278, false); sea.rotation.x = -Math.PI / 2;
+  // the lava river (with two bridges) and the lava lake at the volcano's foot
+  if (!lavaTex) lavaTex = makeLavaTex();
+  const lavaMat = std({ map: lavaTex, emissive: 0xffffff, emissiveMap: lavaTex, emissiveIntensity: 1.5, roughness: 0.6 }); TROPIC.lavaMat = lavaMat;
+  lavaTex.repeat.set(24, 1);
+  const river = mesh(new THREE.PlaneGeometry(170, 7), lavaMat, g, 0, 0.04, RIVER_Z, false); river.rotation.x = -Math.PI / 2;
+  const lake = mesh(new THREE.CircleGeometry(12, 40), lavaMat, g, LAKE.x, 0.045, LAKE.z, false); lake.rotation.x = -Math.PI / 2;
+  const banks = [];
+  for (let x = -82; x <= 82; x += 3.6) for (const sz of [-1, 1]) if (!TROPIC.bridges.some((b) => Math.abs(x - b) < 3)) banks.push([x + rand(-0.6, 0.6), 0, RIVER_Z + sz * rand(3.6, 4.4), rand(0, 6), rand(0.8, 1.2)]);
+  for (let k = 0; k < 26; k++) { const a = k / 26 * Math.PI * 2; banks.push([LAKE.x + Math.sin(a) * rand(12, 13.5), 0, LAKE.z + Math.cos(a) * rand(12, 13.5), rand(0, 6), rand(0.9, 1.4)]); }
+  trMany(g, 'lava_bank', banks, false);
+  for (const x of TROPIC.bridges) trPut(g, 'bridge', x, 0, RIVER_Z);
+  // basalt cliffs on three sides, the sea on the fourth
+  const walls = [];
+  for (let z = -78; z <= 68; z += 10) walls.push([-82, 0, z, Math.PI / 2], [82, 0, z, -Math.PI / 2]);
+  for (let x = -78; x <= 78; x += 10) walls.push([x, 0, -82, 0]);
+  trMany(g, 'rock_wall', walls);
+  addCollider(-84, -5, 4, 180); addCollider(84, -5, 4, 180); addCollider(0, -84, 180, 4); addCollider(0, 77, 180, 4);
+  trPut(g, 'volcano', 0, -2, -340, 0, false);
+  // the beach and the old resort
+  trPut(g, 'tender', 8, 0, 68, Math.PI); addCollider(8, 68, 2.6, 6.2);
+  const huts = [[-44, 32, 0], [-24, 40, 0.3], [28, 38, -0.2], [48, 28, 0]];
+  huts.forEach(([x, z, r]) => { trPut(g, 'bungalow', x, 0, z, r); addCollider(x, z, 6.4, 5.4); });
+  trPut(g, 'beach_bar', 10, 0, 46); addCollider(10, 46, 5.6, 2.8);
+  const shade = [], chairs = [];
+  for (let k = 0; k < 7; k++) { const x = -36 + k * 11 + rand(-2, 2), z = 58 + rand(-2, 2); shade.push([x, 0, z, rand(0, 6)]); chairs.push([x + 1.4, 0, z + 0.6, rand(-0.3, 0.3)], [x - 1.4, 0, z + 0.5, rand(-0.3, 0.3)]); }
+  trMany(g, 'umbrella', shade, false); trMany(g, 'deckchair', chairs, false);
+  for (const [x, z] of [[-6, 30], [14, 22], [-30, 12], [36, 10]]) { trPut(g, 'totem', x, 0, z, rand(-0.5, 0.5)); addCollider(x, z, 1, 1); }
+  // the north shore of the lava: geothermal stations and volcanic boulders
+  for (const [x, z, r] of [[-42, -48, 0], [44, -52, Math.PI]]) { trPut(g, 'geo_lab', x, 0, z, r); addCollider(x + (r ? -2 : 2), z, 14, 7.4); }
+  const boulders = [[-20, -30], [18, -34], [-56, -30], [58, -28], [-12, -48], [24, -70], [-30, -70], [6, 20], [-50, 10], [52, 6], [-16, 4], [30, -22], [62, 48], [-64, 48]];
+  trMany(g, 'lava_rock', boulders.map(([x, z], k) => [x, 0, z, k * 1.1])); boulders.forEach(([x, z]) => addCollider(x, z, 3.2, 2.8));
+  // jungle: palms and undergrowth wherever there is room
+  const keepOut = (x, z, r) => Math.abs(z - RIVER_Z) < 6 + r || Math.hypot(x - LAKE.x, z - LAKE.z) < 17 + r || Math.hypot(x, z - 64) < 9 + r || blocked(x, z, r + 1.5);
+  const palms = [], bushes = [];
+  for (let k = 0; k < 400 && palms.length < 75; k++) { const x = rand(-76, 76), z = rand(-76, 66); if (!keepOut(x, z, 1)) { palms.push([x, 0, z, rand(0, 6), rand(0.85, 1.2)]); } }
+  palms.forEach(([x, z]) => {}); trMany(g, 'palm', palms); palms.forEach(([x, , z]) => addCollider(x, z, 0.8, 0.8));
+  for (let k = 0; k < 300 && bushes.length < 70; k++) { const x = rand(-78, 78), z = rand(-78, 50); if (!keepOut(x, z, 0)) bushes.push([x, 0, z, rand(0, 6), rand(0.8, 1.5)]); }
+  trMany(g, 'bush', bushes, false);
+  const crates = [];
+  for (const [x, z, n] of [[-36, -40, 2], [36, -44, 2], [16, 40, 2], [-30, 44, 2]]) for (let k = 0; k < n; k++) { const cx = x + (k % 2) * 2.5, cz = z + Math.floor(k / 2) * 1.8; crates.push([cx, 0, cz, rand(-0.1, 0.1)]); addCollider(cx, cz, 2.5, 1.7); }
+  cvMany(g, 'crate', crates);
+  for (const [x, z] of [[-38, -44], [40, -46], [-20, 36], [20, 34], [-8, -26], [8, -40]]) addBarrel(g, x, z);
+  // smoke over the crater
+  if (!gasTex) softTex();
+  for (let k = 0; k < 7; k++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: gasTex, color: 0x3a3230, transparent: true, opacity: 0.55, depthWrite: false, fog: false }));
+    sp.position.set(rand(-20, 20), 140 + k * 22, -340 + rand(-20, 20)); sp.scale.setScalar(60 + k * 14); g.add(sp); TROPIC.smoke.push(sp);
+  }
+}
+function spawnInTropic(type) {
+  const c = ZTYPES[type];
+  if (c.titan && !TROPIC.risen) { // the 火山巨人 stands up out of the lava lake
+    TROPIC.risen = true; const zb = new Zombie(type, LAKE.x, LAKE.z); zb.riseT = 0; zb.airY = -7; zb.g.position.y = -7; zombies.push(zb);
+    showMsg('岩漿湖沸騰了！', '火山巨人站起來了', 3.5); sfx('bossroar'); shake = 1;
+    return true;
+  }
+  for (let tries = 0; tries < 40; tries++) {
+    const x = rand(-76, 76), z = rand(-76, 60), d = Math.hypot(x - player.pos.x, z - player.pos.z);
+    if (d < 28 || d > 100 || blocked(x, z, 0.8) || onLava({ x, z })) continue;
+    if (c.swarm) { spawnSwarm(x, z, c.swarm, type); return true; }
+    zombies.push(new Zombie(type, x, z));
+    return true;
+  }
+  return false;
+}
+// ---- 毒蜂: a buzzing swarm that chases its owner's target ----
+function releaseSwarm(from, owner) {
+  const bees = [];
+  for (let k = 0; k < 12; k++) {
+    const m = TZ && TZ.wasp ? TZ.wasp.clone() : new THREE.Mesh(spitGeo, sparkMat); m.scale.setScalar(1.8); scene.add(m);
+    bees.push({ m, ph: rand(0, 6), r: rand(0.3, 1.0), h: rand(-0.4, 0.4) });
+  }
+  swarms.push({ p: from.clone(), life: 7, owner, bees, tick: 0 });
+  sfx('buzz', 1);
+}
+// ---- 岩漿彈 and the boss's other lava ----
+function lobLava(from, target, owner) {
+  const d = Math.hypot(target.x - from.x, target.z - from.z), T = from.y > 30 ? 1.6 : clamp(d / 16, 0.9, 2.2);
+  const v = new THREE.Vector3((target.x - from.x) / T, (target.y - from.y + 0.5 * 9.8 * T * T) / T, (target.z - from.z) / T);
+  const m = TZ && TZ.lava_bomb ? TZ.lava_bomb.clone() : new THREE.Mesh(G.box, rockMat); m.scale.setScalar(1.3); m.position.copy(from); scene.add(m);
+  const marker = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
+  marker.position.set(target.x, 0.1, target.z); marker.scale.setScalar(3); scene.add(marker);
+  lavaShots.push({ m, v, marker, owner, life: 5 });
+}
+function crackGround(boss, toward) {
+  const dir = toward.clone().sub(boss.pos).setY(0); if (dir.lengthSq() < 1) dir.set(0, 0, 1); dir.normalize();
+  const len = 22, mid = boss.pos.clone().addScaledVector(dir, len / 2 + 1.5);
+  const marker = new THREE.Mesh(bandGeo, new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.5, depthWrite: false }));
+  marker.position.set(mid.x, 0.12, mid.z); marker.scale.set(3.2, 1, len); marker.rotation.y = Math.atan2(dir.x, dir.z); scene.add(marker);
+  fissures.push({ a: boss.pos.clone().addScaledVector(dir, 1.5).setY(0), dir, len, marker, k: 0, hit: false });
+  sfx('growl', 1.2); shake = Math.min(1, shake + 0.3);
+}
+function updateTropicHazards(dt) {
+  // the player on fire: a few seconds of burning from any source
+  if (player.burnT > 0) {
+    player.burnT -= dt; burnTick -= dt;
+    if (Math.random() < dt * 10) emitFire(player.pos.clone().add(new THREE.Vector3(rand(-0.3, 0.3), rand(0.2, 1.4), rand(-0.3, 0.3))), UP, rand(0.8, 1.5));
+    if (burnTick <= 0) { burnTick = 0.5; hurtPlayer(3, 'fire'); fireFlash = Math.min(1, fireFlash + 0.35); }
+  }
+  swarms = swarms.filter((q) => {
+    q.life -= dt; q.tick -= dt;
+    const ot = q.owner && q.owner.T; const T = ot && ot !== player && !ot.dead ? ot : ARENA && ARENA.spectate ? null : player;
+    const aim = T ? (T === player ? camera.position.clone().add(new THREE.Vector3(0, -0.3, 0)) : T.pos.clone().setY((T.airY || 0) + 1.3 * T.g.scale.y)) : q.p;
+    const d = aim.clone().sub(q.p), dl = d.length();
+    if (dl > 0.3) q.p.addScaledVector(d.normalize(), Math.min(dl, 5.5 * dt));
+    q.bees.forEach((b, i) => { b.ph += dt * 9; b.m.position.set(q.p.x + Math.cos(b.ph + i) * b.r, q.p.y + b.h + Math.sin(b.ph * 1.7) * 0.15, q.p.z + Math.sin(b.ph + i * 2) * b.r); b.m.lookAt(q.p); });
+    if (T && dl < 1.6 && q.tick <= 0) { q.tick = 0.4; if (T === player) hurtPlayer(3, 'melee'); else T.damage(3 * (ARENA ? ARENA.zdmg : 1), { part: 'body', fromZombie: true }, null); }
+    if (q.life > 0) return true;
+    q.bees.forEach((b) => scene.remove(b.m)); return false;
+  });
+  beeBuzz -= dt;
+  if (beeBuzz <= 0 && swarms.some((q) => q.p.distanceTo(player.pos) < 12)) { beeBuzz = 0.45; sfx('buzz', 0.8); }
+  lavaShots = lavaShots.filter((q) => {
+    q.life -= dt; q.v.y -= 9.8 * dt; q.m.position.addScaledVector(q.v, dt); q.m.rotation.x += dt * 4;
+    if (Math.random() < dt * 25) emitFire(q.m.position.clone(), UP, rand(0.5, 1.2));
+    q.marker.material.opacity = 0.55 + Math.sin(q.life * 16) * 0.3;
+    if (q.m.position.y > 0.3 && q.life > 0) return true;
+    scene.remove(q.m); scene.remove(q.marker); q.marker.material.dispose();
+    const p = q.m.position.clone().setY(0.4);
+    blastAt(p, 3, 40, 22, q.owner || null);
+    for (let k = 0; k < 10; k++) emitFire(p.clone().add(new THREE.Vector3(rand(-1, 1), 0, rand(-1, 1))), UP, rand(2, 4));
+    const pool = new THREE.Mesh(G.pool, new THREE.MeshStandardMaterial({ color: 0x401000, emissive: 0xff5010, emissiveIntensity: 1.6, transparent: true, opacity: 0.95, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+    pool.rotation.x = -Math.PI / 2; pool.position.set(p.x, 0.03, p.z); pool.scale.setScalar(2.2); scene.add(pool);
+    lavaPools.push({ m: pool, x: p.x, z: p.z, r: 1.9, life: 5 });
+    return false;
+  });
+  let inLava = player.pos.y < 0.3 && onLava(player.pos);
+  lavaPools = lavaPools.filter((q) => {
+    q.life -= dt; if (q.life < 1.5) q.m.material.opacity = 0.95 * Math.max(0, q.life / 1.5);
+    if (q.life <= 0) { scene.remove(q.m); q.m.material.dispose(); return false; }
+    if (player.pos.y < 0.3 && Math.hypot(player.pos.x - q.x, player.pos.z - q.z) < q.r) inLava = true;
+    return true;
+  });
+  lavaTick -= dt;
+  if (inLava) { player.burnT = Math.max(player.burnT || 0, 1.5); if (lavaTick <= 0) { lavaTick = 0.5; hurtPlayer(8, 'fire'); fireFlash = Math.min(1, fireFlash + 0.5); } }
+  fissures = fissures.filter((q) => {
+    q.k += dt; q.marker.material.opacity = 0.35 + Math.sin(q.k * 14) * 0.2;
+    if (q.k >= 1.2 && !q.hit) { // the ground splits and lava sprays along the line
+      q.hit = true; scene.remove(q.marker); q.marker.material.dispose(); sfx('boom', 1.1); shake = Math.min(1, shake + 0.6);
+      for (let k = 0; k < 40; k++) { const t = rand(0, q.len); emitFire(q.a.clone().addScaledVector(q.dir, t).add(new THREE.Vector3(rand(-0.8, 0.8), 0.2, rand(-0.8, 0.8))), UP, rand(4, 9)); }
+      const hitLine = (pp) => { const t = clamp(pp.clone().setY(0).sub(q.a).dot(q.dir), 0, q.len); return q.a.clone().addScaledVector(q.dir, t).distanceTo(pp.clone().setY(0)) < 1.7; };
+      if (hitLine(player.pos) && player.pos.y < 1) { hurtPlayer(35, 'fire'); player.burnT = Math.max(player.burnT || 0, 3); }
+      for (const z of zombies) if (!z.dead && !z.c.boss && hitLine(z.pos)) { z.damage(60, { part: 'body', fire: true }, null); if (!z.c.fireproof) z.burnT = Math.max(z.burnT || 0, 3); }
+    }
+    return q.k < 1.6;
+  });
+  if (!TROPIC) return;
+  TROPIC.t += dt;
+  if (lavaTex) { lavaTex.offset.x += dt * 0.012; lavaTex.offset.y = Math.sin(TROPIC.t * 0.2) * 0.02; }
+  if (TROPIC.lavaMat) TROPIC.lavaMat.emissiveIntensity = 1.4 + Math.sin(TROPIC.t * 1.7) * 0.25;
+  TROPIC.smoke.forEach((sp, k) => { sp.position.y += dt * 4; sp.material.opacity = 0.55 * clamp(1 - (sp.position.y - 140) / 170, 0, 1); if (sp.position.y > 310) sp.position.y = 140; });
+  if ((TROPIC.lavaZ = (TROPIC.lavaZ || 0) - dt) <= 0) { // lava sets zombies alight
+    TROPIC.lavaZ = 0.5;
+    for (const z of zombies) if (!z.dead && !z.c.fireproof && !z.c.flyer && (z.airY || 0) < 0.5 && onLava(z.pos)) z.burnT = Math.max(z.burnT || 0, 2);
+  }
+  if (Math.random() < dt * 3) { const x = rand(-80, 80); emitFire(new THREE.Vector3(x, 0.1, RIVER_Z + rand(-3, 3)), UP, rand(0.5, 1.5)); } // the river bubbles
+}
 function updateFestHazards(dt) {
   gongWaves = gongWaves.filter((w) => {
     const r0 = w.r; w.r += 9 * dt;
@@ -6309,6 +6601,8 @@ function clearDynamic() {
   slicks = []; kSlams = []; kSweeps = []; jamming = false; player.slickT = 0; player.jammed = false;
   gasClouds.forEach((q) => q.sprites.forEach((sp) => scene.remove(sp))); gasClouds = [];
   iceSpikeList.forEach((q) => { scene.remove(q.marker); if (q.m) scene.remove(q.m); }); canisters.forEach((q) => scene.remove(q.m)); iceSpikeList = []; canisters = [];
+  swarms.forEach((q) => q.bees.forEach((b) => scene.remove(b.m))); lavaShots.forEach((q) => { scene.remove(q.m); scene.remove(q.marker); });
+  lavaPools.forEach((q) => scene.remove(q.m)); fissures.forEach((q) => scene.remove(q.marker)); swarms = []; lavaShots = []; lavaPools = []; fissures = []; player.burnT = 0;
   fwShells.forEach((sh) => scene.remove(sh.head)); fwBursts.forEach((b) => scene.remove(b.pts)); fwShells = []; fwBursts = []; fwQueue = [];
   fwVolleyT = 8; fwAmbientT = 2; fwLights.forEach((l) => { l.intensity = 0; });
   zombies.forEach((z) => z.remove()); zombies = []; zMeshes = [];
@@ -6341,8 +6635,8 @@ function startLevel(i) {
   }
   ARENA = LEVELS[i].arena ? { mode: arenaMode, ...ARENA_MODES[arenaMode], live: !ARENA_MODES[arenaMode].spectate, contested: false, kit: [...(arenaKit || loadout)], speed: 1, zdmg: arenaZdmg } : null;
   loadLevel(i);
-  if (DECK_EDGES) player.pos.set(-4, 0, -10); else if (LAB) player.pos.set(0, 0, LAB_Z - 6); else if (POLAR) player.pos.set(0, 0, 72); else if (ARENA) player.pos.set(0, 0, 14); else player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
-  player.yaw = DECK_EDGES ? Math.PI : 0; player.slickT = 0; player.jammed = false; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0); player.calmT = 0; player.regenT = 0;
+  if (DECK_EDGES) player.pos.set(-4, 0, -10); else if (LAB) player.pos.set(0, 0, LAB_Z - 6); else if (POLAR) player.pos.set(0, 0, 72); else if (TROPIC) player.pos.set(0, 0, 64); else if (ARENA) player.pos.set(0, 0, 14); else player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
+  player.yaw = DECK_EDGES ? Math.PI : 0; player.slickT = 0; player.jammed = false; player.burnT = 0; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0); player.calmT = 0; player.regenT = 0;
   wi = 1; resetWeapons(); reloading = 0; switching = 0;
   kills = 0; score = 0; levelCash = 0; waveIdx = 0; queue = []; waveActive = false; interT = 3;
   if (ARENA) {
@@ -7598,7 +7892,7 @@ function frame(dt, now) {
     if (ARENA && ARENA.spectate) updateFlyCam(dt);
     for (let k = 0; k < steps && state === 'playing'; k++) {
       if (!(ARENA && ARENA.spectate)) { updatePlayer(sdt); updateWeapon(sdt); }
-      updateArena(sdt); updateZombies(sdt); updateHazards(sdt); updateGrenades(sdt); updateWaves(sdt); updatePickups(sdt); updateFireworks(sdt); updateFestHazards(sdt); updateAirportHazards(sdt); updateCarrierHazards(sdt); updateLabHazards(sdt); updatePolarHazards(sdt); updateWeaponFx(sdt);
+      updateArena(sdt); updateZombies(sdt); updateHazards(sdt); updateGrenades(sdt); updateWaves(sdt); updatePickups(sdt); updateFireworks(sdt); updateFestHazards(sdt); updateAirportHazards(sdt); updateCarrierHazards(sdt); updateLabHazards(sdt); updatePolarHazards(sdt); updateTropicHazards(sdt); updateWeaponFx(sdt);
     }
     updateHUD();
   } else if (state === 'menu') {
@@ -7624,7 +7918,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026101701'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026101702'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
