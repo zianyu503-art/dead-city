@@ -153,6 +153,7 @@
     border-color: rgba(240,200,140,0.8); }
   body.inarena #tArena, body.inarena #tSpeed { display: flex; }
   .t-seastorm { background: linear-gradient(160deg, rgba(40,85,115,0.65), rgba(6,12,20,0.92)); }
+  .t-carnival { background: linear-gradient(160deg, rgba(150,40,160,0.6), rgba(12,6,20,0.92)); }
   .t-tropic { background: linear-gradient(160deg, rgba(220,120,40,0.6), rgba(30,20,12,0.9)); }
   .t-blizzard { background: linear-gradient(160deg, rgba(190,210,230,0.6), rgba(20,28,40,0.9)); }
   .t-lab { background: linear-gradient(160deg, rgba(150,30,25,0.6), rgba(8,6,6,0.94)); }
@@ -497,6 +498,12 @@ const LEVELS = [
     hpMul: 2.25, speedMul: 1.42, waves: [{ walker: 18, runner: 12, lurker: 3, magma: 2 }, { runner: 14, hive: 3, magma: 3, lurker: 3, dog: 6 },
       { walker: 14, runner: 12, hive: 3, magma: 4, lurker: 4, spitter: 3 }, { runner: 16, hive: 4, magma: 5, lurker: 4, brute: 2 },
       { titan: 1, runner: 12, magma: 3, hive: 2, lurker: 3 }] },
+  // level 16: the helicopter sets down for fuel by a dead amusement park (CONTEXT.md: 第十六關)
+  { num: 16, name: '廢棄遊樂園', theme: 'park', time: 'carnival', outro: '巨象轟然倒下，馬戲團的燈一盞盞熄滅。修好燃料管的直升機再次起飛。',
+    desc: '直升機燃料不夠，迫降在海岸邊一座廢棄的主題樂園。夜裡燈還亮著，摩天輪自己在轉，馬戲團帳篷裡傳出音樂。',
+    hpMul: 2.35, speedMul: 1.44, waves: [{ walker: 18, runner: 12, clown: 3, magician: 2 }, { runner: 14, clown: 4, mascot: 2, magician: 2, screamer: 1 },
+      { walker: 14, runner: 12, mascot: 3, clown: 4, magician: 3, dog: 6 }, { runner: 16, mascot: 4, clown: 5, magician: 3, splitter: 3 },
+      { ringmaster: 1, runner: 12, clown: 4, mascot: 2, magician: 2 }] },
   // 國慶特別版: an event level outside the numbered campaign, open only during 國慶期間 (see CONTEXT.md).
   // num only sets the clear bonus; it plays at level 5's difficulty
   { id: 'national-day', event: true, label: '國慶特別版', num: 5, name: '國慶夜・煙火大道', theme: 'festival', time: 'festival',
@@ -545,6 +552,8 @@ const TIMES = {
            sun: 0xc8d0dc, sunI: 0.7, hemiSky: 0x9aa6b4, hemiGround: 0x2c2c2c, hemiI: 0.85, exp: 0.78, envI: 0.35, night: false },
   seastorm: { label: '海上風暴', sky: true, bgFog: true, rain: true, sea: true, elev: 24, azi: 215, turb: 18, ray: 0.6, mie: 0.02, mieG: 0.8, fog: 0x4a5866, fogD: 0.011,
            sun: 0xc4d0dc, sunI: 0.85, hemiSky: 0x8c9cae, hemiGround: 0x22282e, hemiI: 0.85, exp: 0.8, envI: 0.35, night: false },
+  carnival: { label: '遊樂園之夜', sky: false, bg: 0x0c0614, fog: 0x1a0e24, fogD: 0.012,
+           sun: 0x9a8ad0, sunI: 0.45, hemiSky: 0x7a5aa0, hemiGround: 0x2a1a20, hemiI: 0.75, exp: 1.05, envI: 0, night: true },
   tropic: { label: '火山灰', sky: true, ash: true, elev: 40, azi: 210, turb: 10, ray: 1.6, mie: 0.012, mieG: 0.85, fog: 0xb8957a, fogD: 0.007,
            sun: 0xffe0b8, sunI: 2.8, hemiSky: 0xd0c0a8, hemiGround: 0x3a3020, hemiI: 0.7, exp: 0.6, envI: 0.45, night: false },
   blizzard: { label: '暴風雪', sky: true, bgFog: true, snow: true, wind: true, elev: 20, azi: 160, turb: 18, ray: 0.8, mie: 0.03, mieG: 0.8, fog: 0xc6d0da, fogD: 0.017,
@@ -626,6 +635,15 @@ const ZTYPES = {
               desc: '背著電子干擾器的通訊兵。靠近到 15 公尺內，殭屍羅盤會變成雜訊、準星亂跳、子彈散布變大。打倒它就恢復，優先擊殺。' },
   kraken:   { name: '巨型海怪', color: '#8a2a6a', hp: 6000, speed: 0, dmg: 35, scale: 1, rate: 99, cash: 2000, score: 10000, boss: true, kraken: true,
               desc: '從左舷外海面冒出的巨大海怪，只露出頭和一隻發光的眼睛。眼睛是弱點，打頭的其他地方只有兩成傷害。甲板上出現紅圈是觸手要砸下來，出現紅色長帶是觸手要橫掃甲板，跳起來可以躲過；還會朝你吐酸。' },
+  // ---- 第十六關 (CONTEXT.md); gear from tools/blender/park_zombies.py ----
+  clown:    { name: '小丑殭屍', color: '#ff5a8a', hp: 130, speed: 1.8, dmg: 12, scale: 1, rate: 1.1, cash: 40, score: 400, balloon: true, parkz: true,
+              desc: '頂著彩虹爆炸頭的小丑。會從遠處丟出氣球炸彈，氣球慢慢飄過來，地上的紅圈就是落點，落地會爆炸。' },
+  mascot:   { name: '布偶殭屍', color: '#f0c8d8', hp: 320, speed: 1.4, dmg: 20, scale: 1.1, rate: 1.4, cash: 55, score: 500, plush: true, parkz: true,
+              desc: '穿著兔子吉祥物布偶裝，布偶裝很厚，子彈只有一半傷害（爆頭也一樣）。但布偶裝很怕火，燒它有兩倍效果。' },
+  magician: { name: '魔術師殭屍', color: '#9a50e0', hp: 140, speed: 1.7, dmg: 12, scale: 1, rate: 1.2, cash: 50, score: 450, magic: true, parkz: true,
+              desc: '戴著高帽、披著斗篷。會在一陣紫煙裡瞬間移動到你身邊，也會甩出一扇撲克牌。看到紫煙就轉身。' },
+  ringmaster: { name: '馬戲團團長', color: '#e02040', hp: 7500, speed: 1.5, dmg: 36, scale: 1, rate: 2.2, cash: 4000, score: 18000, boss: true, elephant: true, stomp: true, reach: 3.4,
+              desc: '騎在巨大大象殭屍背上的團長，從馬戲團帳篷裡衝出來。團長本人是弱點（2.5 倍），打大象只有一半。大象會衝撞、踩地；團長會甩鞭召喚小丑、丟出滾地的火圈。血量剩一半時進入壓軸表演。' },
   // ---- 第十五關 (CONTEXT.md); gear from tools/blender/tropic_zombies.py ----
   lurker:   { name: '叢林偽裝者', color: '#4a8a2a', hp: 120, speed: 3.6, dmg: 16, scale: 1, rate: 1.0, cash: 40, score: 400, camo: true, leap: true, tropicz: true,
               desc: '披著樹葉偽裝，不動時幾乎看不見，會慢慢摸到你身邊。九公尺內突然現形撲上來；被打中也會現形幾秒。注意草叢裡晃動的影子。' },
@@ -2184,7 +2202,7 @@ function buildLevel() {
   }
   levelGroup = new THREE.Group(); scene.add(levelGroup);
   colliders = []; worldMeshes = []; lampPositions = []; POLICE_CARS.length = 0; BARRELS.length = 0; FIRE_SPOTS.length = 0; barrelQueue = [];
-  festBanners = []; fwRacks = []; CARGO = null; DECK_EDGES = null; SEA = null; RADAR = null; ARENA_RING = 0; BRAZIERS = []; LAB = null; POLAR = null; TROPIC = null;
+  festBanners = []; fwRacks = []; CARGO = null; DECK_EDGES = null; SEA = null; RADAR = null; ARENA_RING = 0; BRAZIERS = []; LAB = null; POLAR = null; TROPIC = null; PARK = null;
   makeMaterials();
   const g = levelGroup, theme = LV.theme;
   if (theme === 'carrier') { buildCarrier(g); return; } // no city at all: one ship in the open sea
@@ -2192,6 +2210,7 @@ function buildLevel() {
   if (theme === 'lab') { buildLab(g); return; }
   if (theme === 'polar') { buildPolar(g); return; }
   if (theme === 'tropic') { buildTropic(g); return; }
+  if (theme === 'park') { buildPark(g); return; }
 
   // ground (roads)
   const ground = mesh(new THREE.PlaneGeometry(900, 900), M.asphalt, g, 0, 0, 0, false);
@@ -3040,6 +3059,14 @@ function airportBlock(g, bi, bj, cx, cz, inside) {
   if (Math.random() < 0.7) { const bx = cx - dx * 9 - Math.sin(rot) * 8, bz = cz - dz * 9 - Math.cos(rot) * 8; apPut(g, 'baggage_train', bx, 0.16, bz, rot); axisCollider(bx, bz, rot, 0, 1.8, 10); }
   if (Math.random() < 0.4) addTanker(g, cx - dx * 13 + Math.sin(rot) * 6, cz - dz * 13 + Math.cos(rot) * 6, rot);
 }
+// 第十六關: the amusement park (tools/blender/park.py) and its zombies with the elephant (tools/blender/park_zombies.py)
+let PK = null, CZ = null;
+loadModel('park', (scene) => { PK = {}; scene.children.forEach((o) => { PK[o.name] = o; }); });
+loadModel('parkzombie', (scene) => { CZ = {}; scene.children.forEach((o) => { CZ[o.name] = o; }); });
+let _mascotFur = null, _tux = null;
+const mascotFur = () => (_mascotFur ||= new THREE.MeshStandardMaterial({ color: 0xe8e4e0, roughness: 0.95 }));
+const tuxMat = () => (_tux ||= new THREE.MeshStandardMaterial({ color: 0x141418, roughness: 0.6 }));
+const magicMat = new THREE.MeshBasicMaterial({ color: 0xb050ff });
 // 第十五關: the volcano island (tools/blender/tropic.py) and its zombies' gear (tools/blender/tropic_zombies.py)
 let TR = null, TZ = null;
 loadModel('tropic', (scene) => {
@@ -3702,7 +3729,7 @@ class Zombie {
     const g = this.g = new THREE.Group();
     const sw = c.scale * (c.boss ? 1 : rand(0.93, 1.07)); g.scale.set(sw, sw * (c.boss ? 1 : rand(0.95, 1.07)), sw); // varied height and build
     const look = c.look || type; // the float boss wears the 屍王's body
-    const skin = type === 'yeti' ? yetiFur() : type === 'titan' ? titanSkin() : type === 'stalker' ? zm.stalkerSkin : look === 'behemoth' ? zm.bossSkin[0] : pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' || type === 'drowned' || type === 'iceclad' ? zm.paleSkin : type === 'mutant' ? zm.fleshSkin : type === 'splitter' ? zm.splitSkin : zm.skins);
+    const skin = type === 'yeti' ? yetiFur() : type === 'titan' ? titanSkin() : type === 'stalker' ? zm.stalkerSkin : look === 'behemoth' ? zm.bossSkin[0] : pick(type === 'spitter' ? zm.acidSkin : type === 'bloater' ? zm.bloatSkin : type === 'screamer' || type === 'drowned' || type === 'iceclad' || type === 'clown' ? zm.paleSkin : type === 'mutant' ? zm.fleshSkin : type === 'splitter' ? zm.splitSkin : zm.skins);
     const cop = type === 'riot' || type === 'gunner';
     let cloth = cop ? pick(zm.police) : pick(zm.cloth), pants = cop ? zm.policePants : pick(zm.pants);
     if (type === 'medic') { cloth = pick(zm.scrubs); pants = cloth; }
@@ -3722,6 +3749,8 @@ class Zombie {
     if (type === 'polar') { cloth = parkaMat(); pants = zm.policePants; }
     if (type === 'titan') { cloth = titanSkin(); pants = cloth; } // a body of basalt
     if (type === 'lurker') { cloth = zm.camo; pants = zm.camo; }
+    if (type === 'mascot') { cloth = mascotFur(); pants = cloth; } // the plush suit
+    if (type === 'magician') { cloth = tuxMat(); pants = cloth; }
     this.tankHp = type === 'flamer' ? 50 : 0; this.flameTick = 0; this.flaming = false;
     this.healCd = rand(2, 4); this.leapCd = rand(1.5, 3); this.crouch = 0; this.leapT = 0; this.airY = 0;
     this.shieldHp = c.shield ? c.shield * LV.hpMul : 0; this.shieldMax = this.shieldHp; this.gunT = rand(1.5, 3); this.aimT = 0;
@@ -3744,9 +3773,9 @@ class Zombie {
       g.position.copy(this.pos); scene.add(g); zMeshes.push(...this.meshes);
       return;
     }
-    if (c.bug || c.flyer || c.mother || c.kraken || c.ancient) {
+    if (c.bug || c.flyer || c.mother || c.kraken || c.ancient || c.elephant) {
       this.headPivot = new THREE.Group(); body.add(this.headPivot); // nothing to behead
-      if (c.bug) this.buildBug(); else if (c.flyer) this.buildFlyer(); else if (c.kraken) this.buildKraken(); else if (c.ancient) this.buildAncient(); else this.buildMother();
+      if (c.bug) this.buildBug(); else if (c.flyer) this.buildFlyer(); else if (c.kraken) this.buildKraken(); else if (c.ancient) this.buildAncient(); else if (c.elephant) this.buildElephant(); else this.buildMother();
       g.position.copy(this.pos); scene.add(g); zMeshes.push(...this.meshes);
       return;
     }
@@ -3778,7 +3807,7 @@ class Zombie {
     const hp = this.headPivot = new THREE.Group(); hp.position.set(0, 1.72, 0.03); body.add(hp);
     const headS = type === 'spitter' ? 1.22 : type === 'bloater' ? 1.12 : 1;
     const jw = this.jaw = new THREE.Group(); jw.position.set(0, 0.07, 0.03); hp.add(jw);
-    const hairless = ['armored', 'bloater', 'flamer', 'medic', 'stalker', 'splitter', 'behemoth', 'liondance', 'floatboss', 'sailor', 'drowned', 'hazmat', 'patientzero', 'iceclad', 'yeti', 'polar', 'lurker', 'magma', 'titan'].includes(type);
+    const hairless = ['armored', 'bloater', 'flamer', 'medic', 'stalker', 'splitter', 'behemoth', 'liondance', 'floatboss', 'sailor', 'drowned', 'hazmat', 'patientzero', 'iceclad', 'yeti', 'polar', 'lurker', 'magma', 'titan', 'clown', 'mascot', 'magician'].includes(type);
     if (ZP) { // sculpted skull with brow, sockets, cheekbones, nose and ears; hinged jaw with teeth
       add(ZP.head, skin, hp, 0, 0, 0, 'head').scale.setScalar(headS);
       add(ZP.mouth, zm.mouth, hp, 0, 0, 0, 'head').scale.setScalar(headS);
@@ -3964,6 +3993,7 @@ class Zombie {
     if (c.lab) this.dressLab(type);
     if (c.polarz) this.dressPolar(type);
     if (c.tropicz) this.dressTropic(type);
+    if (c.parkz) this.dressPark(type);
     if (type === 'crawler') { body.position.set(0, 0, -0.95); add(G.hand, pants, body, 0.1, 0.93, 0).scale.set(1.3, 1, 1.3); }
     this.lean = { yeti: 0.28, behemoth: 0.22, shocker: 0.08, runner: 0.32, brute: 0.18, crawler: 1.36, bloater: -0.08, screamer: 0.12, armored: 0.1, riot: 0.06, gunner: 0.05, medic: 0.1, mutant: 0.42, gong: 0.05, dragon: 0.25 }[look] ?? rand(0.08, 0.2);
     this.limp = type === 'walker' && Math.random() < 0.4 ? rand(0.2, 0.5) : 0;
@@ -4038,11 +4068,30 @@ class Zombie {
   }
   // a costume piece from fest_zombies.py, attached to a joint and shootable as `part`
   festPart(name, parent, part = 'body') {
-    const src = [FZ, NZ, CV, LZ, IZ, TZ].find((d) => d && d[name]);
+    const src = [FZ, NZ, CV, LZ, IZ, TZ, CZ].find((d) => d && d[name]);
     if (!src) return null;
     const o = src[name].clone();
     o.traverse((m) => { if (!m.isMesh) return; m.castShadow = true; m.userData = { z: this, part, head: part === 'head', mesh: m }; this.meshes.push(m); });
     parent.add(o); return o;
+  }
+  dressPark(type) {
+    const hp = this.headPivot, body = this.body, put = (name, parent, part) => this.festPart(name, parent, part);
+    const mirror = (o, i) => { if (o && i === 0) o.scale.x = -1; };
+    if (type === 'clown') { put('clown_wig', hp, 'head'); put('clown_collar', body); this.knees.forEach((k, i) => mirror(put('clown_shoe', k), i)); this.balloonCd = rand(2, 4); }
+    if (type === 'mascot') { put('mascot_head', hp, 'head'); put('mascot_suit', body); this.hands.forEach((h, i) => mirror(put('mascot_paw', h), i)); }
+    if (type === 'magician') { put('magician_hat', hp, 'head'); put('magician_cape', body); put('wand', this.hands[1]); this.blinkCd = rand(3, 5); this.cardCd = rand(2, 3); }
+  }
+  // 馬戲團團長: the elephant (built like the 遠古巨獸, so it shares its animation) with the ringmaster on its back
+  buildElephant() {
+    const b = this.body, put = (name, parent, part) => this.festPart(name, parent, part);
+    put('elephant_body', b, 'hide'); put('elephant_howdah', b, 'hide'); put('ringmaster_rider', b, 'rider');
+    const head = this.headG = new THREE.Group(); head.position.set(0, 3.6, 2.8); b.add(head); put('elephant_head', head, 'hide');
+    this.legsA = [];
+    for (const [x, z, name] of [[-1.15, 2.0, 'elephant_leg_front'], [1.15, 2.0, 'elephant_leg_front'], [-1.15, -2.0, 'elephant_leg_back'], [1.15, -2.0, 'elephant_leg_back']]) {
+      const l = new THREE.Group(); l.position.set(x, 2.6, z); b.add(l); put(name, l, 'hide'); this.legsA.push(l);
+    }
+    const tail = this.tailA = new THREE.Group(); tail.position.set(0, 3.4, -2.9); b.add(tail); put('elephant_tail', tail, 'hide');
+    this.radius = 2.5; this.lean = 0; this.limp = 0; this.chargeCd = 6; this.hoopCd = 4; this.clownCd = 8; this.chWind = 0; this.chT = 0; this.breathT = 0;
   }
   dressTropic(type) {
     const hp = this.headPivot, body = this.body, put = (name, parent, part) => this.festPart(name, parent, part);
@@ -4411,6 +4460,8 @@ class Zombie {
     if (this.c.kraken) mul = ud.part === 'eye' ? 2 : ud.fromZombie ? 1 : 0.2;
     if (this.c.ancient) mul = ud.part === 'crystal' ? 2.5 : ud.fromZombie ? 1 : 0.5; // the 冰晶 are its weak point
     if (this.c.titan) mul = ud.part === 'tcore' ? 2.5 : ud.fromZombie ? 1 : 0.5; // the 熔岩核心
+    if (this.c.elephant) mul = ud.part === 'rider' ? 2.5 : ud.fromZombie ? 1 : 0.5; // the ringmaster himself
+    if (this.c.plush) mul = ud.fire ? 2 : ud.blast || ud.fromZombie ? 1 : 0.5; // thick, but it burns
     if (this.floatHp > 0 && !ud.fromZombie) mul *= 0.25; // the float shields the boss (from shots; a zombie tears at it up close)
     if (this.cores && this.cores.some((q) => q.hp > 0) && !ud.fromZombie) mul *= 0.25; // so do the virus cores
     if (this.frozenT > 0) mul *= 2; // ice cracks easily
@@ -4585,7 +4636,7 @@ class Zombie {
       if (this.look === 'dog' || this.c.bug) { g.rotation.z = this.fallDir * (Math.PI / 2) * (k * k); g.position.y = 0; }
       else if (this.c.mother) { g.position.y = -3 * k; this.body.scale.setScalar(1 - 0.3 * k); }
       else if (this.c.kraken) { g.position.y = -this.deadT * 5; this.body.rotation.z = this.deadT * 0.05; } // sinks back to the bottom
-      else if (this.c.ancient) { g.rotation.z = this.fallDir * 0.45 * k; g.position.y = -0.6 * k; } // keels over onto the ice
+      else if (this.c.ancient || this.c.elephant) { g.rotation.z = this.fallDir * 0.45 * k; g.position.y = -0.6 * k; } // keels over
       else if (this.type === 'broodmother') { g.rotation.z = this.fallDir * 0.35 * k; g.position.y = -0.5 * k; }
       else if (this.type === 'crawler') this.body.rotation.x += (1.55 - this.body.rotation.x) * Math.min(1, dt * 5);
       else { g.rotation.x = this.fallDir * (Math.PI / 2) * (k * k); g.position.y = Math.sin(k * Math.PI) * 0.15; }
@@ -4843,6 +4894,32 @@ class Zombie {
         for (let k = 0; k < 2; k++) lobSpore(from, tp.clone().add(new THREE.Vector3(rand(-5, 5), 0, rand(-5, 5))).setY(0), this.team || null);
       }
     }
+    if (this.c.balloon && !idle) { // 小丑殭屍 lobs a balloon bomb
+      this.balloonCd -= dt;
+      if (this.balloonCd <= 0 && dist > 8 && dist < 22 && this.los) { this.balloonCd = 6; this.atkAnim = 0.001; this.atkHit = true; lobBalloon(this.hands[1].getWorldPosition(new THREE.Vector3()), tp.clone().addScaledVector(this.tVel(T), 0.8).setY(0), this); }
+    }
+    if (this.c.magic && !idle) { // 魔術師殭屍: vanish and reappear, or a fan of cards
+      this.blinkCd -= dt; this.cardCd -= dt;
+      if (this.blinkCd <= 0 && dist > 8 && dist < 30) { this.blinkCd = 7; blinkNear(this, T); }
+      else if (this.cardCd <= 0 && dist > 6 && dist < 18 && this.los) { this.cardCd = 4; this.atkAnim = 0.001; this.atkHit = true; throwCards(this, T); }
+    }
+    if (this.c.elephant) { // 馬戲團團長
+      if (!this.finale && this.hp < this.maxHp * 0.5) { this.finale = true; this.speed *= 1.25; showMsg('壓軸表演！', '火圈更多、大象更快了', 3); sfx('bossroar'); }
+      this.chargeCd -= dt; this.hoopCd -= dt; this.clownCd -= dt;
+      if (this.chWind > 0) { this.chWind -= dt; hold = true; if (this.chWind <= 0) { this.chT = 1.6; this.chHit = false; sfx('bossroar'); } }
+      else if (this.chT > 0) {
+        this.chT -= dt;
+        if (dist < 2.2 && !this.chHit && !idle) {
+          this.chHit = true; this.chT = 0; this.hurtT(T, 40, 'melee'); sfx('slam', 1.3);
+          if (T === player) { knockPlayer(this.pos, 20); shake = 1; } else if (T && !T.c.boss) T.knockV = T.pos.clone().sub(this.pos).setY(0).normalize().multiplyScalar(16);
+        }
+      } else if (!idle && this.chargeCd <= 0 && dist > 8 && dist < 28 && this.los) { this.chWind = 1.0; this.chargeCd = rand(8, 11); sfx('growl', 1.2); }
+      if (!idle && this.hoopCd <= 0 && dist < 34) { this.hoopCd = this.finale ? 3.5 : 7; rollHoop(this, tp); if (this.finale) rollHoop(this, tp, rand(0.25, 0.4) * pick([-1, 1])); }
+      if (!idle && this.clownCd <= 0 && zombies.filter((q) => !q.dead).length < QUALITY[qLevel].maxZ + 6) {
+        this.clownCd = 12; sfx('crack', 1.2); showMsg('', '團長甩鞭召喚了小丑！', 1.5);
+        for (let k = 0; k < 2; k++) { const cz = new Zombie('clown', this.pos.x + rand(-4, 4), this.pos.z + rand(-4, 4)); cz.rage = 2; addZombie(cz); if (this.team) setTeam(cz, this.team); }
+      }
+    }
     if (this.c.camo) { // 叢林偽裝者: all but invisible until close or hit
       if (!this.camoMats) { this.camoMats = []; this.meshes.forEach((m) => { m.material = m.material.clone(); m.material.transparent = true; this.camoMats.push(m.material); m.castShadow = false; }); }
       this.revealT = Math.max(0, (this.revealT || 0) - dt);
@@ -4999,7 +5076,7 @@ class Zombie {
     if (this.c.bug) { this.animateBug(dt, moving, dx, dz); return true; }
     if (this.c.flyer) { this.animateFlyer(dt, dx, dz); return true; }
     if (this.c.mother) { this.animateMother(dt, dx, dz); return true; }
-    if (this.c.ancient) { this.animateAncient(dt, moving, dx, dz); return true; }
+    if (this.c.ancient || this.c.elephant) { this.animateAncient(dt, moving, dx, dz); return true; }
     if (this.type === 'broodmother') { this.animateBrood(dt, moving, dx, dz); return true; }
     // ---- animation ----
     const t = this.type;
@@ -5309,6 +5386,7 @@ function spawnZombie(type) {
   if (LAB) return spawnInLab(type);
   if (POLAR) return spawnInPolar(type);
   if (TROPIC) return spawnInTropic(type);
+  if (PARK) return spawnInPark(type);
   for (let tries = 0; tries < 40; tries++) {
     const rc = pick(ROAD_CENTERS), t = rand(-HALF + 4, HALF - 4), off = rand(-4, 4);
     const [x, z] = Math.random() < 0.5 ? [rc + off, t] : [t, rc + off];
@@ -6556,6 +6634,173 @@ function updateTropicHazards(dt) {
   }
   if (Math.random() < dt * 3) { const x = rand(-80, 80); emitFire(new THREE.Vector3(x, 0.1, RIVER_Z + rand(-3, 3)), UP, rand(0.5, 1.5)); } // the river bubbles
 }
+// ============================================================
+//  第十六關: the abandoned amusement park (CONTEXT.md; .scratch/level-16/spec.md)
+// ============================================================
+let PARK = null, balloonShots = [], cards = [], hoops = [];
+const PARK_R = 78;
+function pkPut(g, name, x, y, z, rot = 0, shoot = true) {
+  if (!PK || !PK[name]) return null;
+  const o = PK[name].clone(); o.position.set(x, y, z); o.rotation.y = rot;
+  o.traverse((c) => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; if (shoot) worldMeshes.push(c); } });
+  g.add(o); return o;
+}
+function pkMany(g, name, items, shoot = true, shadow = true) {
+  if (!PK || !PK[name] || !items.length) return;
+  PK[name].traverse((c) => {
+    if (!c.isMesh) return;
+    const im = new THREE.InstancedMesh(c.geometry, c.material, items.length);
+    items.forEach(([x, y, z, rot = 0], k) => { _fq.setFromAxisAngle(_UPY, rot); im.setMatrixAt(k, _fm4.compose(_fv.set(x, y, z), _fq, _fsc.set(1, 1, 1))); });
+    im.castShadow = shadow; im.receiveShadow = true; im.frustumCulled = false; g.add(im); if (shoot) worldMeshes.push(im);
+  });
+}
+function buildPark(g) {
+  PARK = { gondolas: [], lights: [] };
+  const paveTex = TEX.pave.clone(); paveTex.repeat.set(60, 60); paveTex.needsUpdate = true;
+  const ground = mesh(new THREE.PlaneGeometry(220, 220), std({ map: paveTex, roughness: 0.85 }), g, 0, 0, 0, false); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; worldMeshes.push(ground);
+  // iron fence all round, the FUNLAND gate on the south side where the helicopter came down
+  const fence = [];
+  for (let x = -PARK_R + 3; x < PARK_R; x += 6) { fence.push([x, 0, -PARK_R, 0]); if (Math.abs(x) > 8) fence.push([x, 0, PARK_R, 0]); }
+  for (let z = -PARK_R + 3; z < PARK_R; z += 6) fence.push([PARK_R, 0, z, Math.PI / 2], [-PARK_R, 0, z, Math.PI / 2]);
+  pkMany(g, 'fence', fence, false);
+  addCollider(0, -PARK_R - 1, 170, 2); addCollider(0, PARK_R + 1, 170, 2); addCollider(PARK_R + 1, 0, 2, 170); addCollider(-PARK_R - 1, 0, 2, 170);
+  pkPut(g, 'park_gate', 0, 0, PARK_R - 0.5); for (const s of [-1, 1]) addCollider(s * 7, PARK_R - 0.5, 1.4, 1.4);
+  pkPut(g, 'ticket_booth', 11, 0, 70, -0.4); addCollider(11, 70, 2.6, 2.4);
+  // the Ferris wheel (north-west), turning; its cars hang upright
+  pkPut(g, 'ferris_frame', -42, 0, -28); addCollider(-42, -28, 22, 8);
+  PARK.wheel = pkPut(g, 'ferris_wheel', -42, 18, -28, 0, false);
+  for (let k = 0; k < 12; k++) { const c = pkPut(g, 'ferris_gondola', -42, 18, -28, 0, false); if (c) PARK.gondolas.push(c); }
+  // the carousel (centre-east), turning
+  pkPut(g, 'carousel_base', 24, 0, 2); PARK.ride = pkPut(g, 'carousel_ride', 24, 0, 2, 0, false); addCollider(24, 2, 17, 17);
+  // the roller coaster along the east fence
+  pkPut(g, 'coaster', 62, 0, -12); addCollider(62, -12, 6.4, 62);
+  // the circus big top to the north, its entrance toward the park (the boss comes out of it)
+  pkPut(g, 'big_top', 0, 0, -52);
+  addCollider(-9, -52, 10, 26); addCollider(9, -52, 10, 26); addCollider(0, -62, 8, 6);
+  pkPut(g, 'circus_cannon', 16, 0, -34, -0.5); addCollider(16, -34, 2.4, 3.4);
+  // stalls, carts and furniture along the midway
+  const stalls = [[-24, 20, 0], [-14, 20, 0], [-4, 20, 0], [-30, 40, Math.PI / 2], [40, 30, -Math.PI / 2], [40, 42, -Math.PI / 2], [-50, 2, Math.PI / 2], [-20, -10, Math.PI]];
+  pkMany(g, 'stall', stalls.map(([x, z, r]) => [x, 0, z, r])); stalls.forEach(([x, z, r]) => addCollider(x, z, r % Math.PI ? 1.8 : 4.4, r % Math.PI ? 4.4 : 1.8));
+  const carts = [[8, 32, 0.3], [-36, 10, 1.2], [44, -20, 2.4], [-8, -24, 0.8]];
+  pkMany(g, 'food_cart', carts.map(([x, z, r]) => [x, 0, z, r])); carts.forEach(([x, z]) => addCollider(x, z, 1.8, 1.8));
+  const lamps = [];
+  for (const [x0, z0, x1, z1] of [[-10, 56, 10, 56], [-10, 46, 10, 46], [-30, 30, -18, 30], [18, 30, 30, 30], [-6, -30, 6, -30]]) {
+    lamps.push([x0, 0, z0, 0], [x1, 0, z1, 0]);
+    const n = Math.round(Math.hypot(x1 - x0, z1 - z0) / 10);
+    for (let k = 0; k < n; k++) { const t = (k + 0.5) / n; PARK.lights.push([x0 + (x1 - x0) * t, 0, z0 + (z1 - z0) * t, Math.atan2(-(z1 - z0), x1 - x0)]); }
+  }
+  for (const [x, z] of [[-50, 40], [50, 50], [-60, -50], [40, -54], [0, 10], [-30, -6]]) lamps.push([x, 0, z, 0]);
+  pkMany(g, 'lamp_post', lamps); lamps.forEach(([x, , z]) => addCollider(x, z, 0.5, 0.5));
+  pkMany(g, 'light_string', PARK.lights, false, false);
+  const benches = [[-14, 50, 0], [14, 50, Math.PI], [-24, 4, Math.PI / 2], [6, -14, 0], [50, 10, -Math.PI / 2], [-56, 24, Math.PI / 2]];
+  pkMany(g, 'bench', benches.map(([x, z, r]) => [x, 0, z, r]), true); benches.forEach(([x, z]) => addCollider(x, z, 1.8, 1.8));
+  pkMany(g, 'trash_bin', [[-12, 52], [12, 44], [-26, 24], [30, 22], [4, -20], [-44, -6]].map(([x, z]) => [x, 0, z, 0])); // (x, y, z, rot)
+  pkMany(g, 'balloons', [[-6, 0, 60, 0], [20, 0, 36, 1], [-34, 0, -12, 2], [36, 0, -36, 3]], false);
+  const crates = [];
+  for (const [x, z, n] of [[-60, 60, 2], [56, 62, 2], [-62, -20, 3], [30, -62, 2]]) for (let k = 0; k < n; k++) { const cx = x + (k % 2) * 2.5, cz = z + Math.floor(k / 2) * 1.8; crates.push([cx, 0, cz, rand(-0.1, 0.1)]); addCollider(cx, cz, 2.5, 1.7); }
+  cvMany(g, 'crate', crates);
+  for (const [x, z] of [[-40, 52], [46, 58], [-58, -36], [52, -40], [26, -26], [-18, 34]]) addBarrel(g, x, z);
+  // a few coloured lamps to light the rides
+  for (const [x, y, z, c, i] of [[24, 6, 2, 0xffc070, 40], [0, 5, -36, 0xff3050, 30], [-42, 18, -24, 0xa060ff, 50], [0, 6, 58, 0xffd0a0, 25]]) {
+    const l = new THREE.PointLight(c, i, 34, 1.6); l.position.set(x, y, z); g.add(l);
+  }
+}
+function spawnInPark(type) {
+  const c = ZTYPES[type];
+  if (c.elephant && !PARK.out) { // the ringmaster charges out of the big top
+    PARK.out = true; const zb = new Zombie(type, 0, -52); zb.g.rotation.y = 0; zb.chWind = 0.6; zb.chargeCd = 0; zombies.push(zb);
+    showMsg('馬戲團的音樂停了！', '團長騎著巨象衝出帳篷', 3.5); sfx('bossroar'); shake = 1;
+    return true;
+  }
+  for (let tries = 0; tries < 40; tries++) {
+    const x = rand(-PARK_R + 5, PARK_R - 5), z = rand(-PARK_R + 5, PARK_R - 5), d = Math.hypot(x - player.pos.x, z - player.pos.z);
+    if (d < 28 || d > 100 || blocked(x, z, 0.8)) continue;
+    if (c.swarm) { spawnSwarm(x, z, c.swarm, type); return true; }
+    zombies.push(new Zombie(type, x, z));
+    return true;
+  }
+  return false;
+}
+// ---- 氣球炸彈: floats over slowly, then bursts ----
+const BALLOON_COLORS = [0xd81a20, 0x2a5ae0, 0xe8b010, 0x30b050, 0xb040d0];
+function lobBalloon(from, target, owner) {
+  const d = Math.hypot(target.x - from.x, target.z - from.z), T = clamp(d / 7, 1.2, 3), gr = 3.5;
+  const v = new THREE.Vector3((target.x - from.x) / T, (target.y - from.y + 0.5 * gr * T * T) / T, (target.z - from.z) / T);
+  let m;
+  if (CZ && CZ.balloon) { m = CZ.balloon.clone(); const col = pick(BALLOON_COLORS); m.traverse((o) => { if (o.isMesh && o.material.name === 'balloon') { o.material = o.material.clone(); o.material.color.set(col); } }); }
+  else m = new THREE.Mesh(spitGeo, confettiMat);
+  m.position.copy(from); scene.add(m);
+  const marker = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
+  marker.position.set(target.x, 0.1, target.z); marker.scale.setScalar(2.8); scene.add(marker);
+  balloonShots.push({ m, v, gr, marker, owner, life: 5 });
+}
+// ---- 魔術師殭屍: a fan of playing cards, and the disappearing act ----
+function throwCards(z, T) {
+  const from = z.hands[1].getWorldPosition(new THREE.Vector3()), aim = z.tAim(T);
+  const base = aim.clone().sub(from).normalize();
+  for (let k = -1; k <= 1; k++) {
+    const dir = base.clone().applyAxisAngle(UP, k * 0.16);
+    const m = CZ && CZ.card ? CZ.card.clone() : new THREE.Mesh(G.box, gunMats.white); m.position.copy(from); m.lookAt(from.clone().add(dir)); scene.add(m);
+    cards.push({ m, v: dir.multiplyScalar(24), life: 1.2, owner: z, T });
+  }
+  sfx('bow', 0.6);
+}
+function blinkNear(z, T) {
+  const from = z.pos.clone();
+  for (let k = 0; k < 12; k++) {
+    const a = rand(0, Math.PI * 2), r = rand(4, 6), x = T.pos.x + Math.sin(a) * r, zz = T.pos.z + Math.cos(a) * r;
+    if (Math.abs(x) > PARK_R - 2 && PARK || Math.abs(zz) > PARK_R - 2 && PARK || blocked(x, zz, 0.6)) continue;
+    burst(from.clone().setY(1.2), UP, magicMat, 26, 3); z.pos.set(x, 0, zz); z.g.position.set(x, 0, zz);
+    burst(z.pos.clone().setY(1.2), UP, magicMat, 26, 3); z.hitT = 0.4; sfx('zap', clamp(1.3 - z.pos.distanceTo(player.pos) / 30, 0.3, 1));
+    return;
+  }
+}
+// ---- 火圈: a burning hoop rolling along the ground ----
+function rollHoop(boss, toward, turn = 0) {
+  const dir = toward.clone().sub(boss.pos).setY(0); if (dir.lengthSq() < 1) dir.set(0, 0, 1); dir.normalize().applyAxisAngle(UP, turn);
+  const g = new THREE.Group(); const m = CZ && CZ.fire_hoop ? CZ.fire_hoop.clone() : new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.1, 6, 24), sparkMat);
+  g.add(m); g.position.copy(boss.pos).addScaledVector(dir, 3).setY(1.3); g.rotation.y = Math.atan2(dir.x, dir.z); scene.add(g);
+  hoops.push({ g, m, dir, dist: 0, hit: new Set(), hitPlayer: false });
+  sfx('flame', 1);
+}
+function updateParkHazards(dt) {
+  if (PARK) {
+    if (PARK.wheel) {
+      PARK.wheel.rotation.z += dt * 0.12; const a0 = PARK.wheel.rotation.z, c = PARK.wheel.position;
+      PARK.gondolas.forEach((gd, k) => { const a = -a0 + k / 12 * Math.PI * 2; gd.position.set(c.x + Math.sin(a) * 15, c.y + Math.cos(a) * 15, c.z); });
+    }
+    if (PARK.ride) PARK.ride.rotation.y += dt * 0.45;
+  }
+  balloonShots = balloonShots.filter((q) => {
+    q.life -= dt; q.v.y -= q.gr * dt; q.m.position.addScaledVector(q.v, dt); q.m.rotation.y += dt;
+    q.marker.material.opacity = 0.55 + Math.sin(q.life * 14) * 0.3;
+    if (q.m.position.y > 0.5 && q.life > 0) return true;
+    scene.remove(q.m); scene.remove(q.marker); q.marker.material.dispose();
+    const p = q.m.position.clone().setY(0.6); blastAt(p, 2.8, 50, 18, q.owner || null); burst(p, UP, confettiMat, 24, 6);
+    return false;
+  });
+  cards = cards.filter((q) => {
+    q.life -= dt; q.m.position.addScaledVector(q.v, dt); q.m.rotateZ(dt * 20);
+    const p = q.m.position;
+    if (q.life <= 0 || (p.y < 6 && blocked(p.x, p.z, 0))) { scene.remove(q.m); return false; }
+    if (q.T === player || !q.T) {
+      if (p.distanceTo(camera.position) < 0.7) { hurtPlayer(6, 'melee'); scene.remove(q.m); return false; }
+    } else if (!q.T.dead && Math.hypot(p.x - q.T.pos.x, p.z - q.T.pos.z) < q.T.radius + 0.4 && p.y < (q.T.airY || 0) + 2.2 * q.T.g.scale.y) {
+      q.T.damage(6 * (ARENA ? ARENA.zdmg : 1), { part: 'body', fromZombie: true }, null); scene.remove(q.m); return false;
+    }
+    return true;
+  });
+  hoops = hoops.filter((q) => {
+    const step = 9 * dt; q.dist += step; q.g.position.addScaledVector(q.dir, step); q.m.rotation.x += step / 1.2;
+    if (Math.random() < dt * 30) emitFire(q.g.position.clone().add(new THREE.Vector3(rand(-0.3, 0.3), rand(-1, 1), rand(-0.3, 0.3))), UP, rand(1, 2));
+    const p = q.g.position;
+    if (!q.hitPlayer && Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < 1.4 && player.pos.y < 2) { q.hitPlayer = true; hurtPlayer(25, 'fire'); player.burnT = Math.max(player.burnT || 0, 3); fireFlash = 1; }
+    for (const z of zombies) if (!z.dead && !z.c.boss && !q.hit.has(z) && Math.hypot(z.pos.x - p.x, z.pos.z - p.z) < 1.4) { q.hit.add(z); z.damage(20, { part: 'body', fire: true }, null); if (!z.c.fireproof) z.burnT = Math.max(z.burnT || 0, 3); }
+    if (q.dist < 30 && !blocked(p.x, p.z, 0.2)) return true;
+    for (let k = 0; k < 10; k++) emitFire(p.clone().add(new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1))), UP, rand(2, 4));
+    scene.remove(q.g); return false;
+  });
+}
 function updateFestHazards(dt) {
   gongWaves = gongWaves.filter((w) => {
     const r0 = w.r; w.r += 9 * dt;
@@ -6603,6 +6848,8 @@ function clearDynamic() {
   iceSpikeList.forEach((q) => { scene.remove(q.marker); if (q.m) scene.remove(q.m); }); canisters.forEach((q) => scene.remove(q.m)); iceSpikeList = []; canisters = [];
   swarms.forEach((q) => q.bees.forEach((b) => scene.remove(b.m))); lavaShots.forEach((q) => { scene.remove(q.m); scene.remove(q.marker); });
   lavaPools.forEach((q) => scene.remove(q.m)); fissures.forEach((q) => scene.remove(q.marker)); swarms = []; lavaShots = []; lavaPools = []; fissures = []; player.burnT = 0;
+  balloonShots.forEach((q) => { scene.remove(q.m); scene.remove(q.marker); }); cards.forEach((q) => scene.remove(q.m)); hoops.forEach((q) => scene.remove(q.g));
+  balloonShots = []; cards = []; hoops = [];
   fwShells.forEach((sh) => scene.remove(sh.head)); fwBursts.forEach((b) => scene.remove(b.pts)); fwShells = []; fwBursts = []; fwQueue = [];
   fwVolleyT = 8; fwAmbientT = 2; fwLights.forEach((l) => { l.intensity = 0; });
   zombies.forEach((z) => z.remove()); zombies = []; zMeshes = [];
@@ -6635,7 +6882,7 @@ function startLevel(i) {
   }
   ARENA = LEVELS[i].arena ? { mode: arenaMode, ...ARENA_MODES[arenaMode], live: !ARENA_MODES[arenaMode].spectate, contested: false, kit: [...(arenaKit || loadout)], speed: 1, zdmg: arenaZdmg } : null;
   loadLevel(i);
-  if (DECK_EDGES) player.pos.set(-4, 0, -10); else if (LAB) player.pos.set(0, 0, LAB_Z - 6); else if (POLAR) player.pos.set(0, 0, 72); else if (TROPIC) player.pos.set(0, 0, 64); else if (ARENA) player.pos.set(0, 0, 14); else player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
+  if (DECK_EDGES) player.pos.set(-4, 0, -10); else if (LAB) player.pos.set(0, 0, LAB_Z - 6); else if (POLAR) player.pos.set(0, 0, 72); else if (TROPIC) player.pos.set(0, 0, 64); else if (PARK) player.pos.set(0, 0, 66); else if (ARENA) player.pos.set(0, 0, 14); else player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
   player.yaw = DECK_EDGES ? Math.PI : 0; player.slickT = 0; player.jammed = false; player.burnT = 0; player.pitch = 0; player.hp = 100; player.vy = 0; player.vel.set(0, 0, 0); player.calmT = 0; player.regenT = 0;
   wi = 1; resetWeapons(); reloading = 0; switching = 0;
   kills = 0; score = 0; levelCash = 0; waveIdx = 0; queue = []; waveActive = false; interT = 3;
@@ -7892,7 +8139,7 @@ function frame(dt, now) {
     if (ARENA && ARENA.spectate) updateFlyCam(dt);
     for (let k = 0; k < steps && state === 'playing'; k++) {
       if (!(ARENA && ARENA.spectate)) { updatePlayer(sdt); updateWeapon(sdt); }
-      updateArena(sdt); updateZombies(sdt); updateHazards(sdt); updateGrenades(sdt); updateWaves(sdt); updatePickups(sdt); updateFireworks(sdt); updateFestHazards(sdt); updateAirportHazards(sdt); updateCarrierHazards(sdt); updateLabHazards(sdt); updatePolarHazards(sdt); updateTropicHazards(sdt); updateWeaponFx(sdt);
+      updateArena(sdt); updateZombies(sdt); updateHazards(sdt); updateGrenades(sdt); updateWaves(sdt); updatePickups(sdt); updateFireworks(sdt); updateFestHazards(sdt); updateAirportHazards(sdt); updateCarrierHazards(sdt); updateLabHazards(sdt); updatePolarHazards(sdt); updateTropicHazards(sdt); updateParkHazards(sdt); updateWeaponFx(sdt);
     }
     updateHUD();
   } else if (state === 'menu') {
@@ -7918,7 +8165,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026101702'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026101801'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
