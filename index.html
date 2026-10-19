@@ -3060,8 +3060,10 @@ function airportBlock(g, bi, bj, cx, cz, inside) {
   if (Math.random() < 0.4) addTanker(g, cx - dx * 13 + Math.sin(rot) * 6, cz - dz * 13 + Math.cos(rot) * 6, rot);
 }
 // 第十六關: the amusement park (tools/blender/park.py) and its zombies with the elephant (tools/blender/park_zombies.py)
-let PK = null, CZ = null;
+let PK = null, CZ = null, FUNLAND = null;
 loadModel('park', (scene) => { PK = {}; scene.children.forEach((o) => { PK[o.name] = o; }); });
+// the whole FUNLAND park as one scene (assets/models/funland.glb, made in Blender by another AI from our prompt); park.glb stays as the fallback
+loadModel('funland', (scene) => { FUNLAND = scene; });
 loadModel('parkzombie', (scene) => { CZ = {}; scene.children.forEach((o) => { CZ[o.name] = o; }); });
 let _mascotFur = null, _tux = null;
 const mascotFur = () => (_mascotFur ||= new THREE.MeshStandardMaterial({ color: 0xe8e4e0, roughness: 0.95 }));
@@ -6654,7 +6656,34 @@ function pkMany(g, name, items, shoot = true, shadow = true) {
     im.castShadow = shadow; im.receiveShadow = true; im.frustumCulled = false; g.add(im); if (shoot) worldMeshes.push(im);
   });
 }
+// FUNLAND: the ready-made park scene. It carries its own ground, fence, rides and lights; the game adds walls, drums and lamps.
+function buildFunland(g) {
+  PARK = { gondolas: [], lights: [], funland: true };
+  const park = FUNLAND.clone();
+  park.traverse((c) => {
+    if (!c.isMesh) return;
+    const ground = /^Ground/.test(c.name);
+    c.castShadow = !ground && !/Festoon|Lamps|Decay/.test(c.name); c.receiveShadow = true; worldMeshes.push(c);
+  });
+  g.add(park);
+  const R = 79.5; // the iron fence
+  addCollider(0, -R - 1, 170, 2); addCollider(0, R + 1, 170, 2); addCollider(R + 1, 0, 2, 170); addCollider(-R - 1, 0, 2, 170);
+  for (const s of [-1, 1]) addCollider(s * 11, 72, 2.4, 3);                                       // the entrance pillars
+  addCollider(-20, 67, 6, 6);                                                                         // ticket booth
+  addCollider(-9, -52, 10, 26); addCollider(9, -52, 10, 26); addCollider(0, -62, 8, 6);             // the big top, open toward the park
+  addCollider(-47, -42.3, 32, 9);                                                                     // Ferris wheel legs and platform
+  addCollider(22, 5, 17, 17);                                                                         // carousel
+  addCollider(61, 28.6, 5.5, 14);                                                                     // coaster station (the track itself stands on stilts)
+  for (const [z0, z1, x0, x1] of [[34.6, 39.9, -26.8, -18.6], [18.6, 23.9, -26.8, -18.6], [2.6, 7.9, -26.8, -18.6], [16.6, 21.9, -50.8, -42.6], [0.6, 5.9, -50.8, -42.6]])
+    addCollider((x0 + x1) / 2, (z0 + z1) / 2, x1 - x0, z1 - z0);                                      // midway stalls
+  for (const [x, z] of [[-14, 57.8], [32, 27.8], [-31, -27.2]]) addCollider(x, z, 2, 2);            // popcorn carts
+  for (const [x, z] of [[-40, 52], [46, 58], [-58, -20], [52, -40], [30, -26], [-10, 30]]) addBarrel(g, x, z);
+  for (const [x, y, z, c, i] of [[22, 6, 5, 0xffc070, 40], [0, 5, -36, 0xff3050, 30], [-47, 18, -38, 0xa060ff, 50], [0, 6, 62, 0xffd0a0, 25]]) {
+    const l = new THREE.PointLight(c, i, 34, 1.6); l.position.set(x, y, z); g.add(l);
+  }
+}
 function buildPark(g) {
+  if (FUNLAND) { buildFunland(g); return; }
   PARK = { gondolas: [], lights: [] };
   const paveTex = TEX.pave.clone(); paveTex.repeat.set(60, 60); paveTex.needsUpdate = true;
   const ground = mesh(new THREE.PlaneGeometry(220, 220), std({ map: paveTex, roughness: 0.85 }), g, 0, 0, 0, false); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; worldMeshes.push(ground);
@@ -8165,7 +8194,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026101801'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026101901'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host

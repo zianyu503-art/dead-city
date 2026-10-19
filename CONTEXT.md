@@ -112,4 +112,5 @@
 ## 模型
 
 - 所有 3D 模型都用 Blender 腳本製作（`tools/blender/*.py` 輸出到 `assets/models/*.glb`），不在遊戲裡用基本形狀拼。
+- **例外：FUNLAND**（`assets/models/funland.glb`）：第十六關的整張遊樂園地圖，是玩家拿我們寫的提示詞請另一個 AI 在 Blender 裡做好的現成場景。遊戲直接整個放進來，再補上碰撞牆；摩天輪和旋轉木馬在這份模型裡和底座合在一起，所以不會轉。載入失敗時改用 `tools/blender/park.py` 的程式化地圖。
 - **寫實殭屍重製**（`tools/blender/walker.py`）：暫停中，玩家說要做才繼續。國慶殭屍不使用它。
