@@ -3157,7 +3157,7 @@ function ownBodyMats(o) {
       jacket: ['#ffffff', '#dccab0', '#b8c6b0', '#c4bccc'].map((color) => tex('jacket', { color, side })),
       tie: ['#ffffff', '#a0b0d4', '#b4c89c'].map((color) => tex('tie', { color, side })),
       trousers: ['#ffffff', '#c8c0b8', '#aab2c0'].map((color) => tex('trousers', { color, side })),
-      boots: [tex('boots', { roughness: 0.6 })],
+      boots: [tex('boots', { roughness: 0.6, side })],
       hair: [std({ color: 0x1e1a16, roughness: 0.9, side }), std({ color: 0x3a3631, roughness: 0.9, side })],
       grayHair: std({ color: 0x8a867e, roughness: 0.95, side }),
       darkTie: tex('tie', { color: '#3a4258', side }),
@@ -8309,7 +8309,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026102501'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026102901'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host

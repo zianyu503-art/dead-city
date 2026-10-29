@@ -517,6 +517,21 @@ def bake_all(L):
     L["hair"].data.materials.clear(); L["hair"].data.materials.append(hm)
 
 
+def tidy(L):
+    """Fixes on the layers in the source pose, run on fresh and cached layers alike."""
+    # the model's arms hang inside the jacket, so the jacket's lower sides lie nearest the arms; raised arms then
+    # dragged them out like a cape. Only the shoulders and sleeve caps follow the arms; the rest stays on the torso.
+    # The shirt the same, except the gauze round the forearm (it holds on to the elbow).
+    for k in ("jacket", "shirt"):
+        ob = L[k]; W = get_weights(ob); z = np.array([v.co.z for v in ob.data.vertices])
+        gauze = W[:, [BI[b] for b in ("elbow0", "elbow1", "hand0", "hand1")]].sum(1) > 0.01
+        keep = np.where(gauze, 1.0, smoothstep(1.30, 1.42, z))[:, None]; arms = [BI["arm0"], BI["arm1"]]
+        moved = W[:, arms] * (1 - keep); W[:, arms] -= moved; W[:, BI["torso"]] += moved.sum(1)
+        set_weights(ob, W)
+    for k in ("boots", "hair"):  # remeshed shells: point every face outward
+        bm = bmesh.new(); bm.from_mesh(L[k].data); bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(L[k].data); bm.free()
+
+
 # ---------------------------------------------------------------- rest pose, rig, export
 def repose(L):
     log("moving into the game's rest pose")
@@ -577,6 +592,9 @@ def rig(L, F):
     root = arm.edit_bones.new("body"); root.head = (0, 0, 0); root.tail = (0, 0, 0.1)
     for b in BONES:
         f = F[b]; eb = arm.edit_bones.new(b); eb.head = f["P"]; eb.tail = f["P"] + f["Rf"] @ Vector((0, 0, 0.05)); eb.parent = root
+    for child, parent in (("jaw", "head"), ("elbow0", "arm0"), ("hand0", "elbow0"), ("elbow1", "arm1"), ("hand1", "elbow1"),
+                          ("knee0", "leg0"), ("knee1", "leg1")):  # the game's joint groups nest the same way
+        arm.edit_bones[child].parent = arm.edit_bones[parent]
     bpy.ops.object.mode_set(mode="OBJECT")
     for ob in L.values():
         ob.parent = ro; m = ob.modifiers.new("rig", "ARMATURE"); m.object = ro
@@ -638,6 +656,7 @@ else:
     if WORK:
         bpy.ops.wm.save_as_mainfile(filepath=WORK, copy=True)
         log("saved", WORK)
+tidy(L)
 F = repose(L)
 P = proxies(L, F)
 R = rig(L, F)
