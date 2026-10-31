@@ -226,6 +226,20 @@
   #tDrum { display: none; width: 56px; height: 56px; right: calc(max(34px, env(safe-area-inset-right, 0px)) + 104px); bottom: 128px; border-radius: 50%; font-size: 20px;
     border-color: #f0c050; color: #ffe08a; box-shadow: 0 0 12px rgba(255,190,70,0.6); }
   body.drumheld #tDrum { display: flex; }
+  /* 冥王鐮刀: the purple-black 傳奇 frame, the soul gauge, the burning screen edge, and the 擲 / 魂 buttons */
+  @keyframes soulGlow { 0%, 100% { box-shadow: 0 0 8px rgba(150,70,255,0.5), inset 0 0 10px rgba(120,50,220,0.2); } 50% { box-shadow: 0 0 18px rgba(190,110,255,0.9), inset 0 0 16px rgba(160,80,255,0.35); } }
+  #slots span.legend.soul { border-color: #a060ff; color: #e0c0ff; background: linear-gradient(100deg, rgba(20,6,40,0.5) 30%, rgba(170,100,255,0.55) 50%, rgba(20,6,40,0.5) 70%); background-size: 240% 100%; animation: legendFlow 2.2s linear infinite, soulGlow 2s ease-in-out infinite; }
+  .wc.legend.soul { border-color: #9a50ff; background-image: linear-gradient(100deg, rgba(20,6,40,0.3) 35%, rgba(160,90,255,0.2) 50%, rgba(20,6,40,0.3) 65%); animation: legendFlow 3s linear infinite, soulGlow 2.4s ease-in-out infinite; }
+  .wc.legend.soul .nm { color: #e0c0ff; } .wc.legend.soul .ltd { background: linear-gradient(90deg, #4a1a8a, #d0a0ff, #4a1a8a); color: #fff; border-color: #c080ff; }
+  .soulbar { display: inline-block; width: 70px; height: 8px; border: 1px solid #a060ff; margin-right: 8px; vertical-align: middle; background: rgba(20,0,40,0.6); }
+  .soulbar i { display: block; height: 100%; background: linear-gradient(90deg, #5a20c0, #c080ff); }
+  .soulbar.full { box-shadow: 0 0 10px #b070ff; animation: soulGlow 1s ease-in-out infinite; }
+  #soulEdge { position: fixed; inset: 0; pointer-events: none; z-index: 4; opacity: 0; transition: opacity 0.4s; box-shadow: inset 0 0 90px 20px rgba(130,50,255,0.55); }
+  body.soulfull #soulEdge { opacity: 0.7; } body.soulult #soulEdge { opacity: 1; box-shadow: inset 0 0 140px 40px rgba(120,40,255,0.75); }
+  #tThrow, #tSoul { display: none; width: 56px; height: 56px; right: calc(max(34px, env(safe-area-inset-right, 0px)) + 104px); border-radius: 50%; font-size: 20px; border-color: #a060ff; color: #e0c0ff; box-shadow: 0 0 12px rgba(150,70,255,0.6); }
+  #tThrow { bottom: 128px; } #tSoul { bottom: 196px; }
+  body.scytheheld #tThrow, body.scytheheld #tSoul { display: flex; }
+  body.soulfull #tSoul { background: rgba(140,60,255,0.45); animation: soulGlow 1s ease-in-out infinite; }
   #drumRing { position: absolute; inset: 0; display: none; pointer-events: none; }
   #drumRing.show { display: block; }
   #drumRing .dri { position: absolute; width: 46px; height: 46px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.55); color: var(--c);
@@ -436,9 +450,12 @@
   <div class="btns"><button class="b primary" id="btnNext">下一關</button><button class="b shopbtn">武器裝備</button><button class="b" id="btnQuit3">返回選單</button></div></div></div>
 
 <div id="drumWheel"></div>
+<div id="soulEdge"></div>
 <div id="touch">
   <div id="drumRing"></div>
   <div class="tb" id="tDrum">鼓</div>
+  <div class="tb" id="tThrow">擲</div>
+  <div class="tb" id="tSoul">魂</div>
   <div id="stickHint"></div>
   <div id="stick"><div id="knob"></div></div>
   <div class="tb" id="tFire">射擊</div>
@@ -757,6 +774,9 @@ const WEAPONS = [
   { id: 'drum', name: '傳世之鼓', cat: '傳奇', limited: '傳奇', legend: true, drum: true, price: 20000, sound: '', dmg: 90, rate: 0.5, auto: true, mag: Infinity, reserve: Infinity,
     reload: 0, spread: 0, pellets: 1, recoil: 0, noFlash: true, zoom: 10,
     desc: '傳說中的八音戰鼓，不需要彈藥。按住 C（手機按「鼓」）切換八種屬性：雷電連鎖光束、生命汲取光球、虛幻瞬移、寒冰風暴球、熾熱岩漿彈、烈焰噴射、巨劍斬擊，每種各有冷卻時間；打中頭部一樣 2.5 倍。第 8 招「諸神黃昏・傳世萬象」消耗目前一半生命，七種屬性同時強化爆發，清空全場殭屍（Boss 最多扣四分之一血），冷卻 60 秒。' },
+  { id: 'scythe', name: '噬魂・冥王鐮刀', cat: '傳奇', limited: '傳奇', legend: true, soulFrame: true, scythe: true, melee: true, price: 25000, sound: '', dmg: 95, rate: 0.38, auto: false,
+    mag: Infinity, reserve: Infinity, reload: 0, spread: 0, pellets: 1, recoil: 0, range: 3.3, arc: 1.15, move: 1.05, noFlash: true, zoom: 0,
+    desc: '冥王的巨鐮，不需要彈藥。左鍵三段連擊，第三刀放出 12 公尺的月牙魂刃；右鍵（手機按「擲」）擲出迴旋鐮刀，飛出 15 公尺再飛回，來回切割，冷卻 4 秒。用鐮刀殺殭屍會累積魂量並回 3 點生命；魂量過半移動更快、揮砍更遠。魂量滿 100 按 F（手機按「魂」）發動「死神降臨・萬魂歸冥」：12 秒內每一刀都放魂刃、一次擲出三把鐮刀，這段時間倒下的殭屍會變成替你作戰的亡魂（最多 10 隻），結束時亡魂自爆、全場殭屍受到最終審判（Boss 最多扣四分之一血）。' },
   // ---- 第二批新武器 (.scratch/weapons-2/spec.md); models in tools/blender/guns.py ----
   { id: 'chainsaw', name: '電鋸', cat: '近戰', price: 3500, sound: '', dmg: 22, rate: 0.1, auto: true, mag: Infinity, reserve: Infinity, reload: 0, spread: 0, pellets: 1, recoil: 0,
     melee: true, saw: true, range: 2.2, arc: 0.6, noFlash: true, zoom: 0,
@@ -3521,10 +3541,11 @@ function buildGun(id) {
     if (DRUM) useModelDrum(extra); else buildProceduralDrum(extra);
     arm(g, 0.14, 0.14, 0.16, 0.24, -0.12, 0.42);
     muzzle = new THREE.Vector3(0, 0.05, -0.1); hip = new THREE.Vector3(0.2, -0.2, -0.5); aim = hip.clone();
-  } else if (id === 'katana' || id === 'saber' || id === 'hammer') {
+  } else if (id === 'katana' || id === 'saber' || id === 'hammer' || id === 'scythe') {
     // the sword is built along its own axis (blade toward -z, handle toward +z) and then posed in a two-handed guard
     const k = new THREE.Group(); g.add(k); extra.blade = k;
     if (id === 'katana') { extra.katana = k; if (KATANA_GLB) useModelKatana(k); else buildProceduralKatana(k); }
+    else if (id === 'scythe') { extra.scytheK = k; if (SCYTHE) useModelScythe(extra); else buildProceduralScythe(extra); }
     else if (id === 'hammer') {
       extra.hammer = k;
       if (GUNS && GUNS.hammer) { const m = GUNS.hammer.clone(); m.traverse((o) => { o.frustumCulled = false; }); k.add(m); }
@@ -3536,12 +3557,12 @@ function buildGun(id) {
     k.rotation.order = 'YXZ'; k.rotation.set(0.5, 0.42, -1.05);
     k.updateMatrix();
     const at = (x, y, z) => new THREE.Vector3(x, y, z).applyMatrix4(k.matrix);
-    const rh = at(0, 0, id === 'hammer' ? 0.12 : 0.05), lh = at(0, 0, id === 'hammer' ? 0.26 : 0.2);
+    const rh = at(0, 0, id === 'hammer' ? 0.12 : 0.05), lh = at(0, 0, id === 'hammer' ? 0.26 : id === 'scythe' ? 0.36 : 0.2);
     extra.pivot = rh.clone().add(lh).multiplyScalar(0.5 * 0.8); // swing turns around the hands (group is scaled by 0.8 below)
     arm(g, rh.x, rh.y, rh.z, 0.09, -0.28, 0.38);
     arm(g, lh.x, lh.y, lh.z, -0.1, -0.3, 0.46);
     // a faint arc of light follows each cut
-    if (id !== 'hammer') extra.ribbon = makeSwordTrail();
+    if (id !== 'hammer' && id !== 'scythe') extra.ribbon = makeSwordTrail();
     muzzle = new THREE.Vector3(0, 0, -0.9); hip = new THREE.Vector3(0.15, -0.085, -0.36); aim = hip.clone();
   } else if (id === 'dbarrel') {
     for (const sx of [-0.017, 0.017]) gc(g, 0.016, 0.62, gunMats.metal, sx, 0.018, -0.36);
@@ -3657,7 +3678,7 @@ function buildGun(id) {
   // one-handed weapons have no left hand on screen, and a sword's left hand sits on the hilt out of sight, so a raised
   // left arm comes in at the lower left to wear the compass (forearm across the view, like checking a watch).
   // While the compass shows, a sword is held in the right hand alone; hide the compass and the left hand returns to the hilt
-  const sword = id === 'katana' || id === 'saber' || id === 'hammer', hilt = g.children.find((o) => o.userData.armSlot && o.scale.x < 0);
+  const sword = id === 'katana' || id === 'saber' || id === 'hammer' || id === 'scythe', hilt = g.children.find((o) => o.userData.armSlot && o.scale.x < 0);
   if (!hilt || sword) {
     const local = (x, y, z) => new THREE.Vector3(x, y, z).sub(hip).divideScalar(0.8); // the same spot on screen for every weapon
     const hand = local(-0.09, -0.15, -0.388), elbow = local(-0.426, -0.31, -0.292);
@@ -3702,8 +3723,8 @@ function resetWeapons() {
   weapons.forEach((w) => gunRoot.remove(w.view.group));
   const kit = ARENA && ARENA.kit ? ARENA.kit : loadout; // in the arena any weapon, owned or not, with endless ammo
   weapons = kit.map((id) => WEAPON[id]).map((c) => ({ c, ammo: c.mag, reserve: ARENA ? Infinity : c.reserve, view: buildGun(c.id) }));
-  $('slots').innerHTML = weapons.map((w, i) => `<span${w.c.legend ? ' class="legend"' : ''}>${i + 1} ${w.c.name}</span>`).join('');
-  document.body.classList.toggle('drumheld', holdingDrum());
+  $('slots').innerHTML = weapons.map((w, i) => `<span${w.c.legend ? ` class="legend${w.c.soulFrame ? ' soul' : ''}"` : ''}>${i + 1} ${w.c.name}</span>`).join('');
+  document.body.classList.toggle('drumheld', holdingDrum()); document.body.classList.toggle('scytheheld', holdingScythe());
   weapons.forEach((w, i) => { gunRoot.add(w.view.group); w.view.group.visible = i === wi; });
 }
 
@@ -4352,6 +4373,7 @@ class Zombie {
   revive() {
     this.dead = false; this.revived = true; this.reviveT = 0; this.deadT = 0; this.hp = this.maxHp * 0.5; this.atkT = 0.6; this.airY = 0;
     this.g.rotation.x = 0; this.g.rotation.z = 0; this.g.position.y = 0;
+    if (this.toAlly) { this.toAlly = false; soul.rising = Math.max(0, soul.rising - 1); if (soul.ultT > 0) { makeAlly(this); return; } this.vanish = true; return; }
     zMeshes.push(...this.meshes); if (this.teamRing) this.teamRing.visible = true;
     burst(this.pos.clone().setY(0.6), UP, acidPartMat, 14, 3); sfx('growl', 0.9);
   }
@@ -4558,6 +4580,7 @@ class Zombie {
   }
   damage(dmg, ud, dir, ap = false) {
     if (this.dead) return false;
+    if (this.ally && !ud.fromZombie) return false; // your own 亡魂
     this.lastPart = ud.part;
     if (this.mutateT > 0) { this.lastFx = 'spark'; return false; } // 零號病人 can't be hurt mid-mutation
     if (this.iceHp > 0) { // 冰甲 takes the hit; fire and blasts crack it three times as fast
@@ -4702,6 +4725,7 @@ class Zombie {
     this.dead = true; this.deadT = 0; this.fallDir = Math.random() < 0.7 ? -1 : 1;
     if (this.climbT > 0) { this.climbT = 0; this.g.position.set(this.pos.x, 0, this.pos.z); } // shot off the rim mid-climb: falls onto the deck
     if (this.c.revive && !this.revived && this.lastPart !== 'head' && !(this.burnT > 0) && !(this.frozenT > 0)) this.reviveT = 3; // 實驗獵犬 gets up again
+    if (soul.ultT > 0 && !this.ally && !this.c.boss && !this.c.explode && !this.tankBlown && this.arms.length && soul.allies.length + soul.rising < 10) { this.reviveT = 0.9; this.toAlly = true; soul.rising++; } // 冥界之門: rises again on your side
     if (this.c.gas) { releaseGas(this.pos.x, this.pos.z, 4, 8); burst(this.pos.clone().setY(1.3), UP, acidPartMat, 16, 4); } // the air tank bursts
     if (this.c.hive) releaseSwarm(this.body.localToWorld(new THREE.Vector3(0, 1.45, -0.35)), this); // the nest splits open
     if (this.c.magma) { // a burst of fire
@@ -4785,13 +4809,16 @@ class Zombie {
     if (!T) return;
     if (T === player) { hurtPlayer(dmg, kind); if (this.c.ignite) player.burnT = Math.max(player.burnT || 0, 3); return; }
     if (this.c.ignite && !T.c.fireproof) T.burnT = Math.max(T.burnT || 0, 2);
-    T.damage(dmg * (ARENA ? ARENA.zdmg : 1), { part: 'body', fromZombie: true }, T.pos.clone().sub(this.pos).setY(0).normalize());
+    let d = dmg * (ARENA ? ARENA.zdmg : 1);
+    if (this.ally) { d *= 3; if (T.c.boss) { d = Math.min(d, Math.max(0, T.maxHp * 0.25 - (T.soulDmg || 0))); T.soulDmg = (T.soulDmg || 0) + d; } } // 亡魂 hit hard, but a boss loses at most a quarter in all
+    T.damage(d, { part: 'body', fromZombie: true }, T.pos.clone().sub(this.pos).setY(0).normalize());
   }
   tLow(T, h = 1) { return T === player ? player.pos.y < h : (T.airY || 0) < h; }
   tVel(T) { return T === player ? player.vel : ZERO3; }
   tAim(T) { return T === player ? camera.position.clone() : T.pos.clone().setY((T.airY || 0) + 1.3 * T.g.scale.y); }
   update(dt) {
     const g = this.g;
+    if (this.vanish) return false; // a 亡魂 gone back to the grave
     if (this.dead) {
       if (this.reviveT > 0) { this.reviveT -= dt; if (this.reviveT <= 0) { this.revive(); return true; } }
       this.deadT += dt;
@@ -4841,6 +4868,8 @@ class Zombie {
       T = this.foe;
     }
     if (drum.decoys.length && (T === player || !T)) T = nearestDecoy(this.pos); // 虛空殘影 draw every zombie's attention
+    if (this.ally) T = soulFoe(this); // a risen 亡魂 hunts the living
+    else if (soul.allies.length && (T === player || !T)) T = nearestAlly(this.pos, 5) || T; // and they turn on it when it comes close
     this.T = T;
     const idle = !T, tp = idle ? this.pos : T.pos;
     const tr = T && T !== player ? T.radius : 0; // a big target is reached at its edge, not its centre
@@ -5708,7 +5737,7 @@ function hurtPlayer(dmg, kind = 'melee') {
   const a = armorOn();
   if (a) { const stopped = dmg * armorRes(a, kind); dmg -= stopped; wearArmorDown(a, stopped); }
   player.calmT = 0; // any hit restarts the wait before health comes back
-  player.hp = Math.max(0, player.hp - dmg);
+  player.hp = Math.max(soul.ultT > 0 ? 1 : 0, player.hp - dmg); // 死神降臨: nothing brings you below 1
   hurtAlpha = Math.min(1, hurtAlpha + 0.5 + dmg / 40); shake = Math.min(1, shake + (a && a.steady ? 0.2 : 0.5));
   const now = performance.now();
   if (now - lastHurtSfx > 350) { sfx('hurt'); lastHurtSfx = now; }
@@ -5736,13 +5765,18 @@ function updateHUD() {
   $('hpnum').textContent = Math.ceil(player.hp);
   $('hpfill').style.width = player.hp + '%';
   $('wname').textContent = w.c.name;
-  if (w.c.drum) {
+  if (w.c.scythe) {
+    $('ammonum').innerHTML = soul.ultT > 0 ? `<span class="dsk" style="color:#d090ff">死神降臨</span><small>${soul.ultT.toFixed(1)} 秒</small>`
+      : `<span class="soulbar${soul.v >= 100 ? ' full' : ''}"><i style="width:${soul.v}%"></i></span><span class="dsk" style="color:#c080ff">魂 ${Math.floor(soul.v)}</span><small>/ 100</small>`;
+    const touch = document.body.classList.contains('is-touch');
+    $('reloadtip').textContent = soul.ultT > 0 ? `亡魂 ${soul.allies.length} 隻` : soul.v >= 100 ? (touch ? '魂量已滿！按「魂」' : '魂量已滿！按 F 發動') : soul.out > 0 ? '鐮刀飛出中…' : soul.throwCd > 0 ? `擲鐮冷卻 ${soul.throwCd.toFixed(1)} 秒` : (touch ? '按「擲」擲出鐮刀' : '右鍵擲出鐮刀');
+  } else if (w.c.drum) {
     const sk = drumSkill(), left = drum.cd[drum.sel];
     $('ammonum').innerHTML = `<span class="dsk" style="color:${sk.css}">${drum.sel + 1} ${sk.name}</span><small>${left > 0.15 ? left.toFixed(1) + ' 秒' : '∞'}</small>`;
     $('reloadtip').textContent = drum.ult && drum.ult.t < 8 ? '諸神黃昏！' : document.body.classList.contains('is-touch') ? '按「鼓」切換屬性' : '按住 C 切換屬性';
   } else $('ammonum').innerHTML = w.c.beam ? `<span class="heat${w.lockT > 0 ? ' hot' : ''}"><i style="width:${Math.round((w.heat || 0) * 100)}%"></i></span><small>熱度</small>`
     : w.c.melee ? '∞' : `${w.ammo} <small>/ ${Number.isFinite(w.reserve) ? w.reserve : '∞'}</small>`;
-  if (!w.c.drum) $('reloadtip').textContent = w.c.beam ? (w.lockT > 0 ? '過熱，散熱中…' : '') : railCharge > 0 ? '蓄能中…' : reloading > 0 ? '換彈中…' : (w.ammo === 0 ? (w.reserve ? '按 R 換彈' : '沒有彈藥') : '');
+  if (!w.c.drum && !w.c.scythe) $('reloadtip').textContent = w.c.beam ? (w.lockT > 0 ? '過熱，散熱中…' : '') : railCharge > 0 ? '蓄能中…' : reloading > 0 ? '換彈中…' : (w.ammo === 0 ? (w.reserve ? '按 R 換彈' : '沒有彈藥') : '');
   [...$('slots').children].forEach((s, i) => s.classList.toggle('on', i === wi));
   $('lvname').textContent = levelTitle(LV);
   $('wave').textContent = interT > 0 && !waveActive ? `下一波 ${Math.ceil(interT)}` : `第 ${waveIdx + 1} / ${LV.waves.length} 波`;
@@ -7036,7 +7070,7 @@ function clearDynamic() {
   gongWaves.forEach((w) => scene.remove(w.m)); strays.forEach((s) => scene.remove(s.m)); gongWaves = []; strays = []; finale = null; player.knock = null;
   slams.forEach((q) => { scene.remove(q.marker); if (q.t) scene.remove(q.t); }); spores.forEach((q) => scene.remove(q.m)); slams = []; spores = []; board = null;
   frosts.forEach((q) => scene.remove(q.sp)); orbs.forEach((q) => scene.remove(q.m)); holes.forEach((q) => { scene.remove(q.m); scene.remove(q.light); }); nades.forEach((q) => scene.remove(q.m));
-  blades.forEach((q) => scene.remove(q.m)); blades = []; clearDrum();
+  blades.forEach((q) => scene.remove(q.m)); blades = []; clearDrum(); clearSoul();
   frosts = []; orbs = []; holes = []; nades = []; railCharge = 0; pendingSmash = null;
   slicks.forEach((q) => scene.remove(q.m)); kSlams.forEach((q) => { scene.remove(q.t); scene.remove(q.marker); }); kSweeps.forEach((q) => { scene.remove(q.t); scene.remove(q.marker); });
   slicks = []; kSlams = []; kSweeps = []; jamming = false; player.slickT = 0; player.jammed = false;
@@ -7243,7 +7277,7 @@ canvas.addEventListener('mousedown', (e) => {
   if (state !== 'playing') return;
   if (usingLock && document.pointerLockElement !== canvas) { lockPointer(); return; }
   if (e.button === 0) { mouseDown = true; tryFire(true); }
-  if (e.button === 2) aiming = true;
+  if (e.button === 2) { if (holdingScythe()) throwScythe(); else aiming = true; } // the scythe throws instead of aiming
 });
 addEventListener('mouseup', (e) => { if (e.button === 0) mouseDown = false; if (e.button === 2) aiming = false; });
 addEventListener('contextmenu', (e) => e.preventDefault());
@@ -7256,6 +7290,7 @@ addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (state !== 'playing') return;
   if (e.code === 'KeyR') startReload();
+  if (e.code === 'KeyF' && holdingScythe() && !e.repeat) soulUlt();
   if (e.code === 'KeyC' && holdingDrum()) { if (!e.repeat) { drum.cDown = performance.now(); openDrumWheel(); } return; } // hold for the wheel; a tap still flips the compass
   if (e.code === 'KeyC' && !e.repeat && !(ARENA && ARENA.spectate)) setCompass(!compassOn);
   if (drum.wheel && /^Digit[1-8]$/.test(e.code)) { drumSelect(+e.code.slice(5) - 1); return; }
@@ -7352,6 +7387,8 @@ function lookBy(dx, dy) {
   btn('tSwitch', () => switchWeapon((wi + 1) % weapons.length));
   btn('tCompass', () => setCompass(!compassOn));
   btn('tDrum', () => (drumRingOpen ? closeDrumRing() : openDrumRing()));
+  btn('tThrow', () => throwScythe());
+  btn('tSoul', () => soulUlt());
   btn('tPause', () => { releaseTouch(); state = 'paused'; $('pause').classList.add('show'); });
   // keep the aim button lit while aiming
   setInterval(() => $('tAim').classList.toggle('down', aiming && state === 'playing'), 150);
@@ -7483,8 +7520,8 @@ function renderShop() {
     } else {
       act = `裝備到欄位 ${[0, 1, 2].map((k) => `<button class="slotbtn${slot === k ? ' on' : ''}" data-eq="${w.id}" data-slot="${k}" aria-label="裝備到欄位 ${k + 1}">${k + 1}</button>`).join('')}`;
     }
-    const tags = [w.drum ? '八種屬性・無限彈・各自冷卻' : '', w.melee ? '免彈藥' : '', w.flame ? '持續燃燒' : '', w.chain ? `連鎖 ${w.chain}` : '', w.spin ? '需預熱' : '', w.pierce > 1 ? `貫穿 ${w.pierce}` : '', w.ap ? '穿甲' : '', w.explosive ? '範圍爆炸' : '', w.burn ? '點燃目標' : '', w.volley ? `一次 ${w.volley} 發` : '', w.saw ? '持續鋸切' : '', w.smash ? '擊退・破盾' : '', w.freeze ? '凍結' : '', w.hole ? '黑洞' : '', w.dual ? '雙持' : '', w.charge ? '蓄能' : '', w.rail ? '無限貫穿' : '', w.beam ? '持續光束・會過熱' : '', w.thrown ? '拋擲' : '', w.safe ? '不傷自己' : '', w.scope ? '瞄準鏡' : '', w.move && w.move < 1 ? '移動較慢' : ''].filter(Boolean).join(' · ');
-    return `<div class="wc${slot >= 0 ? ' eq' : ''}${w.legend ? ' legend' : ''}">
+    const tags = [w.drum ? '八種屬性・無限彈・各自冷卻' : '', w.scythe ? '三段連擊・擲鐮・魂量・亡魂軍團' : '', w.melee ? '免彈藥' : '', w.flame ? '持續燃燒' : '', w.chain ? `連鎖 ${w.chain}` : '', w.spin ? '需預熱' : '', w.pierce > 1 ? `貫穿 ${w.pierce}` : '', w.ap ? '穿甲' : '', w.explosive ? '範圍爆炸' : '', w.burn ? '點燃目標' : '', w.volley ? `一次 ${w.volley} 發` : '', w.saw ? '持續鋸切' : '', w.smash ? '擊退・破盾' : '', w.freeze ? '凍結' : '', w.hole ? '黑洞' : '', w.dual ? '雙持' : '', w.charge ? '蓄能' : '', w.rail ? '無限貫穿' : '', w.beam ? '持續光束・會過熱' : '', w.thrown ? '拋擲' : '', w.safe ? '不傷自己' : '', w.scope ? '瞄準鏡' : '', w.move && w.move < 1 ? '移動較慢' : ''].filter(Boolean).join(' · ');
+    return `<div class="wc${slot >= 0 ? ' eq' : ''}${w.legend ? ' legend' : ''}${w.soulFrame ? ' soul' : ''}">
       <div class="top"><div><div class="nm">${w.name}${w.limited ? `<span class="ltd">${w.limited}</span>` : ''}</div><div class="ct">${w.cat}${tags ? ' · ' + tags : ''}</div></div>
         <div class="pr num">${have ? (slot >= 0 ? `欄位 ${slot + 1}` : '已擁有') : w.reward ? '限定獎勵' : priceTag(w)}</div></div>
       <div class="ds">${w.desc}</div>
@@ -7622,7 +7659,7 @@ function switchWeapon(i) {
   if (weapons[i].view.saber) weapons[i].view.ext = 0; // the blade ignites again each time it is drawn
   $('scope').style.display = 'none';
   weapons[wi].view.group.visible = false; wi = i; weapons[wi].view.group.visible = true;
-  closeDrumWheel(); closeDrumRing(); document.body.classList.toggle('drumheld', holdingDrum());
+  closeDrumWheel(); closeDrumRing(); document.body.classList.toggle('drumheld', holdingDrum()); document.body.classList.toggle('scytheheld', holdingScythe());
   switching = 0.35; reloading = 0;
 }
 function camRight() { return new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion); }
@@ -7686,6 +7723,7 @@ function updateSlashMarks(dt) {
 }
 let swingDur = 0.32, pendingSmash = null, railCharge = 0;
 function meleeSwing(w) {
+  if (w.c.scythe) { scytheSwing(w); return; }
   swingT = swingDur = w.c.smash ? 0.5 : 0.32;
   if (w.c.smash) { pendingSmash = { w, t: 0.2 }; sfx('swoosh', 0.8); return; } // the hammer lands at the bottom of the swing
   const f = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
@@ -8340,8 +8378,211 @@ function closeDrumWheel() { drum.wheel = false; $('drumWheel') && $('drumWheel')
 function openDrumRing() { drumRingOpen = true; $('drumRing').classList.add('show'); renderDrumWheel(); }
 function closeDrumRing() { drumRingOpen = false; $('drumRing') && $('drumRing').classList.remove('show'); }
 const holdingDrum = () => !!(weapons[wi] && weapons[wi].c.drum);
+// ============================================================
+//  噬魂・冥王鐮刀 (CONTEXT.md: 冥王鐮刀): a three-cut combo whose last cut throws a crescent soul wave, a boomerang throw on
+//  the right button, and a soul gauge filled by kills. Full, F (or 魂) brings 死神降臨: twelve seconds in which every cut
+//  throws a wave, three scythes fly at once and the dead rise to fight for you, ending in a judgement on everything left.
+//  Models in tools/blender/scythe.py.
+// ============================================================
+const soul = { v: 0, combo: 0, lastSwing: 0, throwCd: 0, out: 0, flying: [], waves: [], wisps: [], allies: [], rising: 0, ultT: 0, gate: null, edgeT: 0 };
+let SCYTHE = null, _scyMats = null;
+function scytheMats() {
+  if (_scyMats) return _scyMats;
+  const glow = (color, opacity = 1) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  _scyMats = {
+    scy_wood: std({ color: 0x2a1c16, roughness: 0.75 }), scy_iron: std({ color: 0x2c2e33, roughness: 0.4, metalness: 1 }),
+    scy_bone: std({ color: 0xd2c6a8, roughness: 0.6 }), scy_leather: std({ color: 0x2c140e, roughness: 0.85 }),
+    scy_blade: std({ color: 0x40434c, roughness: 0.3, metalness: 1, emissive: 0x180830, emissiveIntensity: 0.6 }),
+    scy_edge: glow(0xc070ff), scy_fire: glow(0x9a50ff, 0.9), scy_dark: new THREE.MeshBasicMaterial({ color: 0x050205 }),
+    soul_wave: glow(0xb070ff, 0.85),
+  };
+  return _scyMats;
+}
+loadModel('scythe', (scene) => {
+  const m = scytheMats();
+  scene.traverse((o) => { if (o.isMesh) { o.material = m[o.material.name] || gunMats.metal; o.castShadow = !o.material.blending || o.material.blending === THREE.NormalBlending; } });
+  SCYTHE = {}; scene.children.forEach((o) => { SCYTHE[o.name] = o; });
+  weapons.forEach((w) => { if (w.view.scytheK) useModelScythe(w.view); });
+});
+function useModelScythe(v) {
+  const k = v.scytheK; k.clear();
+  const s = SCYTHE.scythe.clone(); s.position.z = 0.15; s.rotation.z = 1.6; s.traverse((o) => { o.frustumCulled = false; }); k.add(s); // blade arcs over the top of the view
+  const halo = drumGlow(0xa060ff, 0.5); halo.position.set(0, 0.42, -0.7); scene.remove(halo); k.add(halo); v.soulHalo = halo;
+}
+function buildProceduralScythe(v) {
+  const k = v.scytheK, m = scytheMats();
+  gc(k, 0.018, 1.3, m.scy_wood, 0, 0, -0.25);
+  const b = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.03, 6, 24, 1.3), m.scy_blade); b.position.set(-0.45, 0, -0.8); b.rotation.x = Math.PI / 2; k.add(b);
+}
+const holdingScythe = () => !!(weapons[wi] && weapons[wi].c.scythe);
+const soulAllyMat = () => (soulAllyMat.m ||= std({ color: 0x7a50d0, emissive: 0x5a20c0, emissiveIntensity: 0.9, roughness: 0.6, transparent: true, opacity: 0.8 }));
+// a hit from the scythe; a kill feeds the gauge and heals. During 死神降臨 a boss loses at most a quarter of its health
+function scytheHit(z, dmg, ud = { part: 'body' }, dir = null, ult = false) {
+  if (!z || z.dead || z.ally) return false;
+  if (ult && z.c.boss) { const left = z.maxHp * 0.25 - (z.soulDmg || 0); dmg = Math.min(dmg, Math.max(0, left)); z.soulDmg = (z.soulDmg || 0) + dmg; if (dmg <= 0) return false; }
+  const killed = z.damage(dmg, ud, dir || new THREE.Vector3(0, 0, 1));
+  if (killed) {
+    soulGain(ud.part === 'head' ? 8 : 4, zChest(z));
+    player.hp = Math.min(100, player.hp + 3); // 噬魂
+  } else if (z.c.boss) soulGain(2, null);
+  return killed;
+}
+function soulGain(n, from) {
+  if (soul.ultT > 0) return;
+  const was = soul.v; soul.v = Math.min(100, soul.v + n);
+  if (from) { const s = drumGlow(0xb070ff, 0.35, from); soul.wisps.push({ s, t: 0, from: from.clone() }); }
+  if (was < 100 && soul.v >= 100) { showMsg('魂量已滿', document.body.classList.contains('is-touch') ? '按「魂」發動死神降臨' : '按 F 發動死神降臨', 2); sfx('heal', 0.8); }
+}
+const scytheReach = () => (soul.v >= 50 || soul.ultT > 0 ? 1.3 : 1);
+function scytheSwing(w) {
+  if (soul.out > 0 && soul.ultT <= 0) { swingT = 0; return; } // the scythe is in the air
+  const now = performance.now() / 1000;
+  soul.combo = now - soul.lastSwing < 1.0 ? (soul.combo % 3) + 1 : 1; soul.lastSwing = now;
+  const third = soul.combo === 3;
+  swingT = swingDur = third ? 0.42 : 0.3;
+  const f = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+  const range = w.c.range * scytheReach(), arc = w.c.arc * (third ? 1.2 : 1);
+  let hits = 0, kill = false;
+  for (const z of zombies) {
+    if (z.dead || z.ally || hits >= 6) continue;
+    const to = new THREE.Vector3(z.pos.x - player.pos.x, 0, z.pos.z - player.pos.z), d = to.length();
+    if (d > range + z.radius) continue;
+    if (d > 0.01 && to.normalize().dot(f) < Math.cos(arc)) continue;
+    const killed = scytheHit(z, w.c.dmg * (third ? 1.5 : 1), { part: z.shieldHp > 0 ? 'shield' : 'body' }, f, soul.ultT > 0);
+    const at = zChest(z);
+    burst(at, f, bloodMat, 18, 5); burst(at, UP, drumPartMat(0xa060ff), 8, 3); slashMark(at.clone().addScaledVector(f, -0.25), 0xa060ff);
+    if (killed && z.headPivot && z.look !== 'dog' && !z.c.boss && Math.random() < 0.6) decapitate(z);
+    hits++; kill = kill || killed;
+  }
+  if (hits) { hitMarker(kill); sfx('cut'); hitStop = 0.06; shake = Math.min(1, shake + 0.3); }
+  sfx('swoosh', third ? 1 : 0.7);
+  if (third || soul.ultT > 0) soulWave(f);
+}
+// 月牙魂刃: a crescent of soul fire that cuts through every zombie in a 12 m line
+function soulWave(h) {
+  const m = SCYTHE ? SCYTHE.soul_wave.clone() : new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.06, 6, 24, 2.4), scytheMats().soul_wave);
+  m.position.copy(player.pos).setY(1.1).addScaledVector(h, 0.6); m.rotation.y = Math.atan2(-h.x, -h.z); m.scale.setScalar(1.5); scene.add(m);
+  soul.waves.push({ m, h: h.clone(), dist: 0, hit: new Set() });
+  sfx('slash', 1);
+}
+// 迴旋擲鐮: out 15 m and back, cutting both ways; three at once in 死神降臨
+function throwScythe() {
+  if (soul.throwCd > 0 || (soul.out > 0 && soul.ultT <= 0) || switching > 0) return;
+  soul.throwCd = soul.ultT > 0 ? 2 : 4;
+  const f = camera.getWorldDirection(new THREE.Vector3()), h = new THREE.Vector3(f.x, 0, f.z).normalize();
+  for (const fan of soul.ultT > 0 ? [-0.28, 0, 0.28] : [0]) {
+    const g = new THREE.Group(), spin = new THREE.Group(); g.add(spin);
+    const s = SCYTHE ? SCYTHE.scythe.clone() : new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 1.3), scytheMats().scy_blade);
+    s.position.z = 0.45; spin.add(s); spin.rotation.z = 0.25;
+    g.position.copy(player.pos).setY(1.2); scene.add(g);
+    soul.flying.push({ g, spin, dir: h.clone().applyAxisAngle(UP, fan), back: false, dist: 0, hit: new Set(), glow: drumGlow(0xa060ff, 1.4) });
+    soul.out++;
+  }
+  sfx('swoosh', 1);
+}
+// 死神降臨・萬魂歸冥
+function soulUlt() {
+  if (soul.v < 100 || soul.ultT > 0) return;
+  soul.v = 0; soul.ultT = 12; soul.throwCd = 0;
+  zombies.forEach((z) => { z.soulDmg = 0; });
+  const at = player.pos.clone();
+  soul.gate = { m: drumFlat(9, 0x7a30ff, 12, at, 0.35), ring: drumFlat(9.4, 0xc080ff, 12, at, 0.75, true), inner: drumFlat(5, 0xb060ff, 12, at, 0.5, true) };
+  showMsg('死神降臨・萬魂歸冥', '冥界之門開啟，亡者將為你而戰', 2.6); sfx('ult', 1);
+  for (let k = 0; k < 40; k++) burst(at.clone().add(new THREE.Vector3(rand(-6, 6), 0.2, rand(-6, 6))), UP, drumPartMat(0xa060ff), 1, rand(3, 7));
+  shake = 1; boomLight.position.copy(at).setY(2); boomLight.color.set(0x9a50ff); boomT = 0.6;
+}
+// the dead who rise in 死神降臨 fight for you: purple, untouchable by your weapons, hit three times as hard
+function makeAlly(z) {
+  z.ally = true; z.hp = z.maxHp * 0.8; z.speed *= 1.35; z.foe = null; z.tgtCd = 0;
+  z.meshes.forEach((m) => { m.userData.mat0 = m.material; m.material = soulAllyMat(); });
+  zMeshes = zMeshes.filter((m) => m.userData.z !== z);
+  const glow = drumGlow(0x9a50ff, 2.4); scene.remove(glow); glow.position.y = 1; z.g.add(glow);
+  soul.allies.push(z);
+  burst(z.pos.clone().setY(0.6), UP, drumPartMat(0xa060ff), 18, 3); sfx('growl', 0.9);
+}
+function soulFoe(a) {
+  let best = null, bd = Infinity;
+  for (const o of zombies) { if (o === a || o.dead || o.ally || o.climbT > 0) continue; const d = (o.pos.x - a.pos.x) ** 2 + (o.pos.z - a.pos.z) ** 2; if (d < bd) { bd = d; best = o; } }
+  return best;
+}
+function nearestAlly(p, max) {
+  let best = null, bd = max * max;
+  for (const a of soul.allies) { if (a.dead) continue; const d = (a.pos.x - p.x) ** 2 + (a.pos.z - p.z) ** 2; if (d < bd) { bd = d; best = a; } }
+  return best;
+}
+function soulJudgement() { // the end: the risen burst, and a wave of souls breaks over everything still standing
+  for (const a of soul.allies) {
+    if (!a.dead) {
+      burst(zChest(a), UP, drumPartMat(0xa060ff), 24, 5);
+      for (const z of zombies) if (!z.dead && !z.ally && Math.hypot(z.pos.x - a.pos.x, z.pos.z - a.pos.z) < 4) scytheHit(z, 150, { part: 'body', blast: true }, null, true);
+    }
+    a.vanish = true;
+  }
+  soul.allies = [];
+  for (const z of zombies) if (!z.dead && !z.ally) { scytheHit(z, 150, { part: 'body' }, null, true); burst(zChest(z), UP, drumPartMat(0xa060ff), 6, 3); }
+  if (soul.gate) drum.fx.push({ m: drumFlat(2, 0xc080ff, 1, player.pos, 0.9, true), life: 1, max: 1, grow: 30 });
+  showMsg('最終審判', '', 1.6); sfx('boom', 1.4); shake = 1;
+  boomLight.position.copy(player.pos).setY(3); boomLight.color.set(0xb070ff); boomT = 0.6;
+}
+function updateSoul(dt) {
+  soul.throwCd = Math.max(0, soul.throwCd - dt);
+  if (soul.ultT > 0) {
+    soul.ultT -= dt;
+    if (soul.gate) { soul.gate.m.rotation.z += dt * 0.5; soul.gate.inner.rotation.z -= dt * 0.8; soul.gate.ring.material.opacity = 0.6 + 0.2 * Math.sin(soul.ultT * 6); }
+    if (Math.random() < dt * 12 && soul.gate) burst(soul.gate.m.position.clone().add(new THREE.Vector3(rand(-8, 8), 0.1, rand(-8, 8))), UP, drumPartMat(0x9a50ff), 1, rand(2, 4));
+    if (soul.ultT <= 0) { soulJudgement(); if (soul.gate) { ['m', 'ring', 'inner'].forEach((k) => scene.remove(soul.gate[k])); soul.gate = null; } }
+  }
+  soul.allies = soul.allies.filter((a) => !a.dead && !a.vanish);
+  // the souls of the slain drift into the blade
+  soul.wisps = soul.wisps.filter((w) => {
+    w.t += dt * 2.4; const to = camera.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, -0.4, 0));
+    w.s.position.lerpVectors(w.from, to, w.t * w.t).y += Math.sin(w.t * Math.PI) * 0.8;
+    if (w.t < 1) return true; scene.remove(w.s); return false;
+  });
+  // soul waves
+  soul.waves = soul.waves.filter((q) => {
+    const step = 28 * dt; q.dist += step; q.m.position.addScaledVector(q.h, step); q.m.rotation.z = Math.sin(q.dist) * 0.1;
+    q.m.material && (q.m.material.opacity = 0.85 * Math.min(1, (12 - q.dist) / 3));
+    if (Math.random() < 0.8) burst(q.m.position, UP, drumPartMat(0xa060ff), 1, 1.5);
+    for (const z of zombies) {
+      if (z.dead || z.ally || q.hit.has(z) || Math.hypot(z.pos.x - q.m.position.x, z.pos.z - q.m.position.z) > 1.3 + z.radius) continue;
+      q.hit.add(z); const k = scytheHit(z, 110, { part: 'body' }, q.h, soul.ultT > 0); burst(zChest(z), q.h, bloodMat, 10, 4); if (k) hitMarker(true);
+    }
+    if (q.dist < 12 && !blocked(q.m.position.x, q.m.position.z, 0)) return true;
+    scene.remove(q.m); return false;
+  });
+  // thrown scythes
+  soul.flying = soul.flying.filter((t) => {
+    t.spin.rotation.y += dt * 20;
+    const p = t.g.position, home = player.pos.clone().setY(1.2);
+    if (!t.back) { const step = 26 * dt; p.addScaledVector(t.dir, step); t.dist += step; if (t.dist >= 15 || blocked(p.x, p.z, 0)) { t.back = true; t.hit.clear(); } }
+    else { const to = home.clone().sub(p), d = to.length(); p.addScaledVector(to.normalize(), Math.min(d, 30 * dt)); if (d < 1.2) { scene.remove(t.g); scene.remove(t.glow); soul.out--; return false; } }
+    t.glow.position.copy(p);
+    if (Math.random() < 0.6) burst(p, UP, drumPartMat(0x9a50ff), 1, 1);
+    for (const z of zombies) {
+      if (z.dead || z.ally || t.hit.has(z) || Math.hypot(z.pos.x - p.x, z.pos.z - p.z) > 1.3 + z.radius) continue;
+      t.hit.add(z); const k = scytheHit(z, 120, { part: 'body' }, t.dir, soul.ultT > 0); burst(zChest(z), UP, bloodMat, 12, 4); sfx('cut', 0.6); if (k) hitMarker(true);
+    }
+    return true;
+  });
+  // the scythe in your hands: hidden while it flies, its fire burning brighter as the gauge fills
+  const w = weapons[wi], v = w && w.view;
+  if (v && v.scytheK) {
+    v.scytheK.visible = !(soul.out > 0 && soul.ultT <= 0);
+    const lvl = soul.ultT > 0 ? 1.4 : soul.v / 100, tt = performance.now() / 1000, m = scytheMats();
+    m.scy_edge.opacity = 0.55 + 0.45 * lvl; m.scy_fire.opacity = 0.4 + 0.6 * lvl * (0.8 + 0.2 * Math.sin(tt * 9));
+    if (v.soulHalo) { v.soulHalo.scale.setScalar(0.25 + 0.5 * lvl + 0.05 * Math.sin(tt * 7)); v.soulHalo.material.opacity = 0.3 + 0.5 * Math.min(1, lvl); }
+  }
+  document.body.classList.toggle('soulfull', holdingScythe() && (soul.v >= 100 || soul.ultT > 0));
+  document.body.classList.toggle('soulult', soul.ultT > 0);
+}
+function clearSoul() {
+  soul.waves.forEach((q) => scene.remove(q.m)); soul.flying.forEach((t) => { scene.remove(t.g); scene.remove(t.glow); }); soul.wisps.forEach((w) => scene.remove(w.s));
+  if (soul.gate) ['m', 'ring', 'inner'].forEach((k) => scene.remove(soul.gate[k]));
+  Object.assign(soul, { v: 0, combo: 0, throwCd: 0, out: 0, flying: [], waves: [], wisps: [], allies: [], rising: 0, ultT: 0, gate: null });
+}
 function updateWeaponFx(dt) {
-  updateDrum(dt);
+  updateDrum(dt); updateSoul(dt);
   frosts = frosts.filter((f) => {
     f.life -= dt; f.v.multiplyScalar(1 - dt * 2.2); f.sp.position.addScaledVector(f.v, dt);
     const k = 1 - f.life / f.max; f.sp.scale.setScalar(0.2 + k * 1.3); f.sp.material.opacity = Math.max(0, f.life / f.max) * 0.75;
@@ -8553,7 +8794,7 @@ function updatePlayer(dt) {
     while (player.regenT >= 1) { player.regenT -= 1; player.hp = Math.min(100, player.hp + 2); }
   } else player.regenT = 0;
   $('health').classList.toggle('regen', player.calmT >= 10 && player.hp < 100);
-  const speed = (aiming ? 2.8 : sprint ? 8.2 : 5.2) * (weapons[wi]?.c.move || 1) * (ARMOR[armorId]?.move || 1) * (player.slowT > 0 ? 0.5 : 1);
+  const speed = (aiming ? 2.8 : sprint ? 8.2 : 5.2) * (weapons[wi]?.c.move || 1) * (holdingScythe() && (soul.v >= 50 || soul.ultT > 0) ? 1.15 : 1) * (ARMOR[armorId]?.move || 1) * (player.slowT > 0 ? 0.5 : 1);
   const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);
   let wx = 0, wz = 0;
   if (keys.KeyW) { wx += fx; wz += fz; } if (keys.KeyS) { wx -= fx; wz -= fz; }
@@ -8835,7 +9076,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026102902'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026103101'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
@@ -8862,7 +9103,7 @@ applyArmorLook();
 $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 buildDrumUi();
-window.__game = { get state() { return state; }, player, drum: () => drum, drumSelect, drumFire: (click = true) => { if (holdingDrum()) drumFire(weapons[wi], click); }, codeWall: () => !!CODEWALL, blades: () => blades, zombies: () => zombies, startLevel, spawnZombie,
+window.__game = { get state() { return state; }, player, drum: () => drum, soul: () => soul, throwScythe: () => throwScythe(), soulUlt: () => soulUlt(), drumSelect, drumFire: (click = true) => { if (holdingDrum()) drumFire(weapons[wi], click); }, codeWall: () => !!CODEWALL, blades: () => blades, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
   modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), grantWeapon, holes: () => holes, nades: () => nades, trigger(v) { mouseDown = v; }, gongWaves: () => gongWaves, startBoarding, cargo: () => CARGO, boarding: () => board, setCompass, compassOn: () => compassOn, spawnDragon, setWeapon(i) { wi = i; weapons.forEach((w, k) => { w.view.group.visible = k === i; }); }, EVENT_LEVEL, completeLevel: () => levelComplete(), setDate(d) { dateOverride = d ? new Date(d + 'T12:00:00') : null; renderMenu(); }, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
