@@ -239,6 +239,23 @@
   #tThrow, #tSoul { display: none; width: 56px; height: 56px; right: calc(max(34px, env(safe-area-inset-right, 0px)) + 104px); border-radius: 50%; font-size: 20px; border-color: #a060ff; color: #e0c0ff; box-shadow: 0 0 12px rgba(150,70,255,0.6); }
   #tThrow { bottom: 128px; } #tSoul { bottom: 196px; }
   body.scytheheld #tThrow, body.scytheheld #tSoul { display: flex; }
+  /* 時空沙漏: the cyan-and-gold clockwork frame, the 時之沙 gauge, bullet time and the stopped world */
+  @keyframes chronoGlow { 0%, 100% { box-shadow: 0 0 8px rgba(110,230,255,0.5), inset 0 0 10px rgba(255,210,120,0.2); } 50% { box-shadow: 0 0 18px rgba(140,240,255,0.95), inset 0 0 16px rgba(255,220,140,0.4); } }
+  #slots span.legend.chrono { border-color: #70e8ff; color: #d8f8ff; background: linear-gradient(100deg, rgba(10,30,50,0.5) 25%, rgba(120,235,255,0.5) 42%, rgba(255,215,120,0.55) 58%, rgba(10,30,50,0.5) 75%); background-size: 240% 100%; animation: legendFlow 2s linear infinite, chronoGlow 1.8s ease-in-out infinite; }
+  .wc.legend.chrono { border-color: #70e8ff; background-image: linear-gradient(100deg, rgba(10,30,50,0.3) 30%, rgba(120,235,255,0.16) 45%, rgba(255,215,120,0.16) 55%, rgba(10,30,50,0.3) 70%); animation: legendFlow 2.8s linear infinite, chronoGlow 2.2s ease-in-out infinite; }
+  .wc.legend.chrono .nm { color: #b8f4ff; } .wc.legend.chrono .ltd { background: linear-gradient(90deg, #1a6a8a, #fff0c0, #1a6a8a); color: #102030; border-color: #90f0ff; }
+  .chronobar { display: inline-block; width: 70px; height: 8px; border: 1px solid #70e8ff; margin-right: 8px; vertical-align: middle; background: rgba(0,20,40,0.6); }
+  .chronobar i { display: block; height: 100%; background: linear-gradient(90deg, #ffc860, #80e8ff); }
+  .chronobar.full { animation: chronoGlow 1s ease-in-out infinite; }
+  #chronoEdge { position: fixed; inset: 0; pointer-events: none; z-index: 4; opacity: 0; transition: opacity 0.25s; box-shadow: inset 0 0 120px 30px rgba(80,210,255,0.5); }
+  body.bullettime #chronoEdge { opacity: 0.8; } body.timestop #chronoEdge { opacity: 1; box-shadow: inset 0 0 160px 50px rgba(255,210,120,0.55); }
+  #chronoClock { position: fixed; left: 50%; top: 50%; width: 300px; height: 300px; margin: -150px 0 0 -150px; border-radius: 50%; pointer-events: none; z-index: 5; display: none;
+    border: 3px solid rgba(255,220,140,0.55); background: repeating-conic-gradient(from -1deg, rgba(255,220,140,0.6) 0 2deg, transparent 2deg 30deg); -webkit-mask: radial-gradient(circle, transparent 0 62%, #000 63% 100%); mask: radial-gradient(circle, transparent 0 62%, #000 63% 100%); }
+  body.timestop #chronoClock { display: block; }
+  #chronoHand { position: absolute; left: 50%; top: 4%; width: 4px; height: 46%; margin-left: -2px; background: rgba(255,230,160,0.9); transform-origin: 50% 100%; }
+  #tChronoSlow, #tChronoUlt { display: none; width: 56px; height: 56px; right: calc(max(34px, env(safe-area-inset-right, 0px)) + 104px); border-radius: 50%; font-size: 20px; border-color: #70e8ff; color: #d8f8ff; box-shadow: 0 0 12px rgba(110,230,255,0.6); }
+  #tChronoSlow { bottom: 128px; } #tChronoUlt { bottom: 196px; } #tChronoSlow.on { background: rgba(80,200,255,0.45); }
+  body.chronoheld #tChronoSlow, body.chronoheld #tChronoUlt { display: flex; }
   body.soulfull #tSoul { background: rgba(140,60,255,0.45); animation: soulGlow 1s ease-in-out infinite; }
   #drumRing { position: absolute; inset: 0; display: none; pointer-events: none; }
   #drumRing.show { display: block; }
@@ -451,11 +468,15 @@
 
 <div id="drumWheel"></div>
 <div id="soulEdge"></div>
+<div id="chronoEdge"></div>
+<div id="chronoClock"><div id="chronoHand"></div></div>
 <div id="touch">
   <div id="drumRing"></div>
   <div class="tb" id="tDrum">鼓</div>
   <div class="tb" id="tThrow">擲</div>
   <div class="tb" id="tSoul">魂</div>
+  <div class="tb" id="tChronoSlow">時</div>
+  <div class="tb" id="tChronoUlt">終</div>
   <div id="stickHint"></div>
   <div id="stick"><div id="knob"></div></div>
   <div class="tb" id="tFire">射擊</div>
@@ -777,6 +798,9 @@ const WEAPONS = [
   { id: 'scythe', name: '噬魂・冥王鐮刀', cat: '傳奇', limited: '傳奇', legend: true, soulFrame: true, scythe: true, melee: true, price: 25000, sound: '', dmg: 95, rate: 0.38, auto: false,
     mag: Infinity, reserve: Infinity, reload: 0, spread: 0, pellets: 1, recoil: 0, range: 3.3, arc: 1.15, move: 1.05, noFlash: true, zoom: 0,
     desc: '冥王的巨鐮，不需要彈藥。左鍵三段連擊，第三刀放出 12 公尺的月牙魂刃；右鍵（手機按「擲」）擲出迴旋鐮刀，飛出 15 公尺再飛回，來回切割，冷卻 4 秒。用鐮刀殺殭屍會累積魂量並回 3 點生命；魂量過半移動更快、揮砍更遠。魂量滿 100 按 F（手機按「魂」）發動「死神降臨・萬魂歸冥」：12 秒內每一刀都放魂刃、一次擲出三把鐮刀，這段時間倒下的殭屍會變成替你作戰的亡魂（最多 10 隻），結束時亡魂自爆、全場殭屍受到最終審判（Boss 最多扣四分之一血）。' },
+  { id: 'chrono', name: '永劫・時空沙漏', cat: '傳奇', limited: '傳奇', legend: true, chronoFrame: true, chrono: true, price: 30000, sound: 'chrono', dmg: 55, rate: 0.09, auto: true,
+    mag: Infinity, reserve: Infinity, reload: 0, spread: 0.007, pellets: 1, recoil: 0.006, pierce: 2, zoom: 22,
+    desc: '操控時間的傳奇步槍，不需要彈藥。射出貫穿兩隻的時光彈，每發都在殭屍身上留下「時印」，滿 5 層（Boss 15 層）牠就被定在時間裡 2.5 秒，接著時間崩解再受重創。按住右鍵（手機按「時」）進入子彈時間：全場殭屍和危險變成四分之一速度，會消耗時之沙。時之沙滿了按 F（手機按「終」）發動「時之終焉・萬物靜止」：時間完全停止 8 秒，這段時間你造成的所有傷害在時間恢復的瞬間以 3 倍一次爆發（Boss 最多扣 30% 血），生命同時倒流回 10 秒內的最高值。冷卻 45 秒。' },
   // ---- 第二批新武器 (.scratch/weapons-2/spec.md); models in tools/blender/guns.py ----
   { id: 'chainsaw', name: '電鋸', cat: '近戰', price: 3500, sound: '', dmg: 22, rate: 0.1, auto: true, mag: Infinity, reserve: Infinity, reload: 0, spread: 0, pellets: 1, recoil: 0,
     melee: true, saw: true, range: 2.2, arc: 0.6, noFlash: true, zoom: 0,
@@ -2768,6 +2792,9 @@ function sfx(name, vol = 1) {
     case 'zap': sNoise(t, 0.35, 9000, 1500, 0.8 * vol, 'highpass'); sTone(t, 0.25, 900, 120, 0.4 * vol, 'square'); break;
     case 'bossroar': sTone(t, 1.8, 60, 30, 0.9, 'sawtooth'); sTone(t, 1.8, 92, 45, 0.6, 'sawtooth'); sNoise(t, 1.6, 700, 150, 0.6, 'bandpass'); break;
     case 'splat': sNoise(t, 0.5, 900, 120, 0.8); sTone(t, 0.3, 160, 60, 0.4, 'sawtooth'); break;
+    case 'chrono': sNoise(t, 0.12, 7000, 2500, 0.45, 'bandpass'); sTone(t, 0.1, 1800, 900, 0.18, 'triangle'); sTone(t, 0.08, 220, 90, 0.4); break;
+    case 'tick': sTone(t, 0.05, 2600, 2400, 0.25 * vol, 'square'); sTone(t + 0.02, 0.18, 880, 860, 0.12 * vol, 'sine'); break;
+    case 'timestop': sTone(t, 2.2, 160, 60, 0.9 * vol, 'sine'); sTone(t, 1.6, 1320, 660, 0.18 * vol, 'triangle'); sNoise(t, 0.8, 300, 6000, 0.5 * vol, 'bandpass'); break;
     case 'drum': sTone(t, 0.32, 120, 46, 0.9 * vol, 'sine'); sNoise(t, 0.12, 900, 200, 0.45 * vol); sTone(t, 0.08, 320, 180, 0.25 * vol, 'triangle'); break;
     case 'blink': sTone(t, 0.25, 300, 1600, 0.2 * vol, 'sine'); sNoise(t, 0.25, 4000, 9000, 0.3 * vol, 'highpass'); break;
     case 'ult': for (let k = 0; k < 6; k++) { sTone(t + k * 0.11, 0.4, 110, 42, 1.0 * vol, 'sine'); sNoise(t + k * 0.11, 0.1, 900, 200, 0.5 * vol); } sTone(t + 0.7, 1.4, 220, 440, 0.25 * vol, 'triangle'); break;
@@ -3533,6 +3560,11 @@ function buildGun(id) {
     gb(g, 0.03, 0.04, 0.004, gunMats.metal, 0, 0.065, -0.1);
     arm(g, 0, -0.07, 0.08, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.2, -0.14, -0.22, 0.0);
     muzzle = new THREE.Vector3(0, 0.02, -0.47); hip = new THREE.Vector3(0.17, -0.18, -0.45); aim = new THREE.Vector3(0, -0.056, -0.34);
+  } else if (id === 'chrono') {
+    const holder = new THREE.Group(); g.add(holder); extra.chronoHolder = holder;
+    if (CHRONO) useModelChrono(extra); else buildProceduralChrono(extra);
+    arm(g, 0, -0.085, 0.09, 0.05, -0.22, 0.42); arm(g, 0, -0.045, -0.3, -0.14, -0.22, -0.04);
+    muzzle = new THREE.Vector3(0, 0.012, -0.67); hip = new THREE.Vector3(0.17, -0.17, -0.5); aim = new THREE.Vector3(0, -0.055, -0.3);
   } else if (id === 'drum') {
     // the drum floats at the lower right with its rune face tipped toward you; the right hand holds the stick over it
     const holder = new THREE.Group(); holder.position.set(-0.02, -0.06, -0.06); holder.rotation.set(1.0, 0, 0.32); holder.scale.setScalar(0.72); g.add(holder);
@@ -3723,8 +3755,8 @@ function resetWeapons() {
   weapons.forEach((w) => gunRoot.remove(w.view.group));
   const kit = ARENA && ARENA.kit ? ARENA.kit : loadout; // in the arena any weapon, owned or not, with endless ammo
   weapons = kit.map((id) => WEAPON[id]).map((c) => ({ c, ammo: c.mag, reserve: ARENA ? Infinity : c.reserve, view: buildGun(c.id) }));
-  $('slots').innerHTML = weapons.map((w, i) => `<span${w.c.legend ? ` class="legend${w.c.soulFrame ? ' soul' : ''}"` : ''}>${i + 1} ${w.c.name}</span>`).join('');
-  document.body.classList.toggle('drumheld', holdingDrum()); document.body.classList.toggle('scytheheld', holdingScythe());
+  $('slots').innerHTML = weapons.map((w, i) => `<span${w.c.legend ? ` class="legend${w.c.soulFrame ? ' soul' : w.c.chronoFrame ? ' chrono' : ''}"` : ''}>${i + 1} ${w.c.name}</span>`).join('');
+  document.body.classList.toggle('drumheld', holdingDrum()); document.body.classList.toggle('scytheheld', holdingScythe()); document.body.classList.toggle('chronoheld', holdingChrono());
   weapons.forEach((w, i) => { gunRoot.add(w.view.group); w.view.group.visible = i === wi; });
 }
 
@@ -4581,6 +4613,9 @@ class Zombie {
   damage(dmg, ud, dir, ap = false) {
     if (this.dead) return false;
     if (this.ally && !ud.fromZombie) return false; // your own 亡魂
+    if (chrono.stopT > 0 && !ud.release) { // 萬物靜止: the blow is kept, to land when time runs again
+      this.stored = (this.stored || 0) + dmg * (ud.part === 'head' ? 2.5 : 1); chrono.marked.add(this); this.lastFx = 'blood'; return false;
+    }
     this.lastPart = ud.part;
     if (this.mutateT > 0) { this.lastFx = 'spark'; return false; } // 零號病人 can't be hurt mid-mutation
     if (this.iceHp > 0) { // 冰甲 takes the hit; fire and blasts crack it three times as fast
@@ -5765,7 +5800,12 @@ function updateHUD() {
   $('hpnum').textContent = Math.ceil(player.hp);
   $('hpfill').style.width = player.hp + '%';
   $('wname').textContent = w.c.name;
-  if (w.c.scythe) {
+  if (w.c.chrono) {
+    const touch = document.body.classList.contains('is-touch');
+    $('ammonum').innerHTML = chrono.stopT > 0 ? `<span class="dsk" style="color:#90f0ff">萬物靜止</span><small>${chrono.stopT.toFixed(1)} 秒</small>`
+      : `<span class="chronobar${chrono.sand >= 100 ? ' full' : ''}"><i style="width:${chrono.sand}%"></i></span><span class="dsk" style="color:#80e8ff">時之沙 ${Math.floor(chrono.sand)}</span>`;
+    $('reloadtip').textContent = chrono.stopT > 0 ? '時間停止中，盡情攻擊' : chrono.cd > 0 ? `時之終焉冷卻 ${Math.ceil(chrono.cd)} 秒` : chrono.sand >= 100 ? (touch ? '時之沙已滿！按「終」' : '時之沙已滿！按 F 發動') : (touch ? '按「時」子彈時間' : '按住右鍵子彈時間');
+  } else if (w.c.scythe) {
     $('ammonum').innerHTML = soul.ultT > 0 ? `<span class="dsk" style="color:#d090ff">死神降臨</span><small>${soul.ultT.toFixed(1)} 秒</small>`
       : `<span class="soulbar${soul.v >= 100 ? ' full' : ''}"><i style="width:${soul.v}%"></i></span><span class="dsk" style="color:#c080ff">魂 ${Math.floor(soul.v)}</span><small>/ 100</small>`;
     const touch = document.body.classList.contains('is-touch');
@@ -5776,7 +5816,7 @@ function updateHUD() {
     $('reloadtip').textContent = drum.ult && drum.ult.t < 8 ? '諸神黃昏！' : document.body.classList.contains('is-touch') ? '按「鼓」切換屬性' : '按住 C 切換屬性';
   } else $('ammonum').innerHTML = w.c.beam ? `<span class="heat${w.lockT > 0 ? ' hot' : ''}"><i style="width:${Math.round((w.heat || 0) * 100)}%"></i></span><small>熱度</small>`
     : w.c.melee ? '∞' : `${w.ammo} <small>/ ${Number.isFinite(w.reserve) ? w.reserve : '∞'}</small>`;
-  if (!w.c.drum && !w.c.scythe) $('reloadtip').textContent = w.c.beam ? (w.lockT > 0 ? '過熱，散熱中…' : '') : railCharge > 0 ? '蓄能中…' : reloading > 0 ? '換彈中…' : (w.ammo === 0 ? (w.reserve ? '按 R 換彈' : '沒有彈藥') : '');
+  if (!w.c.drum && !w.c.scythe && !w.c.chrono) $('reloadtip').textContent = w.c.beam ? (w.lockT > 0 ? '過熱，散熱中…' : '') : railCharge > 0 ? '蓄能中…' : reloading > 0 ? '換彈中…' : (w.ammo === 0 ? (w.reserve ? '按 R 換彈' : '沒有彈藥') : '');
   [...$('slots').children].forEach((s, i) => s.classList.toggle('on', i === wi));
   $('lvname').textContent = levelTitle(LV);
   $('wave').textContent = interT > 0 && !waveActive ? `下一波 ${Math.ceil(interT)}` : `第 ${waveIdx + 1} / ${LV.waves.length} 波`;
@@ -7070,7 +7110,7 @@ function clearDynamic() {
   gongWaves.forEach((w) => scene.remove(w.m)); strays.forEach((s) => scene.remove(s.m)); gongWaves = []; strays = []; finale = null; player.knock = null;
   slams.forEach((q) => { scene.remove(q.marker); if (q.t) scene.remove(q.t); }); spores.forEach((q) => scene.remove(q.m)); slams = []; spores = []; board = null;
   frosts.forEach((q) => scene.remove(q.sp)); orbs.forEach((q) => scene.remove(q.m)); holes.forEach((q) => { scene.remove(q.m); scene.remove(q.light); }); nades.forEach((q) => scene.remove(q.m));
-  blades.forEach((q) => scene.remove(q.m)); blades = []; clearDrum(); clearSoul();
+  blades.forEach((q) => scene.remove(q.m)); blades = []; clearDrum(); clearSoul(); clearChrono();
   frosts = []; orbs = []; holes = []; nades = []; railCharge = 0; pendingSmash = null;
   slicks.forEach((q) => scene.remove(q.m)); kSlams.forEach((q) => { scene.remove(q.t); scene.remove(q.marker); }); kSweeps.forEach((q) => { scene.remove(q.t); scene.remove(q.marker); });
   slicks = []; kSlams = []; kSweeps = []; jamming = false; player.slickT = 0; player.jammed = false;
@@ -7277,9 +7317,9 @@ canvas.addEventListener('mousedown', (e) => {
   if (state !== 'playing') return;
   if (usingLock && document.pointerLockElement !== canvas) { lockPointer(); return; }
   if (e.button === 0) { mouseDown = true; tryFire(true); }
-  if (e.button === 2) { if (holdingScythe()) throwScythe(); else aiming = true; } // the scythe throws instead of aiming
+  if (e.button === 2) { if (holdingScythe()) throwScythe(); else { aiming = true; if (holdingChrono()) chrono.slowHeld = true; } } // the scythe throws; the hourglass slows time
 });
-addEventListener('mouseup', (e) => { if (e.button === 0) mouseDown = false; if (e.button === 2) aiming = false; });
+addEventListener('mouseup', (e) => { if (e.button === 0) mouseDown = false; if (e.button === 2) { aiming = false; chrono.slowHeld = false; } });
 addEventListener('contextmenu', (e) => e.preventDefault());
 addEventListener('wheel', (e) => {
   if (state !== 'playing') return;
@@ -7291,6 +7331,7 @@ addEventListener('keydown', (e) => {
   if (state !== 'playing') return;
   if (e.code === 'KeyR') startReload();
   if (e.code === 'KeyF' && holdingScythe() && !e.repeat) soulUlt();
+  if (e.code === 'KeyF' && holdingChrono() && !e.repeat) chronoUlt();
   if (e.code === 'KeyC' && holdingDrum()) { if (!e.repeat) { drum.cDown = performance.now(); openDrumWheel(); } return; } // hold for the wheel; a tap still flips the compass
   if (e.code === 'KeyC' && !e.repeat && !(ARENA && ARENA.spectate)) setCompass(!compassOn);
   if (drum.wheel && /^Digit[1-8]$/.test(e.code)) { drumSelect(+e.code.slice(5) - 1); return; }
@@ -7389,6 +7430,8 @@ function lookBy(dx, dy) {
   btn('tDrum', () => (drumRingOpen ? closeDrumRing() : openDrumRing()));
   btn('tThrow', () => throwScythe());
   btn('tSoul', () => soulUlt());
+  btn('tChronoSlow', () => { chrono.slowTouch = !chrono.slowTouch; $('tChronoSlow').classList.toggle('on', chrono.slowTouch); });
+  btn('tChronoUlt', () => chronoUlt());
   btn('tPause', () => { releaseTouch(); state = 'paused'; $('pause').classList.add('show'); });
   // keep the aim button lit while aiming
   setInterval(() => $('tAim').classList.toggle('down', aiming && state === 'playing'), 150);
@@ -7520,8 +7563,8 @@ function renderShop() {
     } else {
       act = `裝備到欄位 ${[0, 1, 2].map((k) => `<button class="slotbtn${slot === k ? ' on' : ''}" data-eq="${w.id}" data-slot="${k}" aria-label="裝備到欄位 ${k + 1}">${k + 1}</button>`).join('')}`;
     }
-    const tags = [w.drum ? '八種屬性・無限彈・各自冷卻' : '', w.scythe ? '三段連擊・擲鐮・魂量・亡魂軍團' : '', w.melee ? '免彈藥' : '', w.flame ? '持續燃燒' : '', w.chain ? `連鎖 ${w.chain}` : '', w.spin ? '需預熱' : '', w.pierce > 1 ? `貫穿 ${w.pierce}` : '', w.ap ? '穿甲' : '', w.explosive ? '範圍爆炸' : '', w.burn ? '點燃目標' : '', w.volley ? `一次 ${w.volley} 發` : '', w.saw ? '持續鋸切' : '', w.smash ? '擊退・破盾' : '', w.freeze ? '凍結' : '', w.hole ? '黑洞' : '', w.dual ? '雙持' : '', w.charge ? '蓄能' : '', w.rail ? '無限貫穿' : '', w.beam ? '持續光束・會過熱' : '', w.thrown ? '拋擲' : '', w.safe ? '不傷自己' : '', w.scope ? '瞄準鏡' : '', w.move && w.move < 1 ? '移動較慢' : ''].filter(Boolean).join(' · ');
-    return `<div class="wc${slot >= 0 ? ' eq' : ''}${w.legend ? ' legend' : ''}${w.soulFrame ? ' soul' : ''}">
+    const tags = [w.chrono ? '時印靜止・子彈時間・時間停止・無限彈' : '', w.drum ? '八種屬性・無限彈・各自冷卻' : '', w.scythe ? '三段連擊・擲鐮・魂量・亡魂軍團' : '', w.melee ? '免彈藥' : '', w.flame ? '持續燃燒' : '', w.chain ? `連鎖 ${w.chain}` : '', w.spin ? '需預熱' : '', w.pierce > 1 ? `貫穿 ${w.pierce}` : '', w.ap ? '穿甲' : '', w.explosive ? '範圍爆炸' : '', w.burn ? '點燃目標' : '', w.volley ? `一次 ${w.volley} 發` : '', w.saw ? '持續鋸切' : '', w.smash ? '擊退・破盾' : '', w.freeze ? '凍結' : '', w.hole ? '黑洞' : '', w.dual ? '雙持' : '', w.charge ? '蓄能' : '', w.rail ? '無限貫穿' : '', w.beam ? '持續光束・會過熱' : '', w.thrown ? '拋擲' : '', w.safe ? '不傷自己' : '', w.scope ? '瞄準鏡' : '', w.move && w.move < 1 ? '移動較慢' : ''].filter(Boolean).join(' · ');
+    return `<div class="wc${slot >= 0 ? ' eq' : ''}${w.legend ? ' legend' : ''}${w.soulFrame ? ' soul' : ''}${w.chronoFrame ? ' chrono' : ''}">
       <div class="top"><div><div class="nm">${w.name}${w.limited ? `<span class="ltd">${w.limited}</span>` : ''}</div><div class="ct">${w.cat}${tags ? ' · ' + tags : ''}</div></div>
         <div class="pr num">${have ? (slot >= 0 ? `欄位 ${slot + 1}` : '已擁有') : w.reward ? '限定獎勵' : priceTag(w)}</div></div>
       <div class="ds">${w.desc}</div>
@@ -7659,7 +7702,8 @@ function switchWeapon(i) {
   if (weapons[i].view.saber) weapons[i].view.ext = 0; // the blade ignites again each time it is drawn
   $('scope').style.display = 'none';
   weapons[wi].view.group.visible = false; wi = i; weapons[wi].view.group.visible = true;
-  closeDrumWheel(); closeDrumRing(); document.body.classList.toggle('drumheld', holdingDrum()); document.body.classList.toggle('scytheheld', holdingScythe());
+  closeDrumWheel(); closeDrumRing(); document.body.classList.toggle('drumheld', holdingDrum()); document.body.classList.toggle('scytheheld', holdingScythe()); document.body.classList.toggle('chronoheld', holdingChrono());
+  chrono.slowTouch = false; $('tChronoSlow') && $('tChronoSlow').classList.remove('on');
   switching = 0.35; reloading = 0;
 }
 function camRight() { return new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion); }
@@ -8581,8 +8625,147 @@ function clearSoul() {
   if (soul.gate) ['m', 'ring', 'inner'].forEach((k) => scene.remove(soul.gate[k]));
   Object.assign(soul, { v: 0, combo: 0, throwCd: 0, out: 0, flying: [], waves: [], wisps: [], allies: [], rising: 0, ultT: 0, gate: null });
 }
+// ============================================================
+//  永劫・時空沙漏 (CONTEXT.md: 時空沙漏): golden rounds that mark their targets (five marks and a zombie is stopped in
+//  time, then shatters), bullet time on the right button, and 時之終焉: the world stops for eight seconds, every blow
+//  struck in that time lands at once, three times over, and your health runs back to its best of the last ten
+//  seconds. Model in tools/blender/chrono.py.
+// ============================================================
+const chrono = { sand: 60, slowHeld: false, slowTouch: false, stopT: 0, cd: 0, marked: new Set(), hist: [], histT: 0, stasis: [], tickT: 0 };
+let CHRONO = null, _chrMats = null;
+function chronoMats() {
+  if (_chrMats) return _chrMats;
+  _chrMats = {
+    chr_gold: std({ color: 0xe8b040, roughness: 0.22, metalness: 1 }), chr_brass: gunMats.brass, chr_dark: std({ color: 0x0c1220, roughness: 0.35, metalness: 0.3 }),
+    chr_crystal: std({ color: 0x9ae8ff, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.4, emissive: 0x1a4a60, emissiveIntensity: 0.5 }),
+    chr_glow: new THREE.MeshBasicMaterial({ color: 0x60e8ff }), chr_sand: new THREE.MeshBasicMaterial({ color: 0xffc860 }),
+    chr_face: std({ color: 0xeee4cc, roughness: 0.5 }), chr_ticks: std({ color: 0x141008, roughness: 0.6 }),
+  };
+  return _chrMats;
+}
+loadModel('chrono', (scene) => {
+  const m = chronoMats();
+  scene.traverse((o) => { if (o.isMesh) o.material = m[o.material.name] || gunMats.metal; });
+  CHRONO = {}; scene.children.forEach((o) => { CHRONO[o.name] = o; });
+  weapons.forEach((w) => { if (w.view.chronoHolder) useModelChrono(w.view); });
+});
+function useModelChrono(v) {
+  const h = v.chronoHolder; h.clear();
+  const put = (name, x, y, z) => { const o = CHRONO[name].clone(); o.position.set(x, y, z); o.traverse((q) => { q.frustumCulled = false; }); h.add(o); return o; };
+  put('chrono', 0, 0, 0);
+  v.gears = [put('chrono_gear_a', -0.036, -0.005, -0.06), put('chrono_gear_b', -0.036, 0.018, 0.0), put('chrono_gear_c', -0.036, -0.012, 0.04)];
+  const glass = new THREE.Group(); glass.position.set(-0.075, 0.075, 0.03); h.add(glass); v.glass = glass; // the hourglass rides on the left, clear of the sights
+  const g1 = CHRONO.chrono_glass.clone(), s1 = CHRONO.chrono_sand.clone(); glass.add(g1, s1); g1.traverse((q) => { q.frustumCulled = false; }); s1.traverse((q) => { q.frustumCulled = false; });
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.008, 0.02), chronoMats().chr_gold); arm.position.set(-0.05, 0.05, 0.03); h.add(arm);
+}
+function buildProceduralChrono(v) {
+  const m = chronoMats();
+  gb(v.chronoHolder, 0.06, 0.085, 0.3, m.chr_dark, 0, 0, 0); gc(v.chronoHolder, 0.02, 0.45, m.chr_crystal, 0, 0.012, -0.38);
+}
+const holdingChrono = () => !!(weapons[wi] && weapons[wi].c.chrono);
+// how fast the world runs: stopped, slowed by bullet time, or normal
+function chronoWorld() {
+  if (chrono.stopT > 0) return 0;
+  if ((chrono.slowHeld || chrono.slowTouch) && holdingChrono() && chrono.sand > 0) return 0.25;
+  return 1;
+}
+let _clockTex = null;
+function clockTex() {
+  if (_clockTex) return _clockTex;
+  const [c, x] = makeCanvas(128);
+  x.translate(64, 64); x.strokeStyle = 'rgba(255,220,140,0.95)'; x.lineWidth = 5; x.beginPath(); x.arc(0, 0, 56, 0, Math.PI * 2); x.stroke();
+  x.lineWidth = 2; x.beginPath(); x.arc(0, 0, 47, 0, Math.PI * 2); x.stroke();
+  for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2, r0 = k % 3 ? 40 : 34; x.beginPath(); x.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); x.lineTo(Math.cos(a) * 46, Math.sin(a) * 46); x.lineWidth = k % 3 ? 2 : 4; x.stroke(); }
+  x.lineWidth = 4; x.beginPath(); x.moveTo(0, 0); x.lineTo(0, -32); x.stroke(); x.lineWidth = 3; x.beginPath(); x.moveTo(0, 0); x.lineTo(22, 10); x.stroke();
+  _clockTex = new THREE.CanvasTexture(c); _clockTex.colorSpace = THREE.SRGBColorSpace;
+  return _clockTex;
+}
+// 時印: each round leaves a mark; five (fifteen on a boss) and the zombie stands frozen in time, then shatters
+function chronoMark(z, at) {
+  if (z.dead || z.stasisT > 0) return;
+  burst(at, UP, drumPartMat(0xffd070), 3, 1.5);
+  z.marks = (z.marks || 0) + 1;
+  chrono.sand = Math.min(100, chrono.sand + 0.6);
+  if (z.marks < (z.c.boss ? 15 : 5)) return;
+  z.marks = 0; z.stasisT = z.c.boss ? 1.2 : 2.5;
+  const ring = new THREE.Sprite(new THREE.SpriteMaterial({ map: clockTex(), color: 0xffe0a0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  ring.scale.setScalar(1.8 * z.g.scale.y); scene.add(ring);
+  const glow = drumGlow(0xffc860, 2.2 * z.g.scale.y);
+  chrono.stasis.push({ z, ring, glow });
+  sfx('tick', 1); burst(zChest(z), UP, drumPartMat(0xffd070), 14, 3);
+}
+function chronoTracer(o, f, end) {
+  const from = o.clone().addScaledVector(f, 0.8).addScaledVector(camRight(), 0.12).add(new THREE.Vector3(0, -0.13, 0));
+  drumBeam(from, end || o.clone().addScaledVector(f, 70), 0x70e8ff, 0.012, 0.07);
+}
+// 時之終焉・萬物靜止
+function chronoUlt() {
+  if (chrono.sand < 100 || chrono.cd > 0 || chrono.stopT > 0) return;
+  chrono.sand = 0; chrono.cd = 45; chrono.stopT = 8; chrono.marked.clear();
+  zombies.forEach((z) => { z.chronoDmg = 0; });
+  const best = Math.max(player.hp, ...chrono.hist); // 時光倒流: back to your best of the last ten seconds
+  if (best > player.hp) { showMsg('時之終焉・萬物靜止', `時光倒流，生命回到 ${Math.round(best)}`, 2.6); player.hp = best; } else showMsg('時之終焉・萬物靜止', '時間停止了', 2.6);
+  sfx('timestop', 1); document.body.classList.add('timestop'); canvas.style.filter = 'grayscale(0.85) sepia(0.25) hue-rotate(170deg) saturate(1.6) brightness(1.05)';
+  boomLight.position.copy(player.pos).setY(2); boomLight.color.set(0x70e8ff); boomT = 0.6;
+  drum.fx.push({ m: drumFlat(1, 0x80e8ff, 0.9, player.pos, 0.85, true), life: 0.9, max: 0.9, grow: 30 });
+  weapons.forEach((w) => { if (w.view.glass) w.view.glassFlip = 1; });
+}
+function chronoRelease() { // time runs again: everything struck in the stop takes it at once, three times over
+  chrono.stopT = 0; document.body.classList.remove('timestop'); canvas.style.filter = '';
+  let kills = 0;
+  for (const z of chrono.marked) {
+    if (z.dead || !z.stored) continue;
+    let dmg = z.stored * 3; z.stored = 0;
+    if (z.c.boss) { dmg = Math.min(dmg, Math.max(0, z.maxHp * 0.3 - (z.chronoDmg || 0))); z.chronoDmg = (z.chronoDmg || 0) + dmg; }
+    if (z.damage(dmg, { part: 'body', release: true, blast: true }, new THREE.Vector3(0, 0, 1), true)) kills++;
+    burst(zChest(z), UP, drumPartMat(0xffd070), 16, 5); burst(zChest(z), UP, drumPartMat(0x80e8ff), 10, 4);
+  }
+  chrono.marked.clear();
+  sfx('boom', 1.2); shake = 1; boomLight.position.copy(player.pos).setY(3); boomLight.color.set(0xffd070); boomT = 0.5;
+  showMsg('時間崩解', kills ? `${kills} 隻殭屍在同一瞬間倒下` : '', 1.8);
+}
+function updateChrono(dt) {
+  chrono.cd = Math.max(0, chrono.cd - dt);
+  chrono.histT -= dt; if (chrono.histT <= 0) { chrono.histT = 0.5; chrono.hist.push(player.hp); if (chrono.hist.length > 20) chrono.hist.shift(); }
+  const slowing = chronoWorld() < 1 && chrono.stopT <= 0;
+  if (chrono.stopT > 0) {
+    chrono.stopT -= dt; chrono.tickT -= dt;
+    if (chrono.tickT <= 0) { chrono.tickT = 1; sfx('tick', 1.2); }
+    $('chronoHand') && ($('chronoHand').style.transform = `rotate(${(8 - chrono.stopT) / 8 * 360}deg)`);
+    if (chrono.stopT <= 0) chronoRelease();
+  } else if (slowing) chrono.sand = Math.max(0, chrono.sand - 18 * dt);
+  else chrono.sand = Math.min(100, chrono.sand + 6 * dt);
+  document.body.classList.toggle('bullettime', slowing);
+  if (!chrono.stopT && canvas.style.filter && !slowing) canvas.style.filter = '';
+  if (slowing && !canvas.style.filter) canvas.style.filter = 'saturate(0.55) hue-rotate(12deg) contrast(1.05)';
+  // zombies stopped by 時印: their clock turns, then they shatter
+  chrono.stasis = chrono.stasis.filter((s) => {
+    const z = s.z; z.stasisT -= dt;
+    s.ring.position.copy(zChest(z)); s.glow.position.copy(s.ring.position); s.ring.material.rotation -= dt * 2;
+    if (z.stasisT > 0 && !z.dead) return true;
+    scene.remove(s.ring); scene.remove(s.glow); z.stasisT = 0;
+    if (!z.dead) { // 崩解
+      const k = z.damage(150, { part: 'body', blast: true }, new THREE.Vector3(0, 0, 1), true);
+      burst(zChest(z), UP, drumPartMat(0xffd070), 18, 5); sfx('freeze', 0.8); if (k) hitMarker(true);
+    }
+    return false;
+  });
+  // the rifle: gears turn (fast in bullet time, backward while time stands still), the hourglass flips for the stop
+  const w = weapons[wi], v = w && w.view;
+  if (v && v.gears) {
+    const sp = chrono.stopT > 0 ? -4 : slowing ? 10 : 2.5;
+    v.gears.forEach((g, i) => { g.rotation.x += dt * sp * (i % 2 ? -1.5 : 1); });
+    if (v.glassFlip > 0) { v.glassFlip = Math.max(0, v.glassFlip - dt * 2.5); v.glass.rotation.x = Math.PI * (1 - v.glassFlip); }
+    const sand = chronoMats().chr_sand; sand.color.setHSL(0.11, 1, 0.45 + 0.25 * (chrono.sand / 100) + (chrono.stopT > 0 ? 0.2 : 0));
+  }
+}
+function clearChrono() {
+  chrono.stasis.forEach((s) => { scene.remove(s.ring); scene.remove(s.glow); s.z.stasisT = 0; }); chrono.stasis = [];
+  chrono.stopT = 0; chrono.marked.clear(); chrono.slowHeld = chrono.slowTouch = false; chrono.cd = 0; chrono.hist = [];
+  document.body.classList.remove('timestop', 'bullettime'); if (typeof canvas !== 'undefined') canvas.style.filter = '';
+}
 function updateWeaponFx(dt) {
-  updateDrum(dt); updateSoul(dt);
+  updateDrum(dt); updateSoul(dt); updateChrono(dt);
   frosts = frosts.filter((f) => {
     f.life -= dt; f.v.multiplyScalar(1 - dt * 2.2); f.sp.position.addScaledVector(f.v, dt);
     const k = 1 - f.life / f.max; f.sp.scale.setScalar(0.2 + k * 1.3); f.sp.material.opacity = Math.max(0, f.life / f.max) * 0.75;
@@ -8745,7 +8928,7 @@ function tryFire(click) {
     }
     return;
   }
-  let anyHit = false, anyKill = false;
+  let anyHit = false, anyKill = false, tracerEnd = null;
   for (let p = 0; p < w.c.pellets; p++) {
     const dir = fwd.clone().add(new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(spread)).normalize();
     ray.set(origin, dir);
@@ -8760,6 +8943,7 @@ function tryFire(click) {
       struck.add(z);
       const falloff = w.c.falloff ? clamp(1.3 - zh.distance / 25, 0.25, 1) : 1;
       const killed = z.damage(dmg * falloff, zh.object.userData, dir, w.c.ap);
+      if (w.c.chrono) { chronoMark(z, zh.point); tracerEnd = zh.point.clone(); }
       if (z.lastFx === 'spark') { burst(zh.point, dir.clone().negate(), sparkMat, 5, 4); sfx('ping'); }
       else if (z.lastFx === 'shield') { burst(zh.point, dir.clone().negate(), shardMat, 3, 3); sfx('thud'); }
       else if (z.lastFx === 'lion') { burst(zh.point, dir.clone().negate(), confettiMat, 4, 3); sfx('thud'); }
@@ -8778,6 +8962,7 @@ function tryFire(click) {
       burst(wh.point, n, dustMat, 4, 2.5); burst(wh.point, n, sparkMat, 1, 4);
     }
   }
+  if (w.c.chrono) { if (!tracerEnd) { ray.set(origin, fwd); const wh = ray.intersectObjects(worldMeshes, false)[0]; if (wh) tracerEnd = wh.point; } chronoTracer(origin, fwd, tracerEnd); }
   if (anyHit) { hitMarker(anyKill); sfx('hit', anyKill ? 1.5 : 1); }
 }
 
@@ -8933,7 +9118,7 @@ let updatingZombies = false, newborn = [];
 function addZombie(z) { (updatingZombies ? newborn : zombies).push(z); }
 function updateZombies(dt) {
   updatingZombies = true;
-  zombies = zombies.filter((z) => { const keep = z.update(dt); if (!keep) z.remove(); return keep; });
+  zombies = zombies.filter((z) => { const keep = z.update(z.stasisT > 0 ? 0 : dt); if (!keep) z.remove(); return keep; }); // 時印: stopped in time
   updatingZombies = false;
   if (newborn.length) { zombies.push(...newborn); newborn = []; }
   groanT -= dt;
@@ -9050,7 +9235,8 @@ function frame(dt, now) {
     if (ARENA && ARENA.spectate) updateFlyCam(dt);
     for (let k = 0; k < steps && state === 'playing'; k++) {
       if (!(ARENA && ARENA.spectate)) { updatePlayer(sdt); updateWeapon(sdt); }
-      updateArena(sdt); updateZombies(sdt); updateHazards(sdt); updateGrenades(sdt); updateWaves(sdt); updatePickups(sdt); updateFireworks(sdt); updateFestHazards(sdt); updateAirportHazards(sdt); updateCarrierHazards(sdt); updateLabHazards(sdt); updatePolarHazards(sdt); updateTropicHazards(sdt); updateParkHazards(sdt); updateWeaponFx(sdt);
+      const wdt = sdt * chronoWorld(); // 時空沙漏: the world slows or stops; you and your shots do not
+      updateArena(wdt); updateZombies(wdt); updateHazards(wdt); updateGrenades(sdt); updateWaves(wdt); updatePickups(sdt); updateFireworks(sdt); updateFestHazards(wdt); updateAirportHazards(wdt); updateCarrierHazards(wdt); updateLabHazards(wdt); updatePolarHazards(wdt); updateTropicHazards(wdt); updateParkHazards(wdt); updateWeaponFx(sdt);
     }
     updateHUD();
   } else if (state === 'menu') {
@@ -9062,7 +9248,7 @@ function frame(dt, now) {
     gunRoot.visible = false;
   }
   gunRoot.visible = state !== 'menu' && !(ARENA && ARENA.spectate);
-  updateParticles(state === 'playing' && ARENA ? dt * ARENA.speed : dt); updateLighting(dt); updateRain(dt); updateSaber();
+  updateParticles((state === 'playing' && ARENA ? dt * ARENA.speed : dt) * (state === 'playing' ? (chrono.stopT > 0 ? 0 : chronoWorld() < 1 ? 0.35 : 1) : 1)); // blood hangs in the air while time stands still updateLighting(dt); updateRain(dt); updateSaber();
   if (msgTimer > 0) { msgTimer -= dt; if (msgTimer <= 0) $('msg').style.opacity = 0; }
   if (cashPopT > 0) { cashPopT -= dt; if (cashPopT <= 0) $('cashpop').style.opacity = 0; }
   if (hitTimer > 0) { hitTimer -= dt; if (hitTimer <= 0) $('hitmark').style.opacity = 0; }
@@ -9076,7 +9262,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026103101'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026110101'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
@@ -9103,7 +9289,7 @@ applyArmorLook();
 $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 buildDrumUi();
-window.__game = { get state() { return state; }, player, drum: () => drum, soul: () => soul, throwScythe: () => throwScythe(), soulUlt: () => soulUlt(), drumSelect, drumFire: (click = true) => { if (holdingDrum()) drumFire(weapons[wi], click); }, codeWall: () => !!CODEWALL, blades: () => blades, zombies: () => zombies, startLevel, spawnZombie,
+window.__game = { get state() { return state; }, player, chrono: () => chrono, chronoUlt: () => chronoUlt(), drum: () => drum, soul: () => soul, throwScythe: () => throwScythe(), soulUlt: () => soulUlt(), drumSelect, drumFire: (click = true) => { if (holdingDrum()) drumFire(weapons[wi], click); }, codeWall: () => !!CODEWALL, blades: () => blades, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
   modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), grantWeapon, holes: () => holes, nades: () => nades, trigger(v) { mouseDown = v; }, gongWaves: () => gongWaves, startBoarding, cargo: () => CARGO, boarding: () => board, setCompass, compassOn: () => compassOn, spawnDragon, setWeapon(i) { wi = i; weapons.forEach((w, k) => { w.view.group.visible = k === i; }); }, EVENT_LEVEL, completeLevel: () => levelComplete(), setDate(d) { dateOverride = d ? new Date(d + 'T12:00:00') : null; renderMenu(); }, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
