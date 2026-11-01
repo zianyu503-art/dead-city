@@ -256,6 +256,19 @@
   #tChronoSlow, #tChronoUlt { display: none; width: 56px; height: 56px; right: calc(max(34px, env(safe-area-inset-right, 0px)) + 104px); border-radius: 50%; font-size: 20px; border-color: #70e8ff; color: #d8f8ff; box-shadow: 0 0 12px rgba(110,230,255,0.6); }
   #tChronoSlow { bottom: 128px; } #tChronoUlt { bottom: 196px; } #tChronoSlow.on { background: rgba(80,200,255,0.45); }
   body.chronoheld #tChronoSlow, body.chronoheld #tChronoUlt { display: flex; }
+  /* 龍皇弓: the red-and-gold dragon-fire frame, the 龍魂 gauge, the draw ring round the crosshair */
+  @keyframes dragonGlow { 0%, 100% { box-shadow: 0 0 8px rgba(255,120,40,0.55), inset 0 0 10px rgba(255,190,80,0.2); } 50% { box-shadow: 0 0 20px rgba(255,150,50,1), inset 0 0 18px rgba(255,210,100,0.4); } }
+  #slots span.legend.dragon { border-color: #ff8a30; color: #ffe0a0; background: linear-gradient(100deg, rgba(60,8,0,0.55) 25%, rgba(255,90,30,0.55) 42%, rgba(255,210,90,0.6) 58%, rgba(60,8,0,0.55) 75%); background-size: 240% 100%; animation: legendFlow 1.8s linear infinite, dragonGlow 1.6s ease-in-out infinite; }
+  .wc.legend.dragon { border-color: #ff7a20; background-image: linear-gradient(100deg, rgba(60,8,0,0.3) 30%, rgba(255,90,30,0.2) 45%, rgba(255,210,90,0.18) 55%, rgba(60,8,0,0.3) 70%); animation: legendFlow 2.6s linear infinite, dragonGlow 2s ease-in-out infinite; }
+  .wc.legend.dragon .nm { color: #ffc070; } .wc.legend.dragon .ltd { background: linear-gradient(90deg, #8a1a08, #ffd070, #8a1a08); color: #2a0800; border-color: #ffb050; }
+  .dragonbar { display: inline-block; width: 70px; height: 8px; border: 1px solid #ff8a30; margin-right: 8px; vertical-align: middle; background: rgba(40,6,0,0.6); }
+  .dragonbar i { display: block; height: 100%; background: linear-gradient(90deg, #a01808, #ffb040); }
+  .dragonbar.full { animation: dragonGlow 1s ease-in-out infinite; }
+  #bowCharge { position: fixed; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; pointer-events: none; z-index: 5; display: none;
+    background: conic-gradient(var(--c, #ffc060) var(--p, 0%), rgba(255,255,255,0.12) 0); -webkit-mask: radial-gradient(circle, transparent 0 21px, #000 22px 26px, transparent 27px); mask: radial-gradient(circle, transparent 0 21px, #000 22px 26px, transparent 27px); }
+  #bowCharge.lv1 { --c: #ffd080; } #bowCharge.lv2 { --c: #ff9a30; } #bowCharge.lv3 { --c: #ff4a10; filter: drop-shadow(0 0 6px #ff6a20); }
+  #tDragon { display: none; width: 56px; height: 56px; right: calc(max(34px, env(safe-area-inset-right, 0px)) + 104px); bottom: 128px; border-radius: 50%; font-size: 20px; border-color: #ff8a30; color: #ffe0a0; box-shadow: 0 0 12px rgba(255,120,40,0.6); }
+  body.bowheld #tDragon { display: flex; }
   body.soulfull #tSoul { background: rgba(140,60,255,0.45); animation: soulGlow 1s ease-in-out infinite; }
   #drumRing { position: absolute; inset: 0; display: none; pointer-events: none; }
   #drumRing.show { display: block; }
@@ -469,6 +482,7 @@
 <div id="drumWheel"></div>
 <div id="soulEdge"></div>
 <div id="chronoEdge"></div>
+<div id="bowCharge"></div>
 <div id="chronoClock"><div id="chronoHand"></div></div>
 <div id="touch">
   <div id="drumRing"></div>
@@ -477,6 +491,7 @@
   <div class="tb" id="tSoul">魂</div>
   <div class="tb" id="tChronoSlow">時</div>
   <div class="tb" id="tChronoUlt">終</div>
+  <div class="tb" id="tDragon">龍</div>
   <div id="stickHint"></div>
   <div id="stick"><div id="knob"></div></div>
   <div class="tb" id="tFire">射擊</div>
@@ -801,6 +816,9 @@ const WEAPONS = [
   { id: 'chrono', name: '永劫・時空沙漏', cat: '傳奇', limited: '傳奇', legend: true, chronoFrame: true, chrono: true, price: 30000, sound: 'chrono', dmg: 55, rate: 0.09, auto: true,
     mag: Infinity, reserve: Infinity, reload: 0, spread: 0.007, pellets: 1, recoil: 0.006, pierce: 2, zoom: 22,
     desc: '操控時間的傳奇步槍，不需要彈藥。射出貫穿兩隻的時光彈，每發都在殭屍身上留下「時印」，滿 5 層（Boss 15 層）牠就被定在時間裡 2.5 秒，接著時間崩解再受重創。按住右鍵（手機按「時」）進入子彈時間：全場殭屍和危險變成四分之一速度，會消耗時之沙。時之沙滿了按 F（手機按「終」）發動「時之終焉・萬物靜止」：時間完全停止 8 秒，這段時間你造成的所有傷害在時間恢復的瞬間以 3 倍一次爆發（Boss 最多扣 30% 血），生命同時倒流回 10 秒內的最高值。冷卻 45 秒。' },
+  { id: 'dragonbow', name: '九霄・龍皇弓', cat: '傳奇', limited: '傳奇', legend: true, dragonFrame: true, dragon: true, price: 35000, sound: '', dmg: 450, rate: 0.4, auto: false,
+    mag: Infinity, reserve: Infinity, reload: 0, spread: 0, pellets: 1, recoil: 0, pierce: 99, zoom: 30, noFlash: true,
+    desc: '龍皇的長弓，不需要彈藥。按住左鍵拉弓、放開射出：輕拉射出一支貫穿兩隻的龍鱗箭；拉到一半射出三支扇形火箭，點燃殭屍；拉滿一秒射出「龍魂箭」，化成火龍貫穿 60 公尺內的一切並在盡頭爆炸。打中頭部一樣 2.5 倍。命中累積龍魂，滿了按 F（手機按「龍」）發動「九龍天降」：九條火龍從天而降俯衝噴火 12 秒，這段時間每一箭都是龍魂箭，最後龍炎風暴燒遍全場（Boss 最多扣 35% 血）。' },
   // ---- 第二批新武器 (.scratch/weapons-2/spec.md); models in tools/blender/guns.py ----
   { id: 'chainsaw', name: '電鋸', cat: '近戰', price: 3500, sound: '', dmg: 22, rate: 0.1, auto: true, mag: Infinity, reserve: Infinity, reload: 0, spread: 0, pellets: 1, recoil: 0,
     melee: true, saw: true, range: 2.2, arc: 0.6, noFlash: true, zoom: 0,
@@ -2792,6 +2810,9 @@ function sfx(name, vol = 1) {
     case 'zap': sNoise(t, 0.35, 9000, 1500, 0.8 * vol, 'highpass'); sTone(t, 0.25, 900, 120, 0.4 * vol, 'square'); break;
     case 'bossroar': sTone(t, 1.8, 60, 30, 0.9, 'sawtooth'); sTone(t, 1.8, 92, 45, 0.6, 'sawtooth'); sNoise(t, 1.6, 700, 150, 0.6, 'bandpass'); break;
     case 'splat': sNoise(t, 0.5, 900, 120, 0.8); sTone(t, 0.3, 160, 60, 0.4, 'sawtooth'); break;
+    case 'bowdraw': sNoise(t, 0.5, 300, 900, 0.18 * vol, 'bandpass'); sTone(t, 0.5, 90, 140, 0.08 * vol, 'triangle'); break;
+    case 'bowshot': sTone(t, 0.12, 180, 70, 0.6 * vol, 'triangle'); sNoise(t, 0.25, 2500, 600, 0.45 * vol, 'bandpass'); break;
+    case 'dragonroar': sTone(t, 1.1, 120, 55, 0.7 * vol, 'sawtooth'); sNoise(t, 1.0, 500, 150, 0.6 * vol); sTone(t + 0.1, 0.8, 240, 110, 0.25 * vol, 'square'); break;
     case 'chrono': sNoise(t, 0.12, 7000, 2500, 0.45, 'bandpass'); sTone(t, 0.1, 1800, 900, 0.18, 'triangle'); sTone(t, 0.08, 220, 90, 0.4); break;
     case 'tick': sTone(t, 0.05, 2600, 2400, 0.25 * vol, 'square'); sTone(t + 0.02, 0.18, 880, 860, 0.12 * vol, 'sine'); break;
     case 'timestop': sTone(t, 2.2, 160, 60, 0.9 * vol, 'sine'); sTone(t, 1.6, 1320, 660, 0.18 * vol, 'triangle'); sNoise(t, 0.8, 300, 6000, 0.5 * vol, 'bandpass'); break;
@@ -3560,6 +3581,18 @@ function buildGun(id) {
     gb(g, 0.03, 0.04, 0.004, gunMats.metal, 0, 0.065, -0.1);
     arm(g, 0, -0.07, 0.08, 0.05, -0.22, 0.42); arm(g, 0, -0.04, -0.2, -0.14, -0.22, 0.0);
     muzzle = new THREE.Vector3(0, 0.02, -0.47); hip = new THREE.Vector3(0.17, -0.18, -0.45); aim = new THREE.Vector3(0, -0.056, -0.34);
+  } else if (id === 'dragonbow') {
+    // the bow stands in the left hand, canted a little, the arrow along the line of sight; the right hand draws the string
+    const holder = new THREE.Group(); holder.position.set(-0.2875, 0.025, -0.4125); holder.rotation.z = 0.35; holder.scale.setScalar(0.62); g.add(holder); extra.bowHolder = holder; // left of the crosshair, ~0.8 m out
+    const model = new THREE.Group(); holder.add(model); extra.bowModel = model;
+    const nocked = new THREE.Group(); nocked.scale.setScalar(1.5); holder.add(nocked); extra.nocked = nocked; // long enough to span a full draw
+    const strMat = new THREE.MeshBasicMaterial({ color: 0xffd890 });
+    extra.strU = new THREE.Mesh(DBEAM_G, strMat); extra.strL = new THREE.Mesh(DBEAM_G, strMat); holder.add(extra.strU, extra.strL);
+    extra.bowGlow = drumGlow(0xff8a30, 0.3); scene.remove(extra.bowGlow); extra.bowGlow.position.set(-0.022, 0.05, -0.4); holder.add(extra.bowGlow);
+    if (DRAGON) useModelBow(extra); else buildProceduralBow(extra);
+    const hand = new THREE.Group(); g.add(hand); extra.drawHand = hand; arm(hand, 0, 0, 0, 0.2, -0.22, 0.32);
+    arm(g, -0.2875, 0.025, -0.4125, -0.5, -0.3, -0.05);
+    muzzle = new THREE.Vector3(-0.12, 0.09, -0.4); hip = new THREE.Vector3(0.1, -0.12, -0.45); aim = new THREE.Vector3(0.08, -0.08, -0.4);
   } else if (id === 'chrono') {
     const holder = new THREE.Group(); g.add(holder); extra.chronoHolder = holder;
     if (CHRONO) useModelChrono(extra); else buildProceduralChrono(extra);
@@ -3755,8 +3788,8 @@ function resetWeapons() {
   weapons.forEach((w) => gunRoot.remove(w.view.group));
   const kit = ARENA && ARENA.kit ? ARENA.kit : loadout; // in the arena any weapon, owned or not, with endless ammo
   weapons = kit.map((id) => WEAPON[id]).map((c) => ({ c, ammo: c.mag, reserve: ARENA ? Infinity : c.reserve, view: buildGun(c.id) }));
-  $('slots').innerHTML = weapons.map((w, i) => `<span${w.c.legend ? ` class="legend${w.c.soulFrame ? ' soul' : w.c.chronoFrame ? ' chrono' : ''}"` : ''}>${i + 1} ${w.c.name}</span>`).join('');
-  document.body.classList.toggle('drumheld', holdingDrum()); document.body.classList.toggle('scytheheld', holdingScythe()); document.body.classList.toggle('chronoheld', holdingChrono());
+  $('slots').innerHTML = weapons.map((w, i) => `<span${w.c.legend ? ` class="legend${w.c.soulFrame ? ' soul' : w.c.chronoFrame ? ' chrono' : w.c.dragonFrame ? ' dragon' : ''}"` : ''}>${i + 1} ${w.c.name}</span>`).join('');
+  document.body.classList.toggle('drumheld', holdingDrum()); document.body.classList.toggle('scytheheld', holdingScythe()); document.body.classList.toggle('chronoheld', holdingChrono()); document.body.classList.toggle('bowheld', holdingBow());
   weapons.forEach((w, i) => { gunRoot.add(w.view.group); w.view.group.visible = i === wi; });
 }
 
@@ -5800,7 +5833,12 @@ function updateHUD() {
   $('hpnum').textContent = Math.ceil(player.hp);
   $('hpfill').style.width = player.hp + '%';
   $('wname').textContent = w.c.name;
-  if (w.c.chrono) {
+  if (w.c.dragon) {
+    const touch = document.body.classList.contains('is-touch');
+    $('ammonum').innerHTML = dragon.ultT > 0 ? `<span class="dsk" style="color:#ffb050">九龍天降</span><small>${Math.max(0, dragon.ultT).toFixed(1)} 秒</small>`
+      : `<span class="dragonbar${dragon.soul >= 100 ? ' full' : ''}"><i style="width:${dragon.soul}%"></i></span><span class="dsk" style="color:#ff9a40">龍魂 ${Math.floor(dragon.soul)}</span>`;
+    $('reloadtip').textContent = dragon.drawing ? ['', '龍鱗箭', '三連火箭', '龍魂箭！放開射出'][bowLevel(dragon.draw)] : dragon.ultT > 0 ? '每一箭都是龍魂箭' : dragon.soul >= 100 ? (touch ? '龍魂已滿！按「龍」' : '龍魂已滿！按 F 召喚') : (touch ? '按住射擊拉弓，放開射箭' : '按住左鍵拉弓，放開射箭');
+  } else if (w.c.chrono) {
     const touch = document.body.classList.contains('is-touch');
     $('ammonum').innerHTML = chrono.stopT > 0 ? `<span class="dsk" style="color:#90f0ff">萬物靜止</span><small>${chrono.stopT.toFixed(1)} 秒</small>`
       : `<span class="chronobar${chrono.sand >= 100 ? ' full' : ''}"><i style="width:${chrono.sand}%"></i></span><span class="dsk" style="color:#80e8ff">時之沙 ${Math.floor(chrono.sand)}</span>`;
@@ -5816,7 +5854,7 @@ function updateHUD() {
     $('reloadtip').textContent = drum.ult && drum.ult.t < 8 ? '諸神黃昏！' : document.body.classList.contains('is-touch') ? '按「鼓」切換屬性' : '按住 C 切換屬性';
   } else $('ammonum').innerHTML = w.c.beam ? `<span class="heat${w.lockT > 0 ? ' hot' : ''}"><i style="width:${Math.round((w.heat || 0) * 100)}%"></i></span><small>熱度</small>`
     : w.c.melee ? '∞' : `${w.ammo} <small>/ ${Number.isFinite(w.reserve) ? w.reserve : '∞'}</small>`;
-  if (!w.c.drum && !w.c.scythe && !w.c.chrono) $('reloadtip').textContent = w.c.beam ? (w.lockT > 0 ? '過熱，散熱中…' : '') : railCharge > 0 ? '蓄能中…' : reloading > 0 ? '換彈中…' : (w.ammo === 0 ? (w.reserve ? '按 R 換彈' : '沒有彈藥') : '');
+  if (!w.c.drum && !w.c.scythe && !w.c.chrono && !w.c.dragon) $('reloadtip').textContent = w.c.beam ? (w.lockT > 0 ? '過熱，散熱中…' : '') : railCharge > 0 ? '蓄能中…' : reloading > 0 ? '換彈中…' : (w.ammo === 0 ? (w.reserve ? '按 R 換彈' : '沒有彈藥') : '');
   [...$('slots').children].forEach((s, i) => s.classList.toggle('on', i === wi));
   $('lvname').textContent = levelTitle(LV);
   $('wave').textContent = interT > 0 && !waveActive ? `下一波 ${Math.ceil(interT)}` : `第 ${waveIdx + 1} / ${LV.waves.length} 波`;
@@ -7110,7 +7148,7 @@ function clearDynamic() {
   gongWaves.forEach((w) => scene.remove(w.m)); strays.forEach((s) => scene.remove(s.m)); gongWaves = []; strays = []; finale = null; player.knock = null;
   slams.forEach((q) => { scene.remove(q.marker); if (q.t) scene.remove(q.t); }); spores.forEach((q) => scene.remove(q.m)); slams = []; spores = []; board = null;
   frosts.forEach((q) => scene.remove(q.sp)); orbs.forEach((q) => scene.remove(q.m)); holes.forEach((q) => { scene.remove(q.m); scene.remove(q.light); }); nades.forEach((q) => scene.remove(q.m));
-  blades.forEach((q) => scene.remove(q.m)); blades = []; clearDrum(); clearSoul(); clearChrono();
+  blades.forEach((q) => scene.remove(q.m)); blades = []; clearDrum(); clearSoul(); clearChrono(); clearDragon();
   frosts = []; orbs = []; holes = []; nades = []; railCharge = 0; pendingSmash = null;
   slicks.forEach((q) => scene.remove(q.m)); kSlams.forEach((q) => { scene.remove(q.t); scene.remove(q.marker); }); kSweeps.forEach((q) => { scene.remove(q.t); scene.remove(q.marker); });
   slicks = []; kSlams = []; kSweeps = []; jamming = false; player.slickT = 0; player.jammed = false;
@@ -7332,6 +7370,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyR') startReload();
   if (e.code === 'KeyF' && holdingScythe() && !e.repeat) soulUlt();
   if (e.code === 'KeyF' && holdingChrono() && !e.repeat) chronoUlt();
+  if (e.code === 'KeyF' && holdingBow() && !e.repeat) dragonUlt();
   if (e.code === 'KeyC' && holdingDrum()) { if (!e.repeat) { drum.cDown = performance.now(); openDrumWheel(); } return; } // hold for the wheel; a tap still flips the compass
   if (e.code === 'KeyC' && !e.repeat && !(ARENA && ARENA.spectate)) setCompass(!compassOn);
   if (drum.wheel && /^Digit[1-8]$/.test(e.code)) { drumSelect(+e.code.slice(5) - 1); return; }
@@ -7432,6 +7471,7 @@ function lookBy(dx, dy) {
   btn('tSoul', () => soulUlt());
   btn('tChronoSlow', () => { chrono.slowTouch = !chrono.slowTouch; $('tChronoSlow').classList.toggle('on', chrono.slowTouch); });
   btn('tChronoUlt', () => chronoUlt());
+  btn('tDragon', () => dragonUlt());
   btn('tPause', () => { releaseTouch(); state = 'paused'; $('pause').classList.add('show'); });
   // keep the aim button lit while aiming
   setInterval(() => $('tAim').classList.toggle('down', aiming && state === 'playing'), 150);
@@ -7563,8 +7603,8 @@ function renderShop() {
     } else {
       act = `裝備到欄位 ${[0, 1, 2].map((k) => `<button class="slotbtn${slot === k ? ' on' : ''}" data-eq="${w.id}" data-slot="${k}" aria-label="裝備到欄位 ${k + 1}">${k + 1}</button>`).join('')}`;
     }
-    const tags = [w.chrono ? '時印靜止・子彈時間・時間停止・無限彈' : '', w.drum ? '八種屬性・無限彈・各自冷卻' : '', w.scythe ? '三段連擊・擲鐮・魂量・亡魂軍團' : '', w.melee ? '免彈藥' : '', w.flame ? '持續燃燒' : '', w.chain ? `連鎖 ${w.chain}` : '', w.spin ? '需預熱' : '', w.pierce > 1 ? `貫穿 ${w.pierce}` : '', w.ap ? '穿甲' : '', w.explosive ? '範圍爆炸' : '', w.burn ? '點燃目標' : '', w.volley ? `一次 ${w.volley} 發` : '', w.saw ? '持續鋸切' : '', w.smash ? '擊退・破盾' : '', w.freeze ? '凍結' : '', w.hole ? '黑洞' : '', w.dual ? '雙持' : '', w.charge ? '蓄能' : '', w.rail ? '無限貫穿' : '', w.beam ? '持續光束・會過熱' : '', w.thrown ? '拋擲' : '', w.safe ? '不傷自己' : '', w.scope ? '瞄準鏡' : '', w.move && w.move < 1 ? '移動較慢' : ''].filter(Boolean).join(' · ');
-    return `<div class="wc${slot >= 0 ? ' eq' : ''}${w.legend ? ' legend' : ''}${w.soulFrame ? ' soul' : ''}${w.chronoFrame ? ' chrono' : ''}">
+    const tags = [w.dragon ? '蓄力三段・龍魂箭・九龍天降・無限箭' : '', w.chrono ? '時印靜止・子彈時間・時間停止・無限彈' : '', w.drum ? '八種屬性・無限彈・各自冷卻' : '', w.scythe ? '三段連擊・擲鐮・魂量・亡魂軍團' : '', w.melee ? '免彈藥' : '', w.flame ? '持續燃燒' : '', w.chain ? `連鎖 ${w.chain}` : '', w.spin ? '需預熱' : '', w.pierce > 1 ? `貫穿 ${w.pierce}` : '', w.ap ? '穿甲' : '', w.explosive ? '範圍爆炸' : '', w.burn ? '點燃目標' : '', w.volley ? `一次 ${w.volley} 發` : '', w.saw ? '持續鋸切' : '', w.smash ? '擊退・破盾' : '', w.freeze ? '凍結' : '', w.hole ? '黑洞' : '', w.dual ? '雙持' : '', w.charge ? '蓄能' : '', w.rail ? '無限貫穿' : '', w.beam ? '持續光束・會過熱' : '', w.thrown ? '拋擲' : '', w.safe ? '不傷自己' : '', w.scope ? '瞄準鏡' : '', w.move && w.move < 1 ? '移動較慢' : ''].filter(Boolean).join(' · ');
+    return `<div class="wc${slot >= 0 ? ' eq' : ''}${w.legend ? ' legend' : ''}${w.soulFrame ? ' soul' : ''}${w.chronoFrame ? ' chrono' : ''}${w.dragonFrame ? ' dragon' : ''}">
       <div class="top"><div><div class="nm">${w.name}${w.limited ? `<span class="ltd">${w.limited}</span>` : ''}</div><div class="ct">${w.cat}${tags ? ' · ' + tags : ''}</div></div>
         <div class="pr num">${have ? (slot >= 0 ? `欄位 ${slot + 1}` : '已擁有') : w.reward ? '限定獎勵' : priceTag(w)}</div></div>
       <div class="ds">${w.desc}</div>
@@ -7702,8 +7742,8 @@ function switchWeapon(i) {
   if (weapons[i].view.saber) weapons[i].view.ext = 0; // the blade ignites again each time it is drawn
   $('scope').style.display = 'none';
   weapons[wi].view.group.visible = false; wi = i; weapons[wi].view.group.visible = true;
-  closeDrumWheel(); closeDrumRing(); document.body.classList.toggle('drumheld', holdingDrum()); document.body.classList.toggle('scytheheld', holdingScythe()); document.body.classList.toggle('chronoheld', holdingChrono());
-  chrono.slowTouch = false; $('tChronoSlow') && $('tChronoSlow').classList.remove('on');
+  closeDrumWheel(); closeDrumRing(); document.body.classList.toggle('drumheld', holdingDrum()); document.body.classList.toggle('scytheheld', holdingScythe()); document.body.classList.toggle('chronoheld', holdingChrono()); document.body.classList.toggle('bowheld', holdingBow());
+  dragon.drawing = false; dragon.draw = 0; chrono.slowTouch = false; $('tChronoSlow') && $('tChronoSlow').classList.remove('on');
   switching = 0.35; reloading = 0;
 }
 function camRight() { return new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion); }
@@ -8764,8 +8804,236 @@ function clearChrono() {
   chrono.stopT = 0; chrono.marked.clear(); chrono.slowHeld = chrono.slowTouch = false; chrono.cd = 0; chrono.hist = [];
   document.body.classList.remove('timestop', 'bullettime'); if (typeof canvas !== 'undefined') canvas.style.filter = '';
 }
+// ============================================================
+//  九霄・龍皇弓 (CONTEXT.md: 龍皇弓): hold to draw, let go to loose. A quick shot is one arrow, half a draw three arrows
+//  that set zombies alight, a full draw a 龍魂箭 that pierces a 60 m line and bursts in dragon fire. Hits feed 龍魂;
+//  full, F (or 龍) brings 九龍天降: nine fire dragons dive on the zombies for twelve seconds, every arrow is a 龍魂箭, and
+//  it ends in a firestorm over the whole map. Models in tools/blender/dragonbow.py.
+// ============================================================
+const dragon = { soul: 0, draw: 0, drawing: false, shotT: 0, arrows: [], ultT: 0, dragons: [], storm: false };
+let DRAGON = null, _drgMats = null;
+const arrowRay = new THREE.Raycaster();
+function dragonMats() {
+  if (_drgMats) return _drgMats;
+  const glow = (color, opacity = 1) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false });
+  _drgMats = {
+    dragon_wood: std({ color: 0x24130c, roughness: 0.55 }), dragon_leather: std({ color: 0x3a120c, roughness: 0.85 }),
+    dragon_red: std({ color: 0x8a0c0a, roughness: 0.25, metalness: 0.1 }), dragon_gold: std({ color: 0xe8a838, roughness: 0.22, metalness: 1 }),
+    dragon_fire: glow(0xffa030), dragon_horn: std({ color: 0xe8dcc0, roughness: 0.45 }),
+    dragon_scale: std({ color: 0x6a1410, roughness: 0.35, metalness: 0.45, emissive: 0x2a0400, emissiveIntensity: 0.6 }),
+    dragon_belly: std({ color: 0xe0c070, roughness: 0.4, metalness: 0.5 }), dragon_cord: std({ color: 0xc81810, roughness: 0.8 }),
+    dragon_feather: std({ color: 0x5a0a08, roughness: 0.9 }), dragon_dark: std({ color: 0x120a08, roughness: 0.5 }),
+  };
+  return _drgMats;
+}
+loadModel('dragonbow', (scene) => {
+  const m = dragonMats();
+  scene.traverse((o) => { if (o.isMesh) { o.material = m[o.material.name] || gunMats.metal; o.castShadow = o.material.blending !== THREE.AdditiveBlending; } });
+  DRAGON = {}; scene.children.forEach((o) => { DRAGON[o.name] = o; });
+  weapons.forEach((w) => { if (w.view.bowHolder) useModelBow(w.view); });
+});
+const BOW_TIP = 0.565, BOW_BRACE = 0.045, BOW_DRAW = 1.2, BOW_REST = new THREE.Vector3(-0.022, 0.05, 0); // arrow rest on the shelf
+function useModelBow(v) {
+  v.bowModel.clear(); const b = DRAGON.dragon_bow.clone(); b.traverse((o) => { o.frustumCulled = false; }); v.bowModel.add(b);
+  v.nocked.clear(); const a = DRAGON.dragon_arrow.clone(); a.traverse((o) => { o.frustumCulled = false; }); v.nocked.add(a);
+}
+function buildProceduralBow(v) {
+  const m = dragonMats();
+  for (const s of [-1, 1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.46, 0.015), m.dragon_red); l.position.set(0, s * 0.33, -0.03); v.bowModel.add(l); }
+  v.bowModel.add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.22, 0.035), m.dragon_wood));
+  const a = new THREE.Mesh(new THREE.CylinderGeometry(0.0045, 0.0045, 0.82, 6), m.dragon_dark); a.rotation.x = Math.PI / 2; v.nocked.add(a);
+}
+const holdingBow = () => !!(weapons[wi] && weapons[wi].c.dragon);
+function bowDrawStart() {
+  if (dragon.drawing || dragon.shotT > 0 || switching > 0) return;
+  dragon.drawing = true; dragon.draw = dragon.ultT > 0 ? 1.0 : 0; sfx('bowdraw', 1);
+}
+const bowLevel = (d) => (d >= 1 ? 3 : d >= 0.35 ? 2 : 1);
+function bowRelease() {
+  const lvl = bowLevel(dragon.draw); dragon.drawing = false; dragon.draw = 0; dragon.shotT = lvl === 3 ? 0.35 : 0.22;
+  const o = camera.getWorldPosition(new THREE.Vector3()), f = camera.getWorldDirection(new THREE.Vector3());
+  const from = o.clone().addScaledVector(f, 0.6).add(new THREE.Vector3(0, -0.06, 0));
+  if (lvl === 1) shootArrow(from, f, { dmg: 120, pierce: 2, speed: 65, range: 70 });
+  else if (lvl === 2) for (const fan of [-0.055, 0, 0.055]) shootArrow(from, f.clone().applyAxisAngle(UP, fan), { dmg: 160, pierce: 3, speed: 70, range: 70, burn: 3 });
+  else { shootArrow(from, f, { dmg: 450, pierce: Infinity, speed: 90, range: 60, burn: 4, soul: true }); shake = Math.min(1, shake + 0.4); sfx('dragonroar', 0.6); }
+  sfx('bowshot', lvl === 3 ? 1.3 : 1); kick = lvl === 3 ? 1 : 0.5; player.pitch += lvl === 3 ? 0.02 : 0.008;
+}
+function shootArrow(from, dir, c) {
+  const m = DRAGON ? DRAGON.dragon_arrow.clone() : new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.82, 6).rotateX(Math.PI / 2), dragonMats().dragon_dark);
+  m.position.copy(from); m.lookAt(from.clone().sub(dir)); // the arrow's tip is its -Z
+  if (c.soul) m.scale.setScalar(2.2);
+  scene.add(m);
+  const glow = drumGlow(c.soul ? 0xff7a20 : 0xffb050, c.soul ? 2.4 : 0.6, from);
+  dragon.arrows.push({ m, glow, dir: dir.clone().normalize(), c, dist: 0, hit: new Set(), left: c.pierce });
+}
+// a hit from the bow: feeds 龍魂; in 九龍天降 a boss loses at most 35% of its health to the dragons and the storm
+function bowHit(z, dmg, ud, dir, ult = false) {
+  if (!z || z.dead || z.ally) return false;
+  if (ult && z.c.boss) { const left = z.maxHp * 0.35 - (z.dragonDmg || 0); dmg = Math.min(dmg, Math.max(0, left)); z.dragonDmg = (z.dragonDmg || 0) + dmg; if (dmg <= 0) return false; }
+  const killed = z.damage(dmg, ud, dir || new THREE.Vector3(0, 0, 1));
+  if (!ult && dragon.ultT <= 0) {
+    const was = dragon.soul; dragon.soul = Math.min(100, dragon.soul + (killed ? (ud.part === 'head' ? 9 : 6) : 3));
+    if (was < 100 && dragon.soul >= 100) { showMsg('龍魂已滿', document.body.classList.contains('is-touch') ? '按「龍」召喚九龍天降' : '按 F 召喚九龍天降', 2); sfx('dragonroar', 0.5); }
+  }
+  return killed;
+}
+function updateArrows(dt) {
+  dragon.arrows = dragon.arrows.filter((a) => {
+    const step = a.c.speed * dt, p = a.m.position;
+    arrowRay.set(p, a.dir); arrowRay.far = step;
+    const wh = arrowRay.intersectObjects(worldMeshes, false)[0], wallD = wh ? wh.distance : Infinity;
+    let stop = false, any = false, kill = false;
+    for (const zh of arrowRay.intersectObjects(zMeshes, false)) {
+      if (zh.distance > wallD) break;
+      const z = zh.object.userData.z;
+      if (a.hit.has(z) || z.dead) continue;
+      a.hit.add(z); any = true;
+      kill = bowHit(z, a.c.dmg, zh.object.userData, a.dir) || kill;
+      if (a.c.burn && !z.dead && !z.c.fireproof) z.burnT = Math.max(z.burnT || 0, a.c.burn);
+      burst(zh.point, a.dir.clone().negate(), bloodMat, zh.object.userData.head ? 14 : 8, 3);
+      if (a.c.soul) for (let k = 0; k < 4; k++) emitFire(zh.point, UP, rand(2, 4));
+      if (--a.left <= 0) { stop = true; p.copy(zh.point); break; }
+    }
+    if (any) { hitMarker(kill); sfx('hit', kill ? 1.4 : 1); }
+    if (!stop) { if (wh) { p.copy(wh.point); stop = true; } else p.addScaledVector(a.dir, step); }
+    a.dist += step; a.glow.position.copy(p);
+    if (a.c.soul || Math.random() < 0.5) burst(p, UP, drumPartMat(a.c.soul ? 0xff7a20 : 0xffc060), a.c.soul ? 3 : 1, 1);
+    if (a.c.soul && Math.random() < 0.8) emitFire(p, a.dir.clone().negate(), rand(1, 2));
+    if (!stop && a.dist < a.c.range) return true;
+    if (a.c.soul) { // 龍魂箭 bursts in dragon fire where it ends
+      blastAt(p.clone().setY(Math.max(0.3, p.y)), 5, 200, null);
+      for (const z of zombies) if (!z.dead && !z.ally && !z.c.fireproof && z.pos.distanceTo(p) < 5) z.burnT = Math.max(z.burnT || 0, 4);
+      for (let k = 0; k < 18; k++) emitFire(p, new THREE.Vector3(rand(-1, 1), rand(0.2, 1), rand(-1, 1)).normalize(), rand(3, 7));
+    }
+    scene.remove(a.m); scene.remove(a.glow); return false;
+  });
+}
+// ---- 九龍天降: nine serpent dragons, each a head, a chain of body segments, two pairs of claws and a tail ----
+function makeDragon(i) {
+  const g = new THREE.Group(); scene.add(g);
+  const piece = (name, fallback) => { const o = DRAGON && DRAGON[name] ? DRAGON[name].clone() : fallback(); g.add(o); return o; };
+  const m = dragonMats(), S = 1.5;
+  const head = piece('dragon_head', () => new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.1, 10).rotateX(-Math.PI / 2), m.dragon_red)); head.scale.setScalar(S);
+  const segs = [];
+  for (let k = 0; k < 14; k++) {
+    const s = piece('dragon_segment', () => new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.21, 0.58, 10).rotateX(Math.PI / 2).translate(0, 0, 0.27), m.dragon_scale));
+    s.scale.setScalar(S * (1 - k * 0.032)); segs.push(s);
+    if ((k === 2 || k === 9) && DRAGON && DRAGON.dragon_claw) for (const sx of [-1, 1]) { const c = DRAGON.dragon_claw.clone(); c.position.set(sx * 0.18, -0.12, 0.25); c.rotation.z = sx * 0.4; s.add(c); }
+  }
+  const tail = piece('dragon_tail', () => new THREE.Mesh(new THREE.ConeGeometry(0.16, 1, 8).rotateX(Math.PI / 2).translate(0, 0, 0.5), m.dragon_red)); tail.scale.setScalar(S * 0.55);
+  g.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
+  const a = i / 9 * Math.PI * 2, start = player.pos.clone().add(new THREE.Vector3(Math.cos(a) * 30, 40 + i * 2, Math.sin(a) * 30));
+  const d = { g, head, segs, tail, pos: start, vel: new THREE.Vector3(-Math.cos(a), -0.4, -Math.sin(a)).multiplyScalar(14), trail: [start.clone()], state: 'circle', t: rand(0.5, 2), target: null, phase: a, fireT: 0, glow: drumGlow(0xff6010, 4) };
+  for (let k = 1; k < 200; k++) d.trail.push(start.clone().add(new THREE.Vector3(Math.cos(a) * k * 0.15, k * 0.05, Math.sin(a) * k * 0.15)));
+  d.trail.reverse();
+  return d;
+}
+function pickDragonTarget(d) {
+  const alive = zombies.filter((z) => !z.dead && !z.ally && !(z.climbT > 0));
+  if (!alive.length) return null;
+  const boss = alive.find((z) => z.c.boss && dragon.dragons.filter((o) => o.target === z).length < 3);
+  if (boss) return boss;
+  const taken = new Set(dragon.dragons.map((o) => o.target));
+  return alive.filter((z) => !taken.has(z)).sort((p, q) => p.pos.distanceTo(d.pos) - q.pos.distanceTo(d.pos))[0] || alive[0];
+}
+function updateDragons(dt) {
+  for (const d of dragon.dragons) {
+    d.t -= dt;
+    let goal;
+    if (dragon.storm || d.state === 'leave') goal = d.pos.clone().add(new THREE.Vector3(0, 30, 0)).add(d.vel.clone().setY(0).normalize().multiplyScalar(20));
+    else if (d.state === 'circle') {
+      d.phase += dt * 0.5; goal = player.pos.clone().add(new THREE.Vector3(Math.cos(d.phase) * 22, 16, Math.sin(d.phase) * 22));
+      if (d.t <= 0) { d.target = pickDragonTarget(d); if (d.target) { d.state = 'dive'; sfx('dragonroar', 0.4); } else d.t = 1; }
+    } else if (d.state === 'dive') {
+      if (!d.target || d.target.dead) { d.state = 'circle'; d.t = 0.4; continue; }
+      goal = d.target.pos.clone().add(new THREE.Vector3(0, 3.2 * d.target.g.scale.y, 0));
+      if (d.pos.distanceTo(goal) < 6) { d.state = 'breathe'; d.fireT = 1.4; }
+    } else if (d.state === 'breathe') { // hover over it and pour fire down
+      const z = d.target; d.fireT -= dt;
+      goal = z && !z.dead ? z.pos.clone().add(new THREE.Vector3(Math.sin(d.fireT * 3) * 2, 4.5, Math.cos(d.fireT * 3) * 2)) : d.pos.clone();
+      const mouth = d.pos.clone(), aim = (z && !z.dead ? z.pos.clone().setY(0.8) : d.pos.clone().setY(0)).sub(mouth).normalize();
+      for (let k = 0; k < 3; k++) emitFire(mouth, aim.clone().add(new THREE.Vector3(rand(-0.15, 0.15), 0, rand(-0.15, 0.15))).normalize(), rand(10, 14));
+      const at = z && !z.dead ? z.pos : d.pos;
+      for (const o of zombies) if (!o.dead && !o.ally && Math.hypot(o.pos.x - at.x, o.pos.z - at.z) < 4) { bowHit(o, 90 * dt, { part: 'body', fire: true }, null, true); if (!o.c.fireproof && !o.c.boss) o.burnT = Math.max(o.burnT || 0, 3); } // a boss's burns would slip past its 35% cap
+      if (d.fireT <= 0 || !z || z.dead) { d.state = 'circle'; d.t = rand(0.3, 1.2); }
+    }
+    // steer: turn the velocity toward the goal, fast but not instantly, so the body draws long curves
+    const want = goal.clone().sub(d.pos), speed = d.state === 'dive' ? 26 : d.state === 'breathe' ? 9 : 18;
+    if (want.lengthSq() > 0.01) want.setLength(speed);
+    d.vel.lerp(want, Math.min(1, dt * (d.state === 'breathe' ? 4 : 1.6)));
+    d.vel.y += Math.sin(performance.now() / 300 + d.phase * 3) * 0.6; // a serpent's ripple
+    d.pos.addScaledVector(d.vel, dt); d.pos.y = Math.max(2.2, d.pos.y);
+    // the body follows the path the head has flown
+    const last = d.trail[d.trail.length - 1];
+    if (last.distanceToSquared(d.pos) > 0.15 * 0.15) { d.trail.push(d.pos.clone()); if (d.trail.length > 260) d.trail.shift(); }
+    const n = d.trail.length, at = (k) => d.trail[Math.max(0, n - 1 - k)];
+    d.head.position.copy(d.pos); d.head.lookAt(d.pos.clone().sub(d.vel.clone().normalize())); // its -Z leads
+    let idx = 3;
+    d.segs.forEach((s, k) => {
+      const p = at(idx), q = at(Math.max(0, idx - 3)); s.position.copy(p); s.lookAt(p.clone().multiplyScalar(2).sub(q)); // +Z (toward the tail) away from the head
+      idx += Math.round((0.55 * s.scale.x) / 0.15);
+    });
+    const tp = at(idx), tq = at(Math.max(0, idx - 3)); d.tail.position.copy(tp); d.tail.lookAt(tp.clone().multiplyScalar(2).sub(tq));
+    d.glow.position.copy(d.pos);
+  }
+}
+function dragonUlt() {
+  if (dragon.soul < 100 || dragon.ultT > 0) return;
+  dragon.soul = 0; dragon.ultT = 12; dragon.storm = false;
+  zombies.forEach((z) => { z.dragonDmg = 0; });
+  for (let i = 0; i < 9; i++) dragon.dragons.push(makeDragon(i));
+  showMsg('九龍天降', '九條火龍自天而降，每一箭都是龍魂箭', 2.6); sfx('dragonroar', 1.2); sfx('ult', 0.8);
+  shake = 1; boomLight.position.copy(player.pos).setY(6); boomLight.color.set(0xff7a20); boomT = 0.6;
+}
+function dragonStorm() { // 龍炎風暴: the dragons climb away and the whole map burns
+  dragon.storm = true;
+  for (const z of zombies) {
+    if (z.dead || z.ally) continue;
+    bowHit(z, 250, { part: 'body', fire: true }, null, true);
+    if (!z.dead && !z.c.fireproof && !z.c.boss) z.burnT = Math.max(z.burnT || 0, 5);
+    for (let k = 0; k < 6; k++) emitFire(z.pos.clone().add(new THREE.Vector3(rand(-1, 1), 0.2, rand(-1, 1))), UP, rand(4, 9));
+  }
+  showMsg('龍炎風暴', '', 1.8); sfx('boom', 1.4); shake = 1;
+  boomLight.position.copy(player.pos).setY(4); boomLight.color.set(0xff5010); boomT = 0.8;
+}
+function updateDragon(dt) {
+  dragon.shotT = Math.max(0, dragon.shotT - dt);
+  if (dragon.drawing) {
+    if (!holdingBow()) { dragon.drawing = false; dragon.draw = 0; }
+    else if (mouseDown) { const was = dragon.draw; dragon.draw = Math.min(1.2, dragon.draw + dt); if (was < 1 && dragon.draw >= 1) sfx('tick', 0.8); }
+    else bowRelease();
+  }
+  updateArrows(dt);
+  if (dragon.ultT > 0) {
+    dragon.ultT -= dt;
+    if (dragon.ultT <= 1.5 && !dragon.storm) dragonStorm();
+    if (dragon.ultT <= 0) { dragon.dragons.forEach((d) => { scene.remove(d.g); scene.remove(d.glow); }); dragon.dragons = []; }
+  }
+  if (dragon.dragons.length) updateDragons(dt);
+  // the bow in your hands: the string runs from both tips to the nock, which the right hand pulls back
+  const w = weapons[wi], v = w && w.view;
+  if (v && v.bowHolder) {
+    const pull = BOW_DRAW * Math.min(1, dragon.draw) * (1 - 0.06 * Math.sin(performance.now() / 40) * (dragon.draw >= 1 ? 1 : 0)); // a full draw trembles
+    const nock = new THREE.Vector3(BOW_REST.x, BOW_REST.y, BOW_BRACE + pull);
+    for (const [s, tip] of [[v.strU, new THREE.Vector3(0, BOW_TIP, BOW_BRACE)], [v.strL, new THREE.Vector3(0, -BOW_TIP, BOW_BRACE)]]) {
+      const dir = nock.clone().sub(tip); s.position.copy(tip); s.quaternion.setFromUnitVectors(_zAxis, dir.clone().normalize()); s.scale.set(0.003, 0.003, dir.length());
+    }
+    v.nocked.position.set(nock.x, nock.y, nock.z - 0.6); v.nocked.visible = dragon.shotT <= 0;
+    v.bowHolder.updateMatrix(); v.drawHand.position.copy(nock).applyMatrix4(v.bowHolder.matrix);
+    const lvl = dragon.drawing ? bowLevel(dragon.draw) : 0;
+    v.bowGlow.material.opacity = lvl === 3 ? 0.9 : lvl === 2 ? 0.45 : 0.12 + (dragon.ultT > 0 ? 0.5 : 0);
+    v.bowGlow.scale.setScalar(lvl === 3 ? 0.5 + Math.sin(performance.now() / 60) * 0.05 : 0.3);
+  }
+  const ch = $('bowCharge');
+  if (ch) { ch.style.display = dragon.drawing ? 'block' : 'none'; if (dragon.drawing) { const lv = bowLevel(dragon.draw); ch.style.setProperty('--p', Math.min(1, dragon.draw) * 100 + '%'); ch.className = 'lv' + lv; } }
+}
+const _zAxis = new THREE.Vector3(0, 0, 1);
+function clearDragon() {
+  dragon.arrows.forEach((a) => { scene.remove(a.m); scene.remove(a.glow); }); dragon.dragons.forEach((d) => { scene.remove(d.g); scene.remove(d.glow); });
+  Object.assign(dragon, { soul: 0, draw: 0, drawing: false, shotT: 0, arrows: [], ultT: 0, dragons: [], storm: false });
+}
 function updateWeaponFx(dt) {
-  updateDrum(dt); updateSoul(dt); updateChrono(dt);
+  updateDrum(dt); updateSoul(dt); updateChrono(dt); updateDragon(dt);
   frosts = frosts.filter((f) => {
     f.life -= dt; f.v.multiplyScalar(1 - dt * 2.2); f.sp.position.addScaledVector(f.v, dt);
     const k = 1 - f.life / f.max; f.sp.scale.setScalar(0.2 + k * 1.3); f.sp.material.opacity = Math.max(0, f.life / f.max) * 0.75;
@@ -8880,6 +9148,7 @@ function tryFire(click) {
   if (ARENA && ARENA.spectate) return;
   const w = weapons[wi];
   if (w.c.drum) { if (switching <= 0 && !drum.wheel) drumFire(w, click); return; }
+  if (w.c.dragon) { if (click) bowDrawStart(); return; } // let go of the trigger to loose (updateDragon)
   if (fireCd > 0 || reloading > 0 || switching > 0) return;
   if (!w.c.auto && !click) return;
   if (w.c.beam && w.lockT > 0) return; // the laser is still cooling down
@@ -9262,7 +9531,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026110101'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026110102'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
@@ -9289,7 +9558,7 @@ applyArmorLook();
 $('loading').style.display = 'none';
 requestAnimationFrame(loop);
 buildDrumUi();
-window.__game = { get state() { return state; }, player, chrono: () => chrono, chronoUlt: () => chronoUlt(), drum: () => drum, soul: () => soul, throwScythe: () => throwScythe(), soulUlt: () => soulUlt(), drumSelect, drumFire: (click = true) => { if (holdingDrum()) drumFire(weapons[wi], click); }, codeWall: () => !!CODEWALL, blades: () => blades, zombies: () => zombies, startLevel, spawnZombie,
+window.__game = { get state() { return state; }, player, dragon: () => dragon, dragonUlt: () => dragonUlt(), chrono: () => chrono, chronoUlt: () => chronoUlt(), drum: () => drum, soul: () => soul, throwScythe: () => throwScythe(), soulUlt: () => soulUlt(), drumSelect, drumFire: (click = true) => { if (holdingDrum()) drumFire(weapons[wi], click); }, codeWall: () => !!CODEWALL, blades: () => blades, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
   modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), grantWeapon, holes: () => holes, nades: () => nades, trigger(v) { mouseDown = v; }, gongWaves: () => gongWaves, startBoarding, cargo: () => CARGO, boarding: () => board, setCompass, compassOn: () => compassOn, spawnDragon, setWeapon(i) { wi = i; weapons.forEach((w, k) => { w.view.group.visible = k === i; }); }, EVENT_LEVEL, completeLevel: () => levelComplete(), setDate(d) { dateOverride = d ? new Date(d + 'T12:00:00') : null; renderMenu(); }, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
