@@ -6,7 +6,7 @@
 # Game frame (+Y up, +Z toward the viewer, -Z forward), metres. Every object is modelled about its own origin; positions
 # are written in game coordinates and converted with B(). Each output object is ONE mesh built from parts that carry
 # their own material slot. Material names are the game's own; dragon_fire glows.
-import bpy, bmesh, math, sys
+import bpy, bmesh, math, os, sys
 from mathutils import Vector, Matrix
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
@@ -293,58 +293,170 @@ arrow = g.build()
 
 # =====================================================================
 # dragon_head (eastern dragon head for the summoned dragons; origin at the neck joint, facing -Z, ~1.1 long)
+# The upper head and the lower jaw start as UV spheres with a Subdivision Surface modifier (level 2) applied in
+# Blender; then each vertex is moved onto a target cross-section profile: a wide cranium (0.5) that narrows to a 0.24
+# snout with a flattened top, two brow ridges pushed up, and a lower jaw hinged at z=-0.25 and opened 25 degrees.
 # =====================================================================
-def snout_r(t):
-    return (0.095 - 0.045 * t, 0.105 - 0.05 * t)
+def prof(pts, z):
+    """Linear profile over z; pts run from the back of the head (large z) to the snout (small z)."""
+    if z >= pts[0][0]:
+        return pts[0][1]
+    for (z0, v0), (z1, v1) in zip(pts, pts[1:]):
+        if z >= z1:
+            return v1 + (v0 - v1) * (z - z1) / (z0 - z1)
+    return pts[-1][1]
 
 
-def jaw_mid(z):  # centre line of the open lower jaw (drops ~20 degrees from the hinge)
-    return -0.085 + 0.37 * (z + 0.3)
+def subdiv_ellipsoid(c, rad, seg, rings):
+    """A UV sphere (poles along game Z) with radii rad=(x, y, z) about the game point c, smoothed by a Subdivision
+    Surface modifier (level 2) that is applied in Blender. Returns (verts, faces) in game coordinates."""
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=seg, v_segments=rings, radius=1.0)
+    M = Matrix.Translation(B(*c)) @ Matrix.Rotation(math.pi / 2, 4, "X") @ Matrix.Diagonal((rad[0], rad[1], rad[2], 1.0))
+    bmesh.ops.transform(bm, matrix=M, verts=bm.verts)
+    me = bpy.data.meshes.new("tmp_subdiv"); bm.to_mesh(me); bm.free()
+    ob = bpy.data.objects.new("tmp_subdiv", me); scene.collection.objects.link(ob)
+    md = ob.modifiers.new("Subdivision", "SUBSURF"); md.levels = 2; md.render_levels = 2
+    bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.modifier_apply(modifier=md.name)
+    out = ob.data
+    verts = [(v.co.x, v.co.z, -v.co.y) for v in out.vertices]  # Blender -> game coordinates (inverse of B)
+    faces = [tuple(p.vertices) for p in out.polygons]
+    bpy.data.objects.remove(ob, do_unlink=True); bpy.data.meshes.remove(out)
+    return verts, faces
 
 
-def snout_bottom(z):
-    t = (-z - 0.25) / 0.81
-    return (0.02 - 0.025 * t) - (0.105 - 0.05 * t)
+def fit_section(p, c, rad, W, TOP, BOT):
+    """Moves a vertex of an ellipsoid (centre c, radii rad) onto the target cross-section at its height: half-width
+    W(z), height TOP(z) above c and depth BOT(z) below c. The angle around the head axis is kept."""
+    x, y, z = p[0] - c[0], p[1] - c[1], p[2]
+    s = max(-1.0, min(1.0, (z - c[2]) / rad[2])); rr = math.sqrt(1.0 - s * s)
+    ux = max(-1.0, min(1.0, x / (rad[0] * rr))) if rr > 0.02 else 0.0
+    uy = max(-1.0, min(1.0, y / (rad[1] * rr))) if rr > 0.02 else 0.0
+    return (c[0] + ux * prof(W, z), c[1] + uy * (prof(TOP, z) if uy >= 0 else prof(BOT, z)), z)
+
+
+def subset(verts, faces, keep):
+    """The faces with keep[i] set, with their own compact vertex list (so they can carry another material)."""
+    used, nv, nf = {}, [], []
+    for f, k in zip(faces, keep):
+        if k:
+            idx = []
+            for i in f:
+                if i not in used:
+                    used[i] = len(nv); nv.append(verts[i])
+                idx.append(used[i])
+            nf.append(tuple(idx))
+    return nv, nf
+
+
+HEAD_C, HEAD_RAD = (0.0, 0.0, -0.33), (0.25, 0.23, 0.72)
+HEAD_W = [(0.39, 0.04), (0.10, 0.19), (-0.10, 0.245), (-0.25, 0.25), (-0.33, 0.245), (-0.45, 0.19),
+          (-0.60, 0.16), (-0.80, 0.137), (-1.00, 0.122), (-1.10, 0.118)]
+HEAD_TOP = [(0.39, 0.02), (0.10, 0.17), (-0.10, 0.23), (-0.30, 0.235), (-0.45, 0.20), (-0.60, 0.165),
+            (-0.80, 0.14), (-1.00, 0.13), (-1.10, 0.125)]
+HEAD_BOT = [(0.39, 0.02), (0.10, 0.15), (-0.10, 0.22), (-0.25, 0.23), (-0.33, 0.17), (-0.45, 0.08),
+            (-0.60, 0.03), (-0.80, 0.005), (-1.10, 0.0)]
+JAW_C, JAW_RAD = (0.0, -0.03, -0.62), (0.14, 0.05, 0.38)
+JAW_W = [(-0.20, 0.14), (-0.50, 0.13), (-0.90, 0.125), (-1.00, 0.11)]
+JAW_TOP = [(-0.20, 0.06), (-0.60, 0.055), (-1.00, 0.045)]
+JAW_BOT = [(-0.20, 0.065), (-0.60, 0.06), (-1.00, 0.04)]
+HINGE = (0.0, -0.03, -0.25)
+
+
+def jaw_pose(p):
+    """The lower jaw swings open about its hinge: the front end drops 25 degrees."""
+    a = math.radians(25); dy, dz = p[1] - HINGE[1], p[2] - HINGE[2]
+    return (p[0], HINGE[1] + dy * math.cos(a) + dz * math.sin(a), HINGE[2] - dy * math.sin(a) + dz * math.cos(a))
+
+
+def head_vertex(p):
+    x, y, z = fit_section(p, HEAD_C, HEAD_RAD, HEAD_W, HEAD_TOP, HEAD_BOT)
+    if y > 0.0:  # two brow ridges, pushed up above the eyes
+        y += 0.05 * math.exp(-(abs(x) - 0.14) ** 2 / (2 * 0.035 ** 2) - (z + 0.44) ** 2 / (2 * 0.07 ** 2))
+    return (x, y, z)
 
 
 g = Geo("dragon_head")
-snout = [(0.0, 0.02 - 0.025 * t, -0.25 - 0.81 * t) for t in [i / 8 for i in range(9)]]
-g.add(sweep(snout, lambda t: circ(*snout_r(t), n=14), up=(1, 0, 0)), "dragon_scale")
-g.add(blob_geo((0, -0.005, -1.05), (0.05, 0.055, 0.035), n=12, rings=5), "dragon_scale")  # rounded nose
+hv, hf = subdiv_ellipsoid(HEAD_C, HEAD_RAD, seg=10, rings=7)  # upper head and snout
+g.add(([head_vertex(p) for p in hv], hf), "dragon_scale")
+jv, jf = subdiv_ellipsoid(JAW_C, JAW_RAD, seg=8, rings=5)  # lower jaw: belly on its underside
+fit = [fit_section(p, JAW_C, JAW_RAD, JAW_W, JAW_TOP, JAW_BOT) for p in jv]
+belly = [sum(fit[i][1] for i in f) / len(f) < JAW_C[1] for f in jf]
+jv = [jaw_pose(p) for p in fit]
+g.add(subset(jv, jf, belly), "dragon_belly")
+g.add(subset(jv, jf, [not b for b in belly]), "dragon_scale")
+
+TEETH_Z = [-0.40 - 0.055 * i for i in range(9)]
 for s in (-1, 1):
-    g.add(blob_geo((s * 0.022, 0.04, -1.0), (0.009, 0.007, 0.009), n=8, rings=4), "dragon_dark")  # nostrils
-g.add(blob_geo((0, 0.02, -0.2), (0.14, 0.13, 0.2), n=16, rings=10), "dragon_scale")  # cranium
-g.add(sweep(cr([(0, -0.085, -0.3), (0, -0.16, -0.5), (0, -0.27, -0.8)], per=4), lambda t: circ(0.06 - 0.03 * t, 0.04 - 0.018 * t, n=12), up=(1, 0, 0)), "dragon_scale")  # lower jaw, open
-g.add(blob_geo((0, -0.115, -0.6), (0.035, 0.04, 0.07), n=10, rings=5), "dragon_fire")  # fire core in the mouth
-for z in (-0.45, -0.6, -0.75):  # upper fangs
-    for s in (-1, 1):
-        x = s * 0.045; top = snout_bottom(z) + 0.004
-        g.add(tube([(x, top, z), (x, top - 0.035, z)], 0.0075, 0.0008, n=6), "dragon_horn")
-for z in (-0.55, -0.7):  # lower fangs
-    for s in (-1, 1):
-        x = s * 0.04; top = jaw_mid(z) + 0.03
-        g.add(tube([(x, top - 0.004, z), (x, top + 0.03, z)], 0.0068, 0.0008, n=6), "dragon_horn")
+    for z in TEETH_Z:  # upper teeth along the mouth edge, pointing down
+        x, yb = s * 0.8 * prof(HEAD_W, z), -0.6 * prof(HEAD_BOT, z) + 0.004
+        g.add(tube([(x, yb, z), (x, yb - 0.03, z - 0.004)], 0.0066, 0.0007, n=5), "dragon_horn")
+    for z in TEETH_Z:  # lower teeth along the top edge of the jaw, pointing up
+        p = (s * 0.8 * prof(JAW_W, z), JAW_C[1] + 0.6 * prof(JAW_TOP, z) - 0.004, z)
+        g.add(tube([jaw_pose(p), jaw_pose((p[0], p[1] + 0.03, p[2]))], 0.0066, 0.0007, n=5), "dragon_horn")
+    x = s * 0.05  # two longer fangs at the front of each jaw
+    yb = -0.9 * prof(HEAD_BOT, -0.93) + 0.004
+    g.add(tube([(x, yb, -0.93), (x, yb - 0.075, -0.94)], 0.0095, 0.0005, n=5), "dragon_horn")
+    p = (x, JAW_C[1] + 0.9 * prof(JAW_TOP, -0.93) - 0.004, -0.93)
+    g.add(tube([jaw_pose(p), jaw_pose((p[0], p[1] + 0.065, p[2]))], 0.0095, 0.0005, n=5), "dragon_horn")
+
 for s in (-1, 1):
-    g.add(blob_geo((s * 0.105, 0.1, -0.2), (0.02, 0.02, 0.02), n=8, rings=4), "dragon_fire")  # glowing eyes
-    g.add(blob_geo((s * 0.1, 0.13, -0.22), (0.055, 0.02, 0.035), n=10, rings=4), "dragon_scale")  # brow ridge
-    main = [(s * 0.09, 0.1, -0.12), (s * 0.15, 0.2, -0.05), (s * 0.19, 0.265, 0.05), (s * 0.2, 0.3, 0.2), (s * 0.19, 0.32, 0.3)]
-    g.add(tube(cr(main, per=3), 0.02, 0.004, n=8), "dragon_horn")  # antler, sweeping back and up
-    g.add(tube(cr([(s * 0.19, 0.265, 0.05), (s * 0.25, 0.28, 0.0), (s * 0.3, 0.3, -0.07)], per=3), 0.011, 0.002, n=6), "dragon_horn")
-    g.add(tube(cr([(s * 0.2, 0.3, 0.2), (s * 0.25, 0.345, 0.23), (s * 0.26, 0.38, 0.27)], per=3), 0.01, 0.002, n=6), "dragon_horn")
-    w = [(s * 0.055, 0.0, -0.8), (s * 0.12, 0.03, -0.93), (s * 0.19, 0.05, -1.0), (s * 0.25, 0.04, -0.94), (s * 0.3, 0.0, -0.8), (s * 0.31, -0.05, -0.62)]
-    g.add(tube(cr(w, per=4), 0.0085, 0.0018, n=6), "dragon_gold")  # long whisker curling back from the snout
-for k in range(9):  # flame-like mane spikes around the back of the skull
-    a = math.pi * (0.1 + 0.8 * k / 8)
-    R3 = Vector((math.cos(a), math.sin(a), 0))
-    P0 = Vector((0.118 * math.cos(a), 0.02 + 0.109 * math.sin(a), -0.09))
-    path = [P0, P0 + R3 * 0.012 + Vector((0, 0, 0.03)), P0 + R3 * 0.02 + Vector((0, 0, 0.07)), P0 + R3 * 0.01 + Vector((0, 0, 0.1))]
-    g.add(sweep(path, lambda t: circ(0.011 * (1 - t) + 0.0015, 0.005 * (1 - t) + 0.0008, n=8), up=(1, 0, 0)),
-          "dragon_red" if k % 2 == 0 else "dragon_gold")
+    # antler: main beam from above the eye, sweeping back and up (~0.7 long), three tines branching off it
+    main = [(s * 0.13, 0.19, -0.36), (s * 0.19, 0.25, -0.18), (s * 0.24, 0.32, 0.0), (s * 0.27, 0.38, 0.17), (s * 0.26, 0.45, 0.31)]
+    g.add(tube(cr(main, per=2), 0.021, 0.004, n=8), "dragon_horn")
+    for tine in ([(s * 0.19, 0.25, -0.18), (s * 0.25, 0.31, -0.13), (s * 0.29, 0.37, -0.09)],
+                 [(s * 0.24, 0.32, 0.0), (s * 0.31, 0.37, 0.02), (s * 0.36, 0.42, 0.0)],
+                 [(s * 0.27, 0.38, 0.17), (s * 0.33, 0.44, 0.21), (s * 0.36, 0.52, 0.24)]):
+        g.add(tube(cr(tine, per=2), 0.011, 0.0018, n=6), "dragon_horn")
+    # glowing eye just under the brow, dark nostril at the tip, small cheek fin behind the hinge
+    g.add(blob_geo((s * 0.19, 0.04, -0.42), (0.034, 0.034, 0.034), n=8, rings=4), "dragon_fire")
+    g.add(blob_geo((s * 0.03, 0.05, -1.03), (0.012, 0.012, 0.012), n=6, rings=3), "dragon_dark")
+    fin = [(s * 0.19, -0.05, -0.17), (s * 0.27, -0.03, -0.09), (s * 0.33, -0.01, 0.0)]
+    g.add(sweep(fin, lambda t: circ(0.045 * (1 - t) + 0.002, 0.008 * (1 - t) + 0.0008, n=6), up=(0, 1, 0)), "dragon_red")
+    # whisker: ~0.8 long, from the side of the snout tip, out and back
+    w = [(s * 0.11, 0.05, -0.92), (s * 0.21, 0.09, -1.0), (s * 0.36, 0.10, -1.04), (s * 0.47, 0.08, -0.95),
+         (s * 0.52, 0.04, -0.78), (s * 0.50, 0.0, -0.6)]
+    g.add(tube(cr(w, per=3), 0.0085, 0.0016, n=6), "dragon_gold")
+
+for k in range(12):  # flame-shaped mane: seven fan back over the skull, five sweep back under the jaw
+    if k < 7:
+        a, z0 = math.pi * (0.12 + 0.76 * k / 6), -0.12
+    else:
+        a, z0 = -math.pi * (0.22 + 0.56 * (k - 7) / 4), -0.08
+    ca, sa = math.cos(a), math.sin(a)
+    H = prof(HEAD_TOP, z0) if sa >= 0 else prof(HEAD_BOT, z0)
+    P0 = Vector((0.9 * prof(HEAD_W, z0) * ca, 0.9 * H * sa, z0)); R3 = Vector((ca, sa, 0.0))
+    path = [P0, P0 + R3 * 0.03 + Vector((0, 0, 0.05)), P0 + R3 * 0.045 + Vector((0, 0, 0.12)), P0 + R3 * 0.03 + Vector((0, 0, 0.2))]
+    rA = lambda tau: 0.02 * (1 - tau) + 0.002
+    rB = lambda tau: 0.008 * (1 - tau) + 0.0008
+    g.add(sweep(path[:3], lambda t: circ(rA(t * 2 / 3), rB(t * 2 / 3), n=6), up=(1, 0, 0)), "dragon_red")
+    g.add(sweep(path[2:], lambda t: circ(rA(2 / 3 + t / 3), rB(2 / 3 + t / 3), n=6), up=(1, 0, 0)), "dragon_gold")  # gold tip
+g.add(blob_geo((0.0, -0.085, -0.6), (0.03, 0.03, 0.065), n=8, rings=4), "dragon_fire")  # fire core in the open mouth
 head = g.build()
 
 # =====================================================================
 # dragon_segment (one body section: z=0 front joint .. z=+0.55 back joint, overlapping ends)
 # =====================================================================
+def crest(axis, rad, H, ntong, N=22, th=0.0035, inset=0.03):
+    """A flame-shaped dorsal fin on top (+Y) of a spine, plus a gold strip along its top edge. axis(u) and rad(u) give
+    the spine point and body radius at u in 0..1 along the crest; H(u) is the fin height before the flames. Each of the
+    ntong flames rises slowly from its root and ends in a sharp tip toward the back (+Z)."""
+    us = [i / (N - 1) for i in range(N)]
+
+    def h(u):
+        k = min(u * ntong, ntong - 1e-6); l = k - math.floor(k)
+        return H(u) * (0.2 + 0.8 * l ** 0.7)
+
+    def ring(t):
+        q = (h(t) + inset) / 2
+        return [(q, th), (-q, th), (-q, -th), (q, -th)]
+    path = [axis(u) + Vector((0, rad(u) - inset / 2 + h(u) / 2, 0)) for u in us]
+    fin = sweep(path, ring, up=(0, 1, 0))
+    edge = tube([axis(u) + Vector((0, rad(u) + h(u) - 0.002, 0)) for u in us], 0.0028, 0.0016, n=4, up=(0, 1, 0))
+    return fin, edge
+
+
 g = Geo("dragon_segment")
 g.add(sweep([(0, 0, z) for z in (-0.03, 0.1, 0.3, 0.58)], lambda t: circ(0.22 - 0.01 * t, n=14), up=(1, 0, 0)), "dragon_scale")
 for row, z in enumerate((0.06, 0.25, 0.44)):  # three rows of overlapping scales, staggered
@@ -355,12 +467,8 @@ for row, z in enumerate((0.06, 0.25, 0.44)):  # three rows of overlapping scales
 for s in (-1, 1):  # pale belly plates on the underside
     for z in (0.08, 0.22, 0.36, 0.5):
         g.add(blob_geo((s * 0.06, -0.21, z), (0.06, 0.02, 0.07), n=8, rings=2, half=True, ay=(0, -1, 0)), "dragon_belly")
-for k in range(6):  # dorsal crest: red spines with gold edges and tips
-    z = 0.04 + k * 0.095
-    path = [(0, 0.19, z), (0, 0.25, z - 0.008), (0, 0.31, z - 0.024)]
-    g.add(sweep(path, lambda t: circ(0.012 * (1 - t) + 0.0015, 0.035 * (1 - t) ** 0.8 + 0.001, n=6), up=(1, 0, 0)), "dragon_red")
-    g.add(blob_geo((0, 0.31, z - 0.024), (0.004, 0.006, 0.008), n=6, rings=3), "dragon_gold")
-    g.add(tube([(0, 0.22, z + 0.03), (0, 0.27, z + 0.02), (0, 0.3, z)], 0.0018, 0.0008, n=5), "dragon_gold")
+fin, edge = crest(lambda u: Vector((0, 0, 0.56 * u)), lambda u: 0.22 - 0.005 * u, lambda u: 0.075, ntong=3)
+g.add(fin, "dragon_red"); g.add(edge, "dragon_gold")  # one continuous flame crest per segment
 segment = g.build()
 
 # =====================================================================
@@ -382,11 +490,10 @@ for z in (0.2, 0.45, 0.7):  # three rows of scales
         th = 2 * math.pi * (k + 0.5 * (int(z * 10) % 2)) / 8
         rho = Vector((math.cos(th), math.sin(th), 0)); tang = Vector((-math.sin(th), math.cos(th), 0))
         g.add(blob_geo(c0 + rho * r, (0.6 * 2 * math.pi * r / 8, 0.014, 0.13), n=6, rings=2, half=True, ax=tang, ay=rho, az=(0, 0, 1)), "dragon_scale")
-for z in (0.15, 0.4, 0.65):  # dorsal crest continuing from the segment
-    c0 = tail_c(z); top = tail_r(z)
-    path = [c0 + Vector((0, top - 0.01, 0)), c0 + Vector((0, top + 0.03, -0.008)), c0 + Vector((0, top + 0.05, -0.02))]
-    g.add(sweep(path, lambda t: circ(0.009 * (1 - t) + 0.0012, 0.028 * (1 - t) ** 0.8 + 0.001, n=6), up=(1, 0, 0)), "dragon_red")
-    g.add(blob_geo(path[-1], (0.004, 0.006, 0.007), n=6, rings=3), "dragon_gold")
+# dorsal crest continuing the segment crest, smaller and lower toward the tail
+fin, edge = crest(lambda u: tail_c(0.04 + 0.86 * u), lambda u: tail_r(0.04 + 0.86 * u), lambda u: 0.05 - 0.025 * u,
+                  ntong=4, N=20, th=0.003, inset=0.02)
+g.add(fin, "dragon_red"); g.add(edge, "dragon_gold")
 for path, m in (([(0, 0, 0.96), (0, 0.05, 1.07), (0, 0.1, 1.2)], "dragon_red"),  # flame-shaped tail fin
                 ([(0, 0, 0.96), (0, -0.05, 1.06), (0, -0.09, 1.18)], "dragon_red"),
                 ([(0, 0, 0.97), (0, 0, 1.12), (0, 0.005, 1.27)], "dragon_fire")):
@@ -466,6 +573,15 @@ if PREVIEW:
                                (claw2, (3.35, 0.5, 0), (0, 1, 0), 0.0)]:
         pose(ob, pos, axis, ang)
     snap(PREVIEW, (0.6, 0.3, 10.0), (0.6, 0.0, 0.0), 50)
+    # head alone: 3/4 view from the front-left and a little above, filling most of the frame
+    for ob in FINAL + [claw2]:
+        ob.hide_render = True
+    head.hide_render = False
+    head.matrix_world = Matrix.Identity(4)
+    lights(1.0)
+    hc = Vector((0.0, 0.0, -0.42))
+    snap(os.path.join(os.path.dirname(PREVIEW), "dragonbow_view_head.png"),
+         tuple(hc + Vector((-0.7, 0.35, -0.65)).normalized() * 2.0), tuple(hc), 50)
 
     # layout 2: the whole dragon, chained along a gentle S-curve (yaw), seen from above and in front
     for ob in FINAL + [claw2]:

@@ -8913,7 +8913,7 @@ function makeDragon(i) {
   const g = new THREE.Group(); scene.add(g);
   const piece = (name, fallback) => { const o = DRAGON && DRAGON[name] ? DRAGON[name].clone() : fallback(); g.add(o); return o; };
   const m = dragonMats(), S = 1.5;
-  const head = piece('dragon_head', () => new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.1, 10).rotateX(-Math.PI / 2), m.dragon_red)); head.scale.setScalar(S);
+  const head = piece('dragon_head', () => new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.1, 10).rotateX(-Math.PI / 2), m.dragon_red)); head.scale.setScalar(S * 1.6); // a dragon's head is far broader than its neck
   const segs = [];
   for (let k = 0; k < 14; k++) {
     const s = piece('dragon_segment', () => new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.21, 0.58, 10).rotateX(Math.PI / 2).translate(0, 0, 0.27), m.dragon_scale));
@@ -9531,7 +9531,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026110102'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026110201'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
