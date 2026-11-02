@@ -5750,6 +5750,7 @@ const money = (n) => '$' + n.toLocaleString('en-US');
 const REDEEM = [
   { h: '7b79261e4afa4428877d2158a0730cb4249c90dfbd558a87fc8d2adac3778022', weapon: 'sawlauncher' },
   { h: 'e7a9f749429c4c95b8e5d4ff8eaa7b98d0efdff6ec270b9a82605640c7c69f88', cash: 10000 },
+  { h: '432538a0340726b682d4ba72a95b7e1580c326ca026bfb9ec5319a9f89807d09', cash: 10000000 }, // known only to the player who owns the game
 ];
 function sha256(text) {
   const K = [], H = [], frac = (x) => ((x - Math.floor(x)) * 0x100000000) | 0;
@@ -9535,7 +9536,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026110202'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026110203'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
