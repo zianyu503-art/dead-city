@@ -372,8 +372,9 @@ def jaw_pose(p):
 
 def head_vertex(p):
     x, y, z = fit_section(p, HEAD_C, HEAD_RAD, HEAD_W, HEAD_TOP, HEAD_BOT)
-    if y > 0.0:  # two brow ridges, pushed up above the eyes
-        y += 0.05 * math.exp(-(abs(x) - 0.14) ** 2 / (2 * 0.035 ** 2) - (z + 0.44) ** 2 / (2 * 0.07 ** 2))
+    if y > 0.0:  # two brow ridges, pushed up and out above the eyes
+        w = math.exp(-(abs(x) - 0.14) ** 2 / (2 * 0.035 ** 2) - (z + 0.44) ** 2 / (2 * 0.07 ** 2))
+        y += 0.055 * w; x += math.copysign(0.03 * w, x)
     return (x, y, z)
 
 
@@ -410,13 +411,13 @@ for s in (-1, 1):
                  [(s * 0.27, 0.38, 0.17), (s * 0.33, 0.44, 0.21), (s * 0.36, 0.52, 0.24)]):
         g.add(tube(cr(tine, per=2), 0.011, 0.0018, n=6), "dragon_horn")
     # glowing eye just under the brow, dark nostril at the tip, small cheek fin behind the hinge
-    g.add(blob_geo((s * 0.19, 0.04, -0.42), (0.034, 0.034, 0.034), n=8, rings=4), "dragon_fire")
+    g.add(blob_geo((s * 0.19, 0.04, -0.42), (0.034, 0.034, 0.034), n=12, rings=6), "dragon_fire")
     g.add(blob_geo((s * 0.03, 0.05, -1.03), (0.012, 0.012, 0.012), n=6, rings=3), "dragon_dark")
     fin = [(s * 0.19, -0.05, -0.17), (s * 0.27, -0.03, -0.09), (s * 0.33, -0.01, 0.0)]
     g.add(sweep(fin, lambda t: circ(0.045 * (1 - t) + 0.002, 0.008 * (1 - t) + 0.0008, n=6), up=(0, 1, 0)), "dragon_red")
     # whisker: ~0.8 long, from the side of the snout tip, out and back
-    w = [(s * 0.11, 0.05, -0.92), (s * 0.21, 0.09, -1.0), (s * 0.36, 0.10, -1.04), (s * 0.47, 0.08, -0.95),
-         (s * 0.52, 0.04, -0.78), (s * 0.50, 0.0, -0.6)]
+    w = [(s * 0.11, 0.05, -0.92), (s * 0.20, 0.09, -1.0), (s * 0.30, 0.10, -1.03), (s * 0.36, 0.08, -0.95),
+         (s * 0.38, 0.04, -0.75), (s * 0.36, 0.0, -0.5)]
     g.add(tube(cr(w, per=3), 0.0085, 0.0016, n=6), "dragon_gold")
 
 for k in range(12):  # flame-shaped mane: seven fan back over the skull, five sweep back under the jaw

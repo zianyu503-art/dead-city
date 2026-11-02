@@ -8964,13 +8964,17 @@ function updateDragons(dt) {
     d.vel.y += Math.sin(performance.now() / 300 + d.phase * 3) * 0.6; // a serpent's ripple
     d.pos.addScaledVector(d.vel, dt); d.pos.y = Math.max(2.2, d.pos.y);
     // the body follows the path the head has flown
-    const last = d.trail[d.trail.length - 1];
-    if (last.distanceToSquared(d.pos) > 0.15 * 0.15) { d.trail.push(d.pos.clone()); if (d.trail.length > 260) d.trail.shift(); }
+    const last = d.trail[d.trail.length - 1], gap = last.distanceTo(d.pos);
+    if (gap > 0.15) { // fill the path every 15 cm, however far the head went this frame, so the body stays joined
+      const dir = d.pos.clone().sub(last).normalize();
+      for (let t = 0.15; t <= gap; t += 0.15) d.trail.push(last.clone().addScaledVector(dir, t));
+      while (d.trail.length > 400) d.trail.shift();
+    }
     const n = d.trail.length, at = (k) => d.trail[Math.max(0, n - 1 - k)];
     d.head.position.copy(d.pos); d.head.lookAt(d.pos.clone().sub(d.vel.clone().normalize())); // its -Z leads
-    let idx = 3;
+    let idx = 0; // the first segment hangs straight off the neck
     d.segs.forEach((s, k) => {
-      const p = at(idx), q = at(Math.max(0, idx - 3)); s.position.copy(p); s.lookAt(p.clone().multiplyScalar(2).sub(q)); // +Z (toward the tail) away from the head
+      const p = at(idx), q = idx >= 3 ? at(idx - 3) : d.pos.clone().addScaledVector(d.vel.clone().normalize(), 0.45); s.position.copy(p); s.lookAt(p.clone().multiplyScalar(2).sub(q)); // +Z (toward the tail) away from the head
       idx += Math.round((0.55 * s.scale.x) / 0.15);
     });
     const tp = at(idx), tq = at(Math.max(0, idx - 3)); d.tail.position.copy(tp); d.tail.lookAt(tp.clone().multiplyScalar(2).sub(tq));
@@ -9531,7 +9535,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026110201'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026110202'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
