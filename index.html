@@ -423,7 +423,7 @@
   <div class="title">死城<span>突圍</span></div>
   <div class="subtitle">DEAD CITY</div>
   <div id="levels"></div>
-  <div class="menubtns"><span class="wallet num" id="menuCash">$0</span><button class="b primary" id="btnShop">武器裝備<span class="salebadge">3折</span></button><button class="b" id="btnBestiary">感染者圖鑑</button><button class="b" id="btnRedeem">兌換碼</button><button class="b" id="quality">畫質：自動</button></div>
+  <div class="menubtns"><span class="wallet num" id="menuCash">$0</span><button class="b primary" id="btnShop">武器裝備<span class="salebadge">1折</span></button><button class="b" id="btnBestiary">感染者圖鑑</button><button class="b" id="btnRedeem">兌換碼</button><button class="b" id="quality">畫質：自動</button></div>
   <div class="controls">
     <span class="keyhelp"><b>W A S D</b> 移動　<b>Shift</b> 衝刺　<b>空白鍵</b> 跳躍　<b>滑鼠左鍵</b> 射擊　<b>右鍵</b> 瞄準<br>
     <b>R</b> 換彈　<b>1 2 3</b> / 滾輪 切換武器　<b>C</b> 殭屍羅盤　<b>Esc</b> 暫停　·　</span>爆頭傷害 ×2.5
@@ -469,7 +469,7 @@
 
 <div id="shop" class="overlay"><div class="panel">
   <div class="shophead"><h2>武器裝備</h2><span class="wallet num" id="shopCash">$0</span></div>
-  <div class="sale"><b>全場三折</b>所有武器和盔甲只要原價的 30%</div>
+  <div class="sale"><b>全場一折</b>所有武器和盔甲只要原價的 10%</div>
   <div class="tabs" role="tablist"><button class="tab on" role="tab" data-tab="w">武器</button><button class="tab" role="tab" data-tab="a">盔甲</button></div>
   <p class="shopsub" id="shopSub"></p>
   <div id="wpane"><div id="loadout"></div><div id="wlist"></div></div>
@@ -898,7 +898,7 @@ const repairPer = (id) => ARMOR[id].price * REPAIR_RATE / ARMOR[id].dur;
 // flip these back on (and retheme the texts) to run them again, e.g. for 新年. Owned 活動武器 stay usable either way,
 // and the 競技場 always has every zombie and weapon.
 const EVENT_ON = false;               // the 國慶特別版 card in the menu (playable during 國慶期間) and buying or earning 活動武器
-const SALE_ON = false, SALE_RATE = 0.3; // storewide sale: every weapon and armour at 30% of its list price (三折); repairs keep the list price
+const SALE_ON = true, SALE_RATE = 0.1; // storewide sale: every weapon and armour at 10% of its list price (一折); repairs keep the list price
 const SALE = SALE_ON ? SALE_RATE : 1;
 const cost = (item) => Math.round(item.price * SALE);
 const priceTag = (item) => (SALE < 1 ? `<s class="was">${money(item.price)}</s> ${money(cost(item))}` : money(cost(item)));
@@ -9574,7 +9574,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026110401'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026110402'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
