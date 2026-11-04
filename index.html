@@ -526,6 +526,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 // ============================================================
 //  Levels — add more entries here to add more levels
@@ -2308,6 +2309,7 @@ function buildLevel() {
   if (theme === 'polar') { buildPolar(g); return; }
   if (theme === 'tropic') { buildTropic(g); return; }
   if (theme === 'park') { buildPark(g); return; }
+  if (cityMaps[CITY_MAPS[theme]]) { buildCityMap(g, cityMaps[CITY_MAPS[theme]]); return; } // the Blender city replaces the procedural one
 
   // ground (roads)
   const ground = mesh(new THREE.PlaneGeometry(900, 900), M.asphalt, g, 0, 0, 0, false);
@@ -3048,6 +3050,36 @@ function loadModel(name, onLoad) {
   else new GLTFLoader().load(`./assets/models/${name}.glb`, done, undefined, fail); // on failure the procedural stand-ins remain
 }
 setTimeout(() => { if (!modelsLoaded) { modelsLoaded = true; markModelsLoaded(); } }, 20000); // never block play for long
+// 整張地圖 (tools/blender/map_<theme>.py, built with the blender-modeling skill): a whole city level as one Blender scene,
+// fetched only when its level starts. COL_* boxes become colliders, LAMP_* mark the street lights, the rest is scenery.
+// When a map is missing or fails, the level is built from the procedural city as before.
+const CITY_MAPS = { downtown: 'map_downtown' }; // theme → model
+const cityMaps = {}; // model → scene (null when it failed)
+let _mapLoader = null;
+const mapLoader = () => _mapLoader || (_mapLoader = new GLTFLoader().setDRACOLoader(new DRACOLoader().setDecoderPath('./vendor/three/addons/libs/draco/gltf/'))); // maps are Draco-compressed
+function loadMapModel(name) {
+  return new Promise((resolve) => {
+    const done = (gltf) => { gltf.scene.traverse((o) => { if (o.isMesh) o.material.metalness = Math.min(o.material.metalness, 0.82); }); resolve(gltf.scene); };
+    const fail = (e) => { console.warn(`map ${name} failed to load`, e); (window.__modelErrors ||= []).push(`${name}: ${e && (e.message || e)}`); resolve(null); };
+    const inline = window.__GLB_B64 && window.__GLB_B64[name];
+    if (inline) {
+      const bytes = Uint8Array.from(atob(inline.startsWith('gz:') ? inline.slice(3) : inline), (ch) => ch.charCodeAt(0));
+      const buf = inline.startsWith('gz:') ? new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer() : Promise.resolve(bytes.buffer);
+      buf.then((ab) => mapLoader().parse(ab, '', done, fail), fail);
+    } else mapLoader().load(`./assets/models/${name}.glb`, done, undefined, fail);
+  });
+}
+function buildCityMap(g, scene) {
+  const map = scene.clone(), gone = [];
+  map.updateMatrixWorld(true);
+  map.traverse((o) => {
+    if (/^COL_/.test(o.name)) { const b = new THREE.Box3().setFromObject(o); addCollider((b.min.x + b.max.x) / 2, (b.min.z + b.max.z) / 2, b.max.x - b.min.x, b.max.z - b.min.z); gone.push(o); return; }
+    if (/^LAMP_/.test(o.name)) { lampPositions.push(o.getWorldPosition(new THREE.Vector3())); gone.push(o); return; }
+    if (o.isMesh) { o.castShadow = !/^Ground/.test(o.name); o.receiveShadow = true; worldMeshes.push(o); }
+  });
+  gone.forEach((o) => o.parent && o.parent.remove(o));
+  g.add(map);
+}
 let KATANA_GLB = null, ARM_GLB = null, EVAC = null;
 loadModel('evac', (scene) => {
   const parts = {}; scene.traverse((o) => { if (o.isMesh) parts[o.name] = o.geometry; }); EVAC = parts;
@@ -7189,6 +7221,12 @@ function startLevel(i) {
     modelsReady.then(() => { $('loading').style.display = 'none'; startLevel(i); });
     return;
   }
+  const mapName = CITY_MAPS[LEVELS[i].theme];
+  if (mapName && cityMaps[mapName] === undefined) { // fetch this level's Blender city the first time it is played
+    $('loading').textContent = '載入地圖中…'; $('loading').style.display = 'flex';
+    loadMapModel(mapName).then((scene) => { cityMaps[mapName] = scene; $('loading').style.display = 'none'; startLevel(i); });
+    return;
+  }
   ARENA = LEVELS[i].arena ? { mode: arenaMode, ...ARENA_MODES[arenaMode], live: !ARENA_MODES[arenaMode].spectate, contested: false, kit: [...(arenaKit || loadout)], speed: 1, zdmg: arenaZdmg } : null;
   loadLevel(i);
   if (DECK_EDGES) player.pos.set(-4, 0, -10); else if (LAB) player.pos.set(0, 0, LAB_Z - 6); else if (POLAR) player.pos.set(0, 0, 72); else if (TROPIC) player.pos.set(0, 0, 64); else if (PARK) player.pos.set(0, 0, 66); else if (ARENA) player.pos.set(0, 0, 14); else player.pos.set(ROAD_CENTERS[2], 0, blockCenter(2));
@@ -9536,7 +9574,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026110203'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026110401'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
