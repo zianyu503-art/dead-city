@@ -3076,6 +3076,7 @@ function buildCityMap(g, scene) {
     if (/^COL_/.test(o.name)) { const b = new THREE.Box3().setFromObject(o); addCollider((b.min.x + b.max.x) / 2, (b.min.z + b.max.z) / 2, b.max.x - b.min.x, b.max.z - b.min.z); gone.push(o); return; }
     if (/^LAMP_/.test(o.name)) { lampPositions.push(o.getWorldPosition(new THREE.Vector3())); gone.push(o); return; }
     if (/^SIREN_/.test(o.name)) { POLICE_CARS.push(o.getWorldPosition(new THREE.Vector3())); gone.push(o); return; } // a police car's light bar
+    if (/^Ground_puddles/.test(o.name)) { gone.push(o); return; } // the port map's puddles came out as huge black blots
     if (o.isMesh) { o.castShadow = !/^Ground/.test(o.name); o.receiveShadow = true; worldMeshes.push(o); }
   });
   gone.forEach((o) => o.parent && o.parent.remove(o));
@@ -9578,7 +9579,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026110403'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026110404'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
