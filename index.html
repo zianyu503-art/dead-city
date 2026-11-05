@@ -3053,7 +3053,7 @@ setTimeout(() => { if (!modelsLoaded) { modelsLoaded = true; markModelsLoaded();
 // 整張地圖 (tools/blender/map_<theme>.py, built with the blender-modeling skill): a whole city level as one Blender scene,
 // fetched only when its level starts. COL_* boxes become colliders, LAMP_* mark the street lights, the rest is scenery.
 // When a map is missing or fails, the level is built from the procedural city as before.
-const CITY_MAPS = { downtown: 'map_downtown', suburb: 'map_suburb', industrial: 'map_industrial', police: 'map_police', military: 'map_military', hospital: 'map_hospital', mall: 'map_mall' }; // theme → model
+const CITY_MAPS = { downtown: 'map_downtown', suburb: 'map_suburb', industrial: 'map_industrial', police: 'map_police', military: 'map_military', hospital: 'map_hospital', mall: 'map_mall', highway: 'map_highway', evac: 'map_evac' }; // theme → model
 const cityMaps = {}; // model → scene (null when it failed)
 let _mapLoader = null;
 const mapLoader = () => _mapLoader || (_mapLoader = new GLTFLoader().setDRACOLoader(new DRACOLoader().setDecoderPath('./vendor/three/addons/libs/draco/gltf/'))); // maps are Draco-compressed
@@ -3077,12 +3077,14 @@ function buildCityMap(g, scene) {
     if (/^LAMP_/.test(o.name)) { lampPositions.push(o.getWorldPosition(new THREE.Vector3())); gone.push(o); return; }
     if (/^SIREN_/.test(o.name)) { POLICE_CARS.push(o.getWorldPosition(new THREE.Vector3())); gone.push(o); return; } // a police car's light bar
     if (/^Ground_puddles/.test(o.name)) { gone.push(o); return; } // the port map's puddles came out as huge black blots
+    if (/^FIRE_/.test(o.name)) { const f = o.getWorldPosition(new THREE.Vector3()); FIRE_SPOTS.push(f); const lp = f.clone(); lp.fire = true; lampPositions.push(lp); gone.push(o); return; } // a burning wreck
     if (/^BARREL_/.test(o.name)) { const p = o.getWorldPosition(new THREE.Vector3()); barrels.push(p); gone.push(o); return; } // explosive barrels go here
     if (o.isMesh) { o.castShadow = !/^Ground/.test(o.name); o.receiveShadow = true; worldMeshes.push(o); }
   });
   gone.forEach((o) => o.parent && o.parent.remove(o));
   g.add(map);
   barrels.forEach((p) => addBarrel(g, p.x, p.z));
+  if (LV.theme === 'evac') buildEvac(g, blockCenter(2), blockCenter(2)); // the helipad, barriers and helicopter stay the game's own (the map leaves the centre block bare)
   // the 兌換碼 walls stand where they always did (the maps leave their spots clear)
   if (LV.theme === 'suburb') placeCodeWall(g, blockCenter(3), blockCenter(1) - 3.2);
   if (LV.theme === 'industrial') placeCodeWall(g, blockCenter(0) + 17.5, blockCenter(4) + 19, 'code_wall_port', Math.PI);
@@ -9581,7 +9583,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026110501'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026110502'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
