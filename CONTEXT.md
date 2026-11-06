@@ -180,11 +180,11 @@
 
 ## 整張地圖
 
-第 1～10 關的城市都改用 Blender 做的整張地圖（`CITY_MAPS`，主題對應模型名，腳本是 `tools/blender/map_<主題>.py`），由子代理用 blender-modeling skill 製作，材質是 Poly Haven 的真實掃描貼圖。
+第 1～11 關的城市都改用 Blender 做的整張地圖（`CITY_MAPS`，主題對應模型名，腳本是 `tools/blender/map_<主題>.py`），由子代理用 blender-modeling skill 製作，材質是 Poly Haven 的真實掃描貼圖。
 - **對齊原本格局**：照原本的道路格線（5×5 街區，道路中線在 ±28、±84、±140）。
 - **碰撞與路燈**：地圖裡名為 `COL_*` 的方塊變成碰撞框，`LAMP_*` 是夜間路燈的位置。
 - **其他標記**：`SIREN_*` 是警車警燈，`BARREL_*` 是爆炸桶，`FIRE_*` 是燃燒殘骸。`Ground_puddles` 載入時丟掉（港區的水坑做得太大）。
-- **遊戲自己保留的東西**：住宅區和港區的兌換碼牆由遊戲放在原位，地圖要留空。最後防線的中央街區也留空，停機坪和撤離直升機仍由 `buildEvac` 蓋。
+- **遊戲自己保留的東西**：住宅區和港區的兌換碼牆由遊戲放在原位，地圖要留空。最後防線的中央街區也留空，停機坪和撤離直升機仍由 `buildEvac` 蓋。國際機場的中央街區同樣留空，要搭的運輸機仍由 `airportBlock` 蓋。
 - **載入時機**：進到該關才下載。下載失敗就退回原本的方塊城市。
 - **壓縮**：原始匯出很大（28 MB），要先跑 `tools/blender/compress_map.py`（貼圖縮到 512 JPEG，幾何用 Draco 壓縮）。遊戲用 `vendor/three/addons/loaders/DRACOLoader.js` 解碼。
 - **備用網址**：claude.ai 備用網址有 16 MB 上限，不打包 `map_*.glb`，那邊照舊用方塊城市。

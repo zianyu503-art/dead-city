@@ -3053,7 +3053,7 @@ setTimeout(() => { if (!modelsLoaded) { modelsLoaded = true; markModelsLoaded();
 // 整張地圖 (tools/blender/map_<theme>.py, built with the blender-modeling skill): a whole city level as one Blender scene,
 // fetched only when its level starts. COL_* boxes become colliders, LAMP_* mark the street lights, the rest is scenery.
 // When a map is missing or fails, the level is built from the procedural city as before.
-const CITY_MAPS = { downtown: 'map_downtown', suburb: 'map_suburb', industrial: 'map_industrial', police: 'map_police', military: 'map_military', hospital: 'map_hospital', mall: 'map_mall', highway: 'map_highway', evac: 'map_evac' }; // theme → model
+const CITY_MAPS = { downtown: 'map_downtown', suburb: 'map_suburb', industrial: 'map_industrial', police: 'map_police', military: 'map_military', hospital: 'map_hospital', mall: 'map_mall', highway: 'map_highway', evac: 'map_evac', airport: 'map_airport' }; // theme → model
 const cityMaps = {}; // model → scene (null when it failed)
 let _mapLoader = null;
 const mapLoader = () => _mapLoader || (_mapLoader = new GLTFLoader().setDRACOLoader(new DRACOLoader().setDecoderPath('./vendor/three/addons/libs/draco/gltf/'))); // maps are Draco-compressed
@@ -3084,6 +3084,7 @@ function buildCityMap(g, scene) {
   gone.forEach((o) => o.parent && o.parent.remove(o));
   g.add(map);
   barrels.forEach((p) => addBarrel(g, p.x, p.z));
+  if (LV.theme === 'airport') airportBlock(g, 2, 2, blockCenter(2), blockCenter(2), true); // the transport plane you board stays the game's own
   if (LV.theme === 'evac') buildEvac(g, blockCenter(2), blockCenter(2)); // the helipad, barriers and helicopter stay the game's own (the map leaves the centre block bare)
   // the 兌換碼 walls stand where they always did (the maps leave their spots clear)
   if (LV.theme === 'suburb') placeCodeWall(g, blockCenter(3), blockCenter(1) - 3.2);
@@ -9583,7 +9584,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026110506'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026110601'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
