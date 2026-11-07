@@ -3053,7 +3053,7 @@ setTimeout(() => { if (!modelsLoaded) { modelsLoaded = true; markModelsLoaded();
 // 整張地圖 (tools/blender/map_<theme>.py, built with the blender-modeling skill): a whole city level as one Blender scene,
 // fetched only when its level starts. COL_* boxes become colliders, LAMP_* mark the street lights, the rest is scenery.
 // When a map is missing or fails, the level is built from the procedural city as before.
-const CITY_MAPS = { downtown: 'map_downtown', suburb: 'map_suburb', industrial: 'map_industrial', police: 'map_police', military: 'map_military', hospital: 'map_hospital', mall: 'map_mall', highway: 'map_highway', evac: 'map_evac', airport: 'map_airport' }; // theme → model
+const CITY_MAPS = { downtown: 'map_downtown', suburb: 'map_suburb', industrial: 'map_industrial', police: 'map_police', military: 'map_military', hospital: 'map_hospital', mall: 'map_mall', highway: 'map_highway', evac: 'map_evac', airport: 'map_airport', carrier: 'map_carrier' }; // theme → model
 const cityMaps = {}; // model → scene (null when it failed)
 let _mapLoader = null;
 const mapLoader = () => _mapLoader || (_mapLoader = new GLTFLoader().setDRACOLoader(new DRACOLoader().setDecoderPath('./vendor/three/addons/libs/draco/gltf/'))); // maps are Draco-compressed
@@ -6165,10 +6165,18 @@ function buildCarrier(g) {
   };
   SEA = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400, 110, 110), seaMat);
   SEA.rotation.x = -Math.PI / 2; SEA.position.y = -16; SEA.frustumCulled = false; g.add(SEA);
-  const hull = cvPut(g, 'carrier_hull', 0, 0, 0);
-  if (hull) hull.traverse((c) => { if (c.isMesh) c.castShadow = false; });
-  cvPut(g, 'deck_lines', 0, 0, 0, 0, false);
-  cvPut(g, 'island', 33, 0, 8); addCollider(33, 8, 8.4, 40.4);
+  const ship = cityMaps[CITY_MAPS.carrier]; // the whole Blender ship; the old flat-colour pieces stay as the fallback
+  if (ship) {
+    const map = ship.clone();
+    map.traverse((c) => { if (c.isMesh) { c.castShadow = !/^Ground/.test(c.name); c.receiveShadow = true; worldMeshes.push(c); } });
+    g.add(map);
+  } else {
+    const hull = cvPut(g, 'carrier_hull', 0, 0, 0);
+    if (hull) hull.traverse((c) => { if (c.isMesh) c.castShadow = false; });
+    cvPut(g, 'deck_lines', 0, 0, 0, 0, false);
+    cvPut(g, 'island', 33, 0, 8);
+  }
+  addCollider(33, 8, 8.4, 40.4);
   RADAR = cvPut(g, 'radar', 33, 26.3, 7, 0, false);
   // fighters parked nose-in along the starboard side and up at the bow
   const jets = [];
@@ -9584,7 +9592,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026110601'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026110701'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
