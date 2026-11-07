@@ -3294,6 +3294,45 @@ const IDENTITY4 = new THREE.Matrix4(), NO_RAYCAST = () => {}, OWN_SPHERE = new T
 let _ownMats = null;
 const _ownDbl = new WeakMap(), _ownTint = new WeakMap();
 const dblSided = (mat) => { if (!_ownDbl.has(mat)) { const c = mat.clone(); c.side = THREE.DoubleSide; _ownDbl.set(mat, c); } return _ownDbl.get(mat); };
+// the far body: one merged low mesh instead of a zombie's 7 layers, coloured from one colour per layer (uv.x picks the
+// layer, uv.y is the baked brightness against that layer's average)
+const LOD_LAYERS = ['skin', 'shirt', 'jacket', 'tie', 'trousers', 'boots', 'hair'], LOD_DIST = 28;
+const _lodMats = new Map(), _texAvg = new WeakMap();
+function texAvg(tex) {
+  if (!tex || !tex.image) return new THREE.Color(1, 1, 1);
+  if (!_texAvg.has(tex)) {
+    const c = new THREE.Color(1, 1, 1);
+    try {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 8;
+      const x = cv.getContext('2d', { willReadFrequently: true }); x.drawImage(tex.image, 0, 0, 8, 8);
+      const d = x.getImageData(0, 0, 8, 8).data; let r = 0, g = 0, b = 0;
+      for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; }
+      const n = (d.length / 4) * 255; c.setRGB(r / n, g / n, b / n, THREE.SRGBColorSpace);
+    } catch { /* an image that can't be read stays white */ }
+    _texAvg.set(tex, c);
+  }
+  return _texAvg.get(tex).clone();
+}
+function lodColor(mat, name) {
+  const own = ZB.layers[name] && mat.map && mat.map === ZB.layers[name].map && ZB.lay.avg && ZB.lay.avg[name]; // baked sheets have empty corners: use the body's own average
+  return (own ? new THREE.Color(...own) : texAvg(mat.map)).multiply(mat.color);
+}
+function lodMat(mats) {
+  const key = LOD_LAYERS.map((k) => (mats[k] ? mats[k].uuid : '-')).join();
+  if (!_lodMats.has(key)) {
+    const under = { jacket: 'shirt', tie: 'shirt', hair: 'skin' }; // a layer this zombie goes without shows what lies beneath it
+    const pal = LOD_LAYERS.map((k) => { const n = mats[k] ? k : under[k]; return lodColor(mats[n], n); });
+    const m = std({ roughness: 0.85, side: THREE.DoubleSide });
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uPal = { value: pal };
+      sh.vertexShader = 'uniform vec3 uPal[7];\nvarying vec3 vPal;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vPal = uPal[int(uv.x * 7.0)] * uv.y * 2.0;');
+      sh.fragmentShader = 'varying vec3 vPal;\n' + sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n  diffuseColor.rgb *= vPal;');
+    };
+    m.customProgramCacheKey = () => 'zblod';
+    _lodMats.set(key, m);
+  }
+  return _lodMats.get(key);
+}
 // what each layer is made of: the player's own outfit in its baked colours (a few tints of each, so a crowd is not one
 // man copied), or the type's uniform on the same cut; tinted skins (acid, pale, boss...) tint the baked skin
 function ownBodyMats(o) {
@@ -4233,6 +4272,18 @@ class Zombie {
     scene.add(g);
     zMeshes.push(...this.meshes);
   }
+  // far from the player the layers give way to the one merged body and nothing casts a shadow; the scope brings them back
+  checkLod() {
+    const L = this.ownLayers, held = this.ghost || this.camoMats || L[0].userData.mat0, R = (LOD_DIST * (camera.aspect < 1 ? 95 : 75)) / camera.fov;
+    const d = Math.hypot(this.pos.x - player.pos.x, this.pos.z - player.pos.z), far = !held && d > (this.lodFar ? R - 3 : R);
+    if (far === this.lodFar) return;
+    this.lodFar = far; this.lodMesh.visible = far;
+    L.forEach((m) => { m.visible = !far; });
+    for (const m of this.meshes) {
+      if (m.isSkinnedMesh || !m.visible) continue;
+      if (far) { m.userData.cs = m.castShadow; m.castShadow = false; } else if (m.userData.cs !== undefined) m.castShadow = m.userData.cs;
+    }
+  }
   // the player's own zombie in place of the stock body: the skinned layers follow this zombie's joint groups
   // (moved to where the model has its joints), and an invisible hull per joint takes the bullets
   wearOwnBody(add, headS, o) {
@@ -4278,14 +4329,23 @@ class Zombie {
     const fit = new THREE.Group(); fit.position.set(0, -0.001, 0.016); fit.scale.setScalar(0.7);
     for (const ch of [...hp.children]) if (ch !== this.jaw && !ch.isBone) fit.add(ch);
     hp.add(fit);
-    for (const [name, mat] of Object.entries(ownBodyMats(o))) {
-      const lr = ZB.layers[name];
-      if (!mat || !lr) continue;
-      const m = new THREE.SkinnedMesh(lr.geo, mat);
+    const mats = ownBodyMats(o), skinned = (geo, mat) => {
+      const m = new THREE.SkinnedMesh(geo, mat);
       m.bind(skel, IDENTITY4); m.raycast = NO_RAYCAST; m.castShadow = true;
       m.boundingSphere = OWN_SPHERE; // the posed limbs never leave it, and it spares working one out from the bones
       m.userData = { z: this, part: 'body', mesh: m };
-      body.add(m); this.meshes.push(m);
+      body.add(m); return m;
+    };
+    this.ownLayers = [];
+    for (const [name, mat] of Object.entries(mats)) {
+      const lr = ZB.layers[name];
+      if (!mat || !lr) continue;
+      const m = skinned(lr.geo, mat); this.meshes.push(m); this.ownLayers.push(m);
+    }
+    const glows = Object.values(mats).some((m) => m && (m.transparent || (m.emissive && m.emissiveIntensity > 0 && m.emissive.getHex() !== 0)));
+    if (ZB.layers.lod && !glows) { // left out of this.meshes: states that swap the layers' materials keep a zombie close-up (see checkLod)
+      this.lodMesh = skinned(ZB.layers.lod.geo, lodMat(mats)); this.lodMesh.visible = false; this.lodMesh.castShadow = false;
+      this.lodFar = false; this.lodTick = Math.floor(Math.random() * 16);
     }
     for (const [name, geo] of Object.entries(ZB.hits)) {
       const b = bone[name];
@@ -4929,6 +4989,7 @@ class Zombie {
   update(dt) {
     const g = this.g;
     if (this.vanish) return false; // a 亡魂 gone back to the grave
+    if (this.lodMesh && (++this.lodTick & 15) === 0) this.checkLod();
     if (this.dead) {
       if (this.reviveT > 0) { this.reviveT -= dt; if (this.reviveT <= 0) { this.revive(); return true; } }
       this.deadT += dt;
@@ -9592,7 +9653,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026110701'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026110702'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
@@ -9621,7 +9682,7 @@ requestAnimationFrame(loop);
 buildDrumUi();
 window.__game = { get state() { return state; }, player, dragon: () => dragon, dragonUlt: () => dragonUlt(), chrono: () => chrono, chronoUlt: () => chronoUlt(), drum: () => drum, soul: () => soul, throwScythe: () => throwScythe(), soulUlt: () => soulUlt(), drumSelect, drumFire: (click = true) => { if (holdingDrum()) drumFire(weapons[wi], click); }, codeWall: () => !!CODEWALL, blades: () => blades, zombies: () => zombies, startLevel, spawnZombie,
   tick(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) frame(dt, performance.now()); }, fire: () => tryFire(true),
-  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), grantWeapon, holes: () => holes, nades: () => nades, trigger(v) { mouseDown = v; }, gongWaves: () => gongWaves, startBoarding, cargo: () => CARGO, boarding: () => board, setCompass, compassOn: () => compassOn, spawnDragon, setWeapon(i) { wi = i; weapons.forEach((w, k) => { w.view.group.visible = k === i; }); }, EVENT_LEVEL, completeLevel: () => levelComplete(), setDate(d) { dateOverride = d ? new Date(d + 'T12:00:00') : null; renderMenu(); }, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
+  modelsReady, allModels: () => modelsPending === 0, give(n) { addCash(n); }, startEvac: () => startEvac(), evacState: () => evac, heli: () => HELI, loadout: () => loadout, weapons: () => weapons, resetWeapons, aim(v) { aiming = v; }, wearArmor, checkForUpdate: () => checkForUpdate(), grantWeapon, holes: () => holes, nades: () => nades, trigger(v) { mouseDown = v; }, gongWaves: () => gongWaves, startBoarding, cargo: () => CARGO, boarding: () => board, renderer, setCompass, compassOn: () => compassOn, spawnDragon, setWeapon(i) { wi = i; weapons.forEach((w, k) => { w.view.group.visible = k === i; }); }, EVENT_LEVEL, completeLevel: () => levelComplete(), setDate(d) { dateOverride = d ? new Date(d + 'T12:00:00') : null; renderMenu(); }, hurt: (d, k) => hurtPlayer(d, k), armorRes, ARMOR, durOf, setDur(id, v) { armorDur[id] = v; renderArmorHud(); }, openShop, shopTab(t) { shopTab = t; renderShop(); }, setState(v) { state = v; }, barrels: () => BARRELS, explodeBarrel,
   probe() { ray.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3())); const h = ray.intersectObjects(worldMeshes, false)[0]; return h ? { d: h.distance.toFixed(1), barrel: !!h.object.userData.barrel, pt: h.point.toArray().map((v) => v.toFixed(1)) } : null; },
   spawnNear(type, d = 8) { const z = new Zombie(type, player.pos.x + rand(-2, 2), player.pos.z - d); zombies.push(z); return z; } };
 </script>

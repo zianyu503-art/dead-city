@@ -586,6 +586,65 @@ def proxies(L, F):
     return out
 
 
+# ---------------------------------------------------------------- the far body
+LOD_PARTS = ("skin", "shirt", "jacket", "tie", "trousers", "boots", "hair")  # the slot each layer has in the game's palette
+LOD_TRIS = dict(skin=900, shirt=520, jacket=480, tie=20, trousers=340, boots=130, hair=110)
+LOD_AVG = {}
+
+
+def layer_image(ob):
+    for m in ob.data.materials:
+        if m and m.use_nodes:
+            for n in m.node_tree.nodes:
+                if n.type == "TEX_IMAGE" and n.image:
+                    return n.image
+    return None
+
+
+def lod_body(L):
+    """One merged low body for zombies far away: a single draw, coloured in the game from one colour per layer.
+    uv.x picks the layer, uv.y (mirrored here because glTF flips v) is the baked brightness against the layer's average."""
+    log("building the far body")
+    parts = []
+    for i, k in enumerate(LOD_PARTS):
+        ob = L[k].copy(); ob.data = L[k].data.copy(); ob.name = "zb_lod_" + k
+        for prop in ("zb_src", "zb_baked"):
+            if prop in ob:
+                del ob[prop]
+        scene.collection.objects.link(ob)
+        merge(ob, 0.003)  # the boots, hair and parts of the shirt are torn into loose faces, which a collapse cannot touch
+        decimate(ob, LOD_TRIS[k])
+        ul = ob.data.uv_layers.active or ob.data.uv_layers.new(name="lod")  # hair has no sheet of its own
+        ul.name = "lod"  # a join keeps layers with different names apart
+        for other in [u for u in ob.data.uv_layers if u.name != "lod"]:
+            ob.data.uv_layers.remove(other)
+        uv = ob.data.uv_layers["lod"].data
+        st = np.zeros(len(uv) * 2); uv.foreach_get("uv", st); st = st.reshape(-1, 2)
+        shade = np.ones(len(st)); img = layer_image(ob)
+        if img:
+            w, h = img.size; px = np.zeros(w * h * 4, np.float32); img.pixels.foreach_get(px); px = px.reshape(h, w, 4)
+            c = px[(st[:, 1] % 1 * h).astype(int).clip(0, h - 1), (st[:, 0] % 1 * w).astype(int).clip(0, w - 1), :3].astype(float)
+            if not img.is_float:
+                c = c ** 2.2  # stored as sRGB
+            avg = c.mean(0); LOD_AVG[k] = [round(float(v), 4) for v in avg]
+            shade = ((c @ np.array((0.2126, 0.7152, 0.0722))) / max(float(avg @ np.array((0.2126, 0.7152, 0.0722))), 1e-4)).clip(0, 2)
+        st[:, 0] = (i + 0.5) / len(LOD_PARTS); st[:, 1] = 1 - shade / 2
+        uv.foreach_set("uv", st.ravel())
+        ob.data.materials.clear()
+        parts.append(ob)
+    for o in bpy.context.selected_objects:
+        o.select_set(False)
+    for o in parts:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = parts[0]
+    bpy.ops.object.join()
+    ob = bpy.context.view_layer.objects.active; ob.name = "zb_lod"; ob.data.name = "zb_lod"
+    ob.data.materials.append(bpy.data.materials.new("zb_lod_mat"))
+    st = np.zeros(len(ob.data.loops) * 2); ob.data.uv_layers.active.data.foreach_get("uv", st)
+    log(f"  far body: {tris(ob)} tris, uv layers {len(ob.data.uv_layers)}, loops per layer {np.bincount((st[::2] * len(LOD_PARTS)).astype(int)).tolist()}, colours {LOD_AVG}")
+    return ob
+
+
 def rig(L, F):
     arm = bpy.data.armatures.new("zb_rig"); ro = bpy.data.objects.new("zb_rig", arm); scene.collection.objects.link(ro)
     activate(ro); bpy.ops.object.mode_set(mode="EDIT")
@@ -609,6 +668,7 @@ def layout_empty(F):
                th=round((F["knee1"]["P"] - F["leg1"]["P"]).length, 5), splay=SPLAY,
                jaw=[round(c, 5) for c in (Vector(to_game(F["jaw"]["P"])) - hp)],
                eye=[round(c, 5) for c in (Vector(to_game(G(V(0.032, -0.155, 1.685)))) - hp)])
+    lay["avg"] = LOD_AVG
     e["layout"] = json.dumps(lay)
     log("  layout", lay)
     return e
@@ -659,9 +719,10 @@ else:
 tidy(L)
 F = repose(L)
 P = proxies(L, F)
-R = rig(L, F)
+LOD = lod_body(L)
+R = rig({**L, "lod": LOD}, F)
 E = layout_empty(F)
-export(list(L.values()) + P + [R, E])
+export(list(L.values()) + [LOD] + P + [R, E])
 if PREVIEW:
     preview(L, PREVIEW)
 log("done")
