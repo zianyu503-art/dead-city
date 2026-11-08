@@ -23,11 +23,13 @@
 #
 # Set ZB_WORK=<file.blend> to save the baked stage there; running the script on that file skips
 # the slow part.
-import bpy, bmesh, math, sys, os, time, json
+import bpy, bmesh, math, sys, os, time, json, random
 import numpy as np
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 from mathutils.interpolate import poly_3d_calc
+sys.path.insert(0, "/Users/alex/.claude/skills/blender-modeling/scripts")
+import bkit  # the blender-modeling skill: tear() for the ripped jacket
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 OUT = argv[0] if argv else "zombiebody.glb"
@@ -645,6 +647,154 @@ def lod_body(L):
     return ob
 
 
+# ---------------------------------------------------------------- variety: bloodied sheets, rips, face and build
+# The game picks one sheet set per zombie (0 is the clean bake) and mixes the morphs, so a crowd is not one man copied.
+GORE_SETS = [  # seed, blood, mud, bites on the skin
+    (11, 0.85, 0.7, 2),
+    (29, 1.25, 1.0, 3),
+]
+DRIED, FRESH, MUD = np.array((0.17, 0.028, 0.022)), np.array((0.32, 0.04, 0.03)), np.array((0.62, 0.5, 0.38))  # sRGB
+
+
+def vnoise(P, seed):
+    """Value noise on a 3D lattice for many points at once."""
+    i = np.floor(P).astype(np.int64); f = (P - i).astype(np.float32); f = f * f * (3 - 2 * f)
+
+    def h(dx, dy, dz):
+        n = (i[:, 0] + dx) * 73856093 ^ (i[:, 1] + dy) * 19349663 ^ (i[:, 2] + dz) * 83492791 ^ seed * 2654435761
+        n = (n ^ (n >> 13)) * 1274126177
+        return ((n ^ (n >> 16)) & 0xFFFF).astype(np.float32) / 65535.0
+    lerp = lambda a, b, t: a + (b - a) * t
+    x0 = lerp(lerp(h(0, 0, 0), h(1, 0, 0), f[:, 0]), lerp(h(0, 1, 0), h(1, 1, 0), f[:, 0]), f[:, 1])
+    x1 = lerp(lerp(h(0, 0, 1), h(1, 0, 1), f[:, 0]), lerp(h(0, 1, 1), h(1, 1, 1), f[:, 0]), f[:, 1])
+    return lerp(x0, x1, f[:, 2])
+
+
+def fbm(P, seed):
+    return 0.5 * vnoise(P, seed) + 0.3 * vnoise(P * 2.03, seed + 7) + 0.2 * vnoise(P * 4.1, seed + 13)
+
+
+def sstep(a, b, x):
+    t = np.clip((x - a) / (b - a), 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def seg_dist(P, a, b):
+    a, b = np.array(a), np.array(b); ab = b - a
+    t = np.clip(((P - a) @ ab) / (ab @ ab), 0, 1)
+    return np.linalg.norm(P - (a + t[:, None] * ab), axis=1)
+
+
+def texel_positions(ob, size):
+    """Where each texel of a layer's sheet sits on the body (source frame, metres): an emission bake of object coordinates."""
+    img = bpy.data.images.new(ob.name + "_pos", size, size, alpha=True, float_buffer=True)
+    img.colorspace_settings.name = "Non-Color"; img.generated_color = (0, 0, 0, 0)
+    m = bpy.data.materials.new("zb_tmp_pos"); m.use_nodes = True; nt = m.node_tree; N = nt.nodes
+    for n in list(N):
+        N.remove(n)
+    tc = N.new("ShaderNodeTexCoord"); vm = N.new("ShaderNodeVectorMath"); vm.operation = "MULTIPLY_ADD"
+    vm.inputs[1].default_value = (0.25, 0.25, 0.25); vm.inputs[2].default_value = (0.5, 0.5, 0.5)
+    em = N.new("ShaderNodeEmission"); out = N.new("ShaderNodeOutputMaterial"); tex = N.new("ShaderNodeTexImage"); tex.image = img; N.active = tex
+    nt.links.new(tc.outputs["Object"], vm.inputs[0]); nt.links.new(vm.outputs[0], em.inputs["Color"]); nt.links.new(em.outputs[0], out.inputs["Surface"])
+    old = list(ob.data.materials); ob.data.materials.clear(); ob.data.materials.append(m)
+    ob.hide_set(False); ob.hide_render = False; activate(ob); scene.cycles.samples = 1
+    bpy.ops.object.bake(type="EMIT", margin=4, target="IMAGE_TEXTURES", use_selected_to_active=False)
+    ob.data.materials.clear()
+    for mm in old:
+        ob.data.materials.append(mm)
+    a = np.empty(size * size * 4, np.float32); img.pixels.foreach_get(a); a = a.reshape(-1, 4)
+    bpy.data.images.remove(img); bpy.data.materials.remove(m)
+    return (a[:, :3] - 0.5) * 4, a[:, 3] > 0.5
+
+
+def bloody(layer, base, P, rng, seed, blood_amt, mud_amt, bites):
+    """One bloodied, muddied copy of a sheet. base: sRGB colours of the covered texels; P: their body positions."""
+    x, y, z = P[:, 0], P[:, 1], P[:, 2]
+    n = fbm(P * 14, seed)
+    wob = (fbm(P * np.array((4, 4, 1.2)), seed + 1) - 0.5) * 0.1
+    front = sstep(-0.01, -0.05, y)  # the source faces -y
+    drool = sstep(0.065, 0.025, np.abs(x + wob)) * front * sstep(1.02 + 0.25 * fbm(P * 3, seed + 2), 1.42, z) * sstep(1.64, 1.58, z)
+    hands = np.zeros(len(P), np.float32)
+    for s in (-1, 1):
+        m = np.array((s, 1, 1))
+        hands = np.maximum(hands, sstep(0.085, 0.05, seg_dist(P, np.array(J["wrist"]) * m, np.array(J["tip"]) * m)))
+        streak = sstep(0.45, 0.6, fbm(P * np.array((14, 14, 2)), seed + 3))
+        hands = np.maximum(hands, sstep(0.07, 0.045, seg_dist(P, np.array(J["elbow"]) * m, np.array(J["wrist"]) * m)) * streak)
+    splash = sstep(0.64, 0.74, fbm(P * 5, seed + 4))
+    blood = sstep(0.15, 0.5, np.clip(np.maximum(np.maximum(drool * 1.35, hands * 1.1), splash) * blood_amt - (1 - n) * 0.55, 0, 1))
+    lum = base @ np.array((0.2126, 0.7152, 0.0722)); lum = np.clip(lum / max(float(lum.mean()), 1e-3), 0, 1.4)
+    bcol = (DRIED + (FRESH - DRIED) * fbm(P * 9, seed + 5)[:, None]) * (0.55 + 0.45 * lum)[:, None]  # the cloth's folds show through
+    mud = sstep(0.5 + 0.15 * fbm(P * 2, seed + 6), 0.05, z) * sstep(0.35, 0.65, fbm(P * 8, seed + 8)) * mud_amt
+    col = base * (0.8 + 0.2 * fbm(P * 3, seed + 9))[:, None]
+    col = col + (col * MUD - col) * mud[:, None]
+    if layer == "skin":
+        blot = sstep(0.55, 0.75, fbm(P * 6, seed + 10)) * 0.35  # bruising
+        col = col + (col * np.array((0.82, 0.72, 0.9)) - col) * blot[:, None]
+        for s in (-1, 1):  # sunken, dark eye sockets
+            d = np.linalg.norm(P - np.array((0.032 * s, -0.15, 1.685)), axis=1)
+            col *= (1 - 0.45 * sstep(0.045, 0.012, d))[:, None]
+        spots = [(0.055, -0.035, 1.52), (0.143, -0.135, 1.12), (0.05, -0.125, 1.625), (0.1, -0.17, 1.0)]
+        for k in rng.sample(range(len(spots)), bites):  # bites: raw flesh, a dark core, a bruised rim and a run of blood
+            c = np.array(spots[k]) * np.array((rng.choice((-1, 1)), 1, 1)); r = rng.uniform(0.022, 0.035)
+            d = np.linalg.norm(P - c, axis=1) / r * (1 + 0.4 * (fbm(P * 60, seed + k) - 0.5))
+            col = col + (np.array((0.42, 0.25, 0.32)) * col / np.maximum(col.mean(1, keepdims=True), 1e-3) * 0.5 - col) * (sstep(1.6, 0.9, d) * 0.6)[:, None]
+            col = col + (np.array((0.5, 0.09, 0.07)) - col) * sstep(1.0, 0.7, d)[:, None]
+            col = col + (np.array((0.12, 0.015, 0.015)) - col) * sstep(0.45, 0.15, d)[:, None]
+            run = sstep(0.4 * r, 0.15 * r, np.abs(x - c[0] - wob * 0.3)) * sstep(c[2] - rng.uniform(0.06, 0.16), c[2], z) * (z < c[2]) * sstep(0.04, 0.0, np.abs(y - c[1]))
+            blood = np.maximum(blood, run * blood_amt)
+    blood = blood * (0.7 + 0.3 * n)  # soaked unevenly
+    return np.clip(col + (bcol - col) * blood[:, None], 0, 1)
+
+
+def gore_sheets(L):
+    """Bloodied copies of each sheet, carried by tiny `zbv_<layer>_<n>` meshes so the exporter keeps them."""
+    log("bloodying the sheets")
+    setup_cycles()
+    carriers = []
+    for k in ("skin", "shirt", "jacket", "tie", "trousers", "boots"):
+        img = layer_image(L[k])
+        if not img:
+            continue
+        size = img.size[0]
+        P, cov = texel_positions(L[k], size)
+        px = np.empty(size * size * 4, np.float32); img.pixels.foreach_get(px); px = px.reshape(-1, 4)
+        for v, (seed, b, m, bites) in enumerate(GORE_SETS, 1):
+            out = px.copy()
+            out[cov, :3] = bloody(k, px[cov, :3], P[cov], random.Random(seed + v), seed, b, m, bites)
+            vi = bpy.data.images.new(f"zb_{k}_col_v{v}", size, size); vi.colorspace_settings.name = "sRGB"
+            vi.pixels.foreach_set(out.ravel()); vi.update(); vi.pack()
+            me = bpy.data.meshes.new(f"zbv_{k}_{v}"); me.from_pydata([(0, 0, 0), (0.001, 0, 0), (0, 0.001, 0)], [], [(0, 1, 2)]); me.uv_layers.new(name="UVMap")
+            mat = bpy.data.materials.new(f"zbv_{k}_{v}"); mat.use_nodes = True; tn = mat.node_tree.nodes.new("ShaderNodeTexImage"); tn.image = vi
+            mat.node_tree.links.new(tn.outputs["Color"], mat.node_tree.nodes["Principled BSDF"].inputs["Base Color"]); me.materials.append(mat)
+            ob = bpy.data.objects.new(f"zbv_{k}_{v}", me); scene.collection.objects.link(ob); carriers.append(ob)
+        log(f"  {k}: {cov.sum()} texels, {len(GORE_SETS)} bloodied copies")
+    return carriers
+
+
+def shape_keys(L):
+    """Morphs the game mixes per zombie. 'gaunt' sinks the cheeks, eye sockets and temples (negative swells the face);
+    'heavy' fills out the chest and belly (negative thins them). The same displacement on every layer keeps the clothes on."""
+    log("face and build morphs")
+    g = lambda v, c, w: np.exp(-((v - c) / w) ** 2)
+    for k in ("skin", "shirt", "jacket", "tie", "trousers"):
+        ob = L[k]; me = ob.data; nv = len(me.vertices)
+        co = np.empty(nv * 3); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
+        x, y, z = co[:, 0], co[:, 1], co[:, 2]
+        W = get_weights(ob); t = np.clip(W[:, BI["torso"]] + 0.5 * (W[:, BI["leg0"]] + W[:, BI["leg1"]]), 0, 1)
+        prof = g(z, 1.22, 0.24) * t
+        heavy = co.copy(); heavy[:, 0] += x * 0.16 * prof; heavy[:, 1] += (y + 0.02) * 0.16 * prof
+        heavy[:, 1] -= 0.075 * g(z, 1.12, 0.11) * (y < -0.02) * t  # the belly pushes forward
+        ob.shape_key_add(name="Basis")
+        ob.shape_key_add(name="heavy").data.foreach_set("co", heavy.ravel())
+        if k == "skin":
+            nrm = np.empty(nv * 3); me.vertex_normals.foreach_get("vector", nrm); nrm = nrm.reshape(-1, 3)
+            H = z.max(); ax = np.abs(x); fr = np.clip((np.median(y) - y) / (0.02 * H), 0, 1)
+            inset = (0.024 * g(z, 0.915 * H, 0.025 * H) * g(ax, 0.037 * H, 0.018 * H)
+                     + 0.012 * g(z, 0.945 * H, 0.012 * H) * g(ax, 0.022 * H, 0.012 * H)
+                     + 0.008 * g(z, 0.95 * H, 0.02 * H) * g(ax, 0.06 * H, 0.015 * H)) * fr
+            ob.shape_key_add(name="gaunt").data.foreach_set("co", (co - nrm * inset[:, None]).ravel())
+
+
 def rig(L, F):
     arm = bpy.data.armatures.new("zb_rig"); ro = bpy.data.objects.new("zb_rig", arm); scene.collection.objects.link(ro)
     activate(ro); bpy.ops.object.mode_set(mode="EDIT")
@@ -717,12 +867,15 @@ else:
         bpy.ops.wm.save_as_mainfile(filepath=WORK, copy=True)
         log("saved", WORK)
 tidy(L)
+bkit.tear(L["jacket"], amount=0.22, seed=4)  # ripped hems and a few holes; the shirt shows through
+VAR = gore_sheets(L)
 F = repose(L)
 P = proxies(L, F)
 LOD = lod_body(L)
+shape_keys(L)
 R = rig({**L, "lod": LOD}, F)
 E = layout_empty(F)
-export(list(L.values()) + [LOD] + P + [R, E])
+export(list(L.values()) + [LOD] + VAR + P + [R, E])
 if PREVIEW:
     preview(L, PREVIEW)
 log("done")

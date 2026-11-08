@@ -3281,10 +3281,11 @@ loadModel('zombie', (scene) => {
 // shape per joint, and the joint layout the model was made for. Every human-shaped zombie wears it.
 let ZB = null;
 loadModel('zombiebody', (scene) => {
-  const zb = { layers: {}, hits: {}, lay: null };
+  const zb = { layers: {}, hits: {}, sheets: {}, lay: null };
   scene.traverse((o) => {
     if (o.isSkinnedMesh) zb.layers[o.name.replace('zb_', '')] = { geo: o.geometry, map: o.material.map, bones: o.skeleton.bones.map((b) => b.name) };
     else if (o.isMesh && o.name.startsWith('zp_')) zb.hits[o.name.slice(3)] = o.geometry;
+    else if (o.isMesh && /^zbv_[a-z]+_\d+/.test(o.name)) { const [, k, v] = o.name.match(/^zbv_([a-z]+)_(\d+)/); (zb.sheets[k] ||= [])[+v] = o.material.map; } // bloodied copies of a layer's sheet
     if (o.userData.layout) zb.lay = JSON.parse(o.userData.layout);
   });
   if (zb.lay && zb.layers.skin) ZB = zb;
@@ -3332,6 +3333,16 @@ function lodMat(mats) {
     _lodMats.set(key, m);
   }
   return _lodMats.get(key);
+}
+// a layer's material on one of its bloodied sheets (zombie_body.py bakes them; 0 is the clean one)
+const _sheetMats = new WeakMap(), MORPHS = ['heavy', 'gaunt']; // the exported morphs arrive unnamed, in this order
+function onSheet(mat, name, v) {
+  const alt = v && ZB.sheets[name] && ZB.sheets[name][v];
+  if (!alt || !mat || mat.map !== ZB.layers[name].map) return mat;
+  if (!_sheetMats.has(mat)) _sheetMats.set(mat, []);
+  const row = _sheetMats.get(mat);
+  if (!row[v]) { row[v] = mat.clone(); row[v].map = alt; }
+  return row[v];
 }
 // what each layer is made of: the player's own outfit in its baked colours (a few tints of each, so a crowd is not one
 // man copied), or the type's uniform on the same cut; tinted skins (acid, pale, boss...) tint the baked skin
@@ -4337,10 +4348,14 @@ class Zombie {
       body.add(m); return m;
     };
     this.ownLayers = [];
+    // one sheet set and a face and build of its own: gaunt (or swollen) cheeks, heavy (or thin) chest and belly
+    const sheet = Math.floor(Math.random() * (1 + (ZB.sheets.skin ? ZB.sheets.skin.length - 1 : 0)));
+    const morph = { gaunt: rand(-0.5, 1), heavy: this.c.boss ? 0 : rand(-0.6, 1) };
     for (const [name, mat] of Object.entries(mats)) {
       const lr = ZB.layers[name];
       if (!mat || !lr) continue;
-      const m = skinned(lr.geo, mat); this.meshes.push(m); this.ownLayers.push(m);
+      const m = skinned(lr.geo, onSheet(mat, name, sheet)); this.meshes.push(m); this.ownLayers.push(m);
+      if (m.morphTargetDictionary) for (const [k, i] of Object.entries(m.morphTargetDictionary)) m.morphTargetInfluences[i] = morph[isNaN(k) ? k : MORPHS[k]] ?? 0;
     }
     const glows = Object.values(mats).some((m) => m && (m.transparent || (m.emissive && m.emissiveIntensity > 0 && m.emissive.getHex() !== 0)));
     if (ZB.layers.lod && !glows) { // left out of this.meshes: states that swap the layers' materials keep a zombie close-up (see checkLod)
@@ -9653,7 +9668,7 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026110702'; // YYYYMMDDNN — bump on every deploy
+const BUILD = '2026110801'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
