@@ -519,6 +519,35 @@ def bake_all(L):
     L["hair"].data.materials.clear(); L["hair"].data.materials.append(hm)
 
 
+def rebuild_boots(L):
+    """The remeshed boots were full of cracks, slits you could see through into the empty boot in the game. Voxel-remesh
+    them into one closed shell, re-bake their colours from the cracked ones and carry the weights across."""
+    old = L["boots"]
+    new = old.copy(); new.data = old.data.copy(); new.name = "zb_boots_closed"; scene.collection.objects.link(new)
+    new.data.materials.clear()
+    m = new.modifiers.new("vox", "REMESH"); m.mode = "VOXEL"; m.voxel_size = 0.006; m.use_smooth_shade = True
+    apply_mods(new); decimate(new, 700)
+    dt = new.modifiers.new("dt", "DATA_TRANSFER"); dt.object = old; dt.use_vert_data = True
+    dt.data_types_verts = {"VGROUP_WEIGHTS"}; dt.vert_mapping = "POLYINTERP_NEAREST"
+    dt.layers_vgroup_select_src = "ALL"; dt.layers_vgroup_select_dst = "NAME"
+    apply_mods(new)
+    setup_cycles()
+    bake_layer(new, [old], TEX["boots"], cage=0.02, ao=0)
+    # the source boots baked with white blotches (missed rays and pale inner parts) that read as holes in dark leather:
+    # paint every pale texel the boots' own dark leather, varied a little so it doesn't look flat
+    img = layer_image(new); n = img.size[0] * img.size[1]; px = np.empty(n * 4, np.float32); img.pixels.foreach_get(px); px = px.reshape(-1, 4)
+    lum = px[:, :3] @ np.array((0.2126, 0.7152, 0.0722)); pale = lum > 0.3
+    leather = np.median(px[~pale, :3], axis=0) if (~pale).any() else np.array((0.07, 0.055, 0.045))
+    rng = np.random.default_rng(5); px[pale, :3] = leather * rng.uniform(0.8, 1.2, (int(pale.sum()), 1))
+    img.pixels.foreach_set(px.ravel()); img.update(); img.pack()
+    log(f"  boots: repainted {pale.mean() * 100:.1f}% pale texels")
+    bpy.data.objects.remove(old)
+    new.name = "zb_boots"; new.data.name = "zb_boots"; L["boots"] = new
+    bm = bmesh.new(); bm.from_mesh(new.data)
+    log(f"  boots rebuilt: {len(bm.faces)} faces, {sum(1 for e in bm.edges if e.is_boundary)} open edges")
+    bm.free()
+
+
 def tidy(L):
     """Fixes on the layers in the source pose, run on fresh and cached layers alike."""
     # the model's arms hang inside the jacket, so the jacket's lower sides lie nearest the arms; raised arms then
@@ -530,6 +559,7 @@ def tidy(L):
         keep = np.where(gauze, 1.0, smoothstep(1.30, 1.42, z))[:, None]; arms = [BI["arm0"], BI["arm1"]]
         moved = W[:, arms] * (1 - keep); W[:, arms] -= moved; W[:, BI["torso"]] += moved.sum(1)
         set_weights(ob, W)
+    rebuild_boots(L)
     for k in ("boots", "hair"):  # remeshed shells: point every face outward
         bm = bmesh.new(); bm.from_mesh(L[k].data); bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(L[k].data); bm.free()
 
@@ -867,7 +897,7 @@ else:
         bpy.ops.wm.save_as_mainfile(filepath=WORK, copy=True)
         log("saved", WORK)
 tidy(L)
-bkit.tear(L["jacket"], amount=0.22, seed=4)  # ripped hems and a few holes; the shirt shows through
+bkit.tear(L["jacket"], amount=0.08, seed=4)  # frayed hems only: bigger rips opened holes you could see through at the waist
 VAR = gore_sheets(L)
 F = repose(L)
 P = proxies(L, F)
