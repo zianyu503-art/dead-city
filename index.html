@@ -527,6 +527,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+const BUILD = '2026111401'; // YYYYMMDDNN — bump on every deploy; also tags model URLs so a cached old model can't pair with new code
 
 // ============================================================
 //  Levels — add more entries here to add more levels
@@ -3047,7 +3048,7 @@ function loadModel(name, onLoad) {
     const buf = inline.startsWith('gz:') ? new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer() : Promise.resolve(bytes.buffer);
     buf.then((ab) => new GLTFLoader().parse(ab, '', done, fail), fail);
   }
-  else new GLTFLoader().load(`./assets/models/${name}.glb`, done, undefined, fail); // on failure the procedural stand-ins remain
+  else new GLTFLoader().load(`./assets/models/${name}.glb?v=${BUILD}`, done, undefined, fail); // on failure the procedural stand-ins remain
 }
 setTimeout(() => { if (!modelsLoaded) { modelsLoaded = true; markModelsLoaded(); } }, 20000); // never block play for long
 // 整張地圖 (tools/blender/map_<theme>.py, built with the blender-modeling skill): a whole city level as one Blender scene,
@@ -3066,7 +3067,7 @@ function loadMapModel(name) {
       const bytes = Uint8Array.from(atob(inline.startsWith('gz:') ? inline.slice(3) : inline), (ch) => ch.charCodeAt(0));
       const buf = inline.startsWith('gz:') ? new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer() : Promise.resolve(bytes.buffer);
       buf.then((ab) => mapLoader().parse(ab, '', done, fail), fail);
-    } else mapLoader().load(`./assets/models/${name}.glb`, done, undefined, fail);
+    } else mapLoader().load(`./assets/models/${name}.glb?v=${BUILD}`, done, undefined, fail);
   });
 }
 function buildCityMap(g, scene) {
@@ -9687,7 +9688,6 @@ function frame(dt, now) {
 //  Updates: phones keep the game open in a background tab for days, so whenever the tab comes back
 //  (and at start-up) look for a newer build online; reload at once in the menu, or on returning to it
 // ============================================================
-const BUILD = '2026111201'; // YYYYMMDDNN — bump on every deploy
 let updateReady = null;
 function checkForUpdate() {
   if (!/^https?:$/.test(location.protocol) || window.__GLB_B64) return; // the single-file artifact copy is updated by its host
