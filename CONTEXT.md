@@ -204,6 +204,7 @@
 由 Haiku 子代理用 blender-modeling skill 製作，零件名稱、原點與大小沿用 `zombie.glb`，遊戲的動作不用改；載入失敗時退回 `zombie.glb` 的舊零件。
 - **巢母**（`brood.glb`，`tools/blender/brood.py`）：半透明有血管的腹部、甲殼、分節長腳與尖爪、獠牙。卵囊沿用遊戲自己的發光材質（弱點）。
 - **軍犬**：做了兩版都不夠好（頭像方盒），先保留原本的。
+- **巨型海怪**（`kraken.glb`，`tools/blender/kraken.py`）：有皺紋、藤壺與疤痕的外套膜，深眼窩裡發光的橫瞳大眼（弱點），帶吸盤的觸手。物件名稱與 `carrier.glb` 相同，遊戲先找 `kraken.glb`。
 
 ## 殭屍動作
 

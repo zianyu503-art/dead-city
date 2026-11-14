@@ -527,7 +527,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-const BUILD = '2026111402'; // YYYYMMDDNN — bump on every deploy; also tags model URLs so a cached old model can't pair with new code
+const BUILD = '2026111403'; // YYYYMMDDNN — bump on every deploy; also tags model URLs so a cached old model can't pair with new code
 
 // ============================================================
 //  Levels — add more entries here to add more levels
@@ -3250,6 +3250,9 @@ loadModel('labzombie', (scene) => { LZ = {}; scene.children.forEach((o) => { LZ[
 // 第十二關: the carrier, its deck gear and the kraken (tools/blender/carrier.py); the naval costumes (tools/blender/naval_zombies.py)
 let CV = null, NZ = null;
 loadModel('carrier', (scene) => { CV = {}; scene.children.forEach((o) => { CV[o.name] = o; }); });
+// tools/blender/kraken.py: the kraken's head, eye and tentacle, ahead of carrier.glb's plain ones
+let KR = null;
+loadModel('kraken', (scene) => { KR = {}; scene.children.forEach((o) => { if (/^kraken_/.test(o.name)) KR[o.name] = o; }); });
 loadModel('navalzombie', (scene) => { NZ = {}; scene.children.forEach((o) => { NZ[o.name] = o; }); });
 // the 兌換碼牆 (tools/blender/graffiti.py): walls with a 兌換碼 sprayed on them, painted face toward +z
 let CODEWALL = null;
@@ -4443,7 +4446,7 @@ class Zombie {
   }
   // a costume piece from fest_zombies.py, attached to a joint and shootable as `part`
   festPart(name, parent, part = 'body') {
-    const src = [FZ, NZ, CV, LZ, IZ, TZ, CZ].find((d) => d && d[name]);
+    const src = [KR, FZ, NZ, CV, LZ, IZ, TZ, CZ].find((d) => d && d[name]);
     if (!src) return null;
     const o = src[name].clone();
     o.traverse((m) => { if (!m.isMesh) return; m.castShadow = true; m.userData = { z: this, part, head: part === 'head', mesh: m }; this.meshes.push(m); });
@@ -6341,7 +6344,8 @@ function makeSlick(x, z) {
 }
 function tentacle(s) { // a clone of the kraken's tentacle in its own group, ready to pose
   const t = new THREE.Group();
-  if (CV && CV.kraken_tentacle) { const m = CV.kraken_tentacle.clone(); m.traverse((o) => { if (o.isMesh) o.castShadow = true; }); m.scale.setScalar(s); t.add(m); }
+  const src = (KR && KR.kraken_tentacle) || (CV && CV.kraken_tentacle);
+  if (src) { const m = src.clone(); m.traverse((o) => { if (o.isMesh) o.castShadow = true; }); m.scale.setScalar(s); t.add(m); }
   scene.add(t); return t;
 }
 const _kq = new THREE.Matrix4();
