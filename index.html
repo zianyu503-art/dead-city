@@ -527,7 +527,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-const BUILD = '2026111401'; // YYYYMMDDNN — bump on every deploy; also tags model URLs so a cached old model can't pair with new code
+const BUILD = '2026111402'; // YYYYMMDDNN — bump on every deploy; also tags model URLs so a cached old model can't pair with new code
 
 // ============================================================
 //  Levels — add more entries here to add more levels
@@ -3271,6 +3271,9 @@ loadModel('festzombie', (scene) => {
 // zombie body parts and accessories (tools/blender/zombie.py), keyed by part name; each is modelled
 // in the frame of the joint it hangs from, so it is added at the joint's origin
 let ZP = null;
+// tools/blender/brood.py: the broodmother's own body, fangs, leg and egg sac with a baked texture; zombie.glb's are the fallback
+let BROOD = null;
+loadModel('brood', (scene) => { const b = {}; scene.traverse((o) => { if (o.isMesh && /^brood_/.test(o.name)) b[o.name] = o; }); if (b.brood_body && b.brood_leg && b.brood_sac) BROOD = b; });
 loadModel('zombie', (scene) => {
   const parts = {};
   scene.traverse((o) => { if (o.isMesh) parts[o.name] = o.geometry; });
@@ -4689,8 +4692,8 @@ class Zombie {
     this.broodLegs = []; this.sacs = [];
     this.lean = 0; this.limp = 0; this.radius = 1.7; this.spawnT = 4; this.mortarT = 3;
     if (ZP) {
-      add(ZP.brood_body, zm.broodSkin, body, 0, 0, 0);
-      add(ZP.brood_fangs, zm.teeth, body, 0, 0, 0);
+      if (BROOD) { add(BROOD.brood_body.geometry, BROOD.brood_body.material, body, 0, 0, 0); add(BROOD.brood_fangs.geometry, BROOD.brood_fangs.material, body, 0, 0, 0); }
+      else { add(ZP.brood_body, zm.broodSkin, body, 0, 0, 0); add(ZP.brood_fangs, zm.teeth, body, 0, 0, 0); }
       for (const [x, y, z] of [[0.1, 1.55, 1.52], [-0.1, 1.55, 1.52], [0.19, 1.5, 1.44], [-0.19, 1.5, 1.44], [0.07, 1.64, 1.46], [-0.07, 1.64, 1.46]])
         add(G.eye, zm.eye, body, x, y, z).scale.setScalar(1.6);
     } else {
@@ -4700,11 +4703,12 @@ class Zombie {
     for (const side of [-1, 1]) for (const z of [0.55, -0.1, -0.75]) { // six legs
       const l = new THREE.Group(); l.position.set(0.55 * side, 1.15, z); l.rotation.y = side < 0 ? Math.PI : 0; body.add(l);
       l.userData.base = l.rotation.y; l.userData.phase = z * 3 + (side < 0 ? Math.PI : 0);
-      if (ZP) add(ZP.brood_leg, zm.broodSkin, l, 0, 0, 0); else add(G.leg, zm.broodSkin, l, 0.6, -0.5, 0).scale.set(1.8, 1.6, 1.8);
+      if (BROOD) add(BROOD.brood_leg.geometry, BROOD.brood_leg.material, l, 0, 0, 0);
+      else if (ZP) add(ZP.brood_leg, zm.broodSkin, l, 0, 0, 0); else add(G.leg, zm.broodSkin, l, 0.6, -0.5, 0).scale.set(1.8, 1.6, 1.8);
       this.broodLegs.push(l);
     }
     for (const [x, y, z] of [[0, 1.95, -1.05], [-0.48, 1.72, -0.45], [0.5, 1.78, -0.3]]) { // glowing egg sacs, the weak points
-      const m = add(ZP ? ZP.brood_sac : G.head, zm.sacGlow, body, x, y, z, 'sac');
+      const m = add(BROOD ? BROOD.brood_sac.geometry : ZP ? ZP.brood_sac : G.head, zm.sacGlow, body, x, y, z, 'sac'); // the game's own glow on it
       if (!ZP) m.scale.setScalar(2);
       this.sacs.push({ m, hp: 500 * LV.hpMul });
     }
